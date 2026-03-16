@@ -2,89 +2,99 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Tech Blog Editor</title>
+  <title>Tech Blog Professional Editor</title>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 2rem; background-color: #f4f4f4; color: #1a1a1a; }
-    .container { max-width: 900px; margin: 0 auto; background: white; padding: 2rem; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    h1 { color: #d32f2f; margin-top: 0; }
-    #editor-container { background-color: #fafafa; padding: 20px; border: 1px solid #ddd; border-radius: 4px; min-height: 400px; margin-bottom: 20px; }
-    .publish-btn { background-color: #d32f2f; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; float: right; }
-    .publish-btn:hover { background-color: #b71c1c; }
-    .clear { clear: both; }
+    :root {
+      --primary-red: #d32f2f;
+      --hover-red: #b71c1c;
+      --bg-gray: #f4f4f4;
+      --editor-white: #ffffff;
+      --border-gray: #ddd;
+    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; padding: 0; background-color: var(--bg-gray); color: #1a1a1a; overflow-x: hidden; }
+    
+    /* Fixed Top GUI */
+    .top-app-bar {
+      position: fixed; top: 0; left: 0; right: 0; height: 60px;
+      background: var(--editor-white); border-bottom: 1px solid var(--border-gray);
+      display: flex; align-items: center; padding: 0 1rem; z-index: 1000;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .app-logo { font-size: 1.2rem; font-weight: bold; color: var(--primary-red); margin-right: 2rem; }
+    .publish-btn {
+      background-color: var(--primary-red); color: white; margin-left: auto;
+      font-weight: bold; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer;
+    }
+    .publish-btn:hover { background-color: var(--hover-red); }
+
+    /* Main Canvas Layout */
+    .main-wrapper { display: flex; margin-top: 60px; min-height: calc(100vh - 60px); justify-content: center; padding-bottom: 40px; }
+    .content-container { width: 900px; max-width: 100%; background: var(--editor-white); padding: 2rem; margin-top: 2rem; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border: 1px solid var(--border-gray); }
+    
+    .article-title-input {
+      width: 100%; font-size: 2.5rem; font-weight: bold; border: none; outline: none;
+      margin-bottom: 1rem; color: #000; font-family: 'Segoe UI Light', sans-serif;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Draft New Article</h1>
-    
-    <div id="editor-container"></div>
-
-    <button class="publish-btn" id="publish-btn">Publish to Server</button>
-    <div class="clear"></div>
+  <div class="top-app-bar">
+    <div class="app-logo">Tech Blog CMS</div>
+    <button class="publish-btn" id="publish-btn">Publish</button>
   </div>
 
-  <script>
-    if (typeof module === 'object') {
-      window.module = module;
-      module = undefined;
-    }
-  </script>
+  <div class="main-wrapper">
+    <div class="content-container">
+      <input type="text" class="article-title-input" placeholder="Enter Article Title Here" id="article-title">
+      
+      <textarea id="editor-container">Start writing your tech article here...</textarea>
+    </div>
+  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
-  
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
+  <script>if (typeof module === 'object') { window.module = module; module = undefined; }</script>
+
+  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+
+  <script>if (window.module) { module = window.module; }</script>
 
   <script>
-    if (window.module) {
-      module = window.module;
-    }
-  </script>
-
-  <script>
-    const editor = new EditorJS({
-      holder: 'editor-container',
-      placeholder: 'Start writing your tech article here...',
-      tools: {
-        header: { class: Header, inlineToolbar: ['link', 'bold', 'italic', 'underline'] },
-        list: { class: EditorjsList, inlineToolbar: true },
-        code: { class: CodeTool, placeholder: 'Paste your C or Python code here...' },
-        table: { class: Table, inlineToolbar: true },
-        Marker: { class: Marker, shortcut: 'CTRL+SHIFT+M' },
-        underline: { class: Underline, shortcut: 'CTRL+U' },
-        
-        // Custom Local Image Uploader
-        image: {
-          class: ImageTool,
-          config: {
-            uploader: {
-              uploadByFile(file) {
-                return new Promise((resolve, reject) => {
-                  const reader = new FileReader();
-                  reader.readAsDataURL(file);
-                  reader.onload = () => resolve({
-                    success: 1,
-                    file: { url: reader.result }
-                  });
-                  reader.onerror = error => reject(error);
-                });
-              }
-            }
-          }
-        }
-      }
+    // Initialize the TinyMCE Editor
+    tinymce.init({
+      selector: '#editor-container',
+      height: 600,
+      menubar: false, // Hides the classic 'File Edit View' menu to keep it modern
+      plugins: [
+        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+        'insertdatetime', 'media', 'table', 'wordcount', 'codesample'
+      ],
+      // This string defines exactly what buttons appear in the top toolbar
+      toolbar: 'undo redo | blocks fontfamily fontsize | ' +
+        'bold italic underline strikethrough forecolor backcolor | ' +
+        'alignleft aligncenter alignright alignjustify | ' +
+        'bullist numlist outdent indent | ' +
+        'image codesample table blockquote | removeformat',
+      content_style: 'body { font-family: "Segoe UI", sans-serif; font-size: 16px; }',
+      
+      // Local Image Upload Handler to convert files to Base64 data
+      images_upload_handler: (blobInfo, progress) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(blobInfo.blob());
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      })
     });
 
+    // Publish Button Logic
     document.getElementById('publish-btn').addEventListener('click', () => {
-      editor.save().then((outputData) => {
-        console.log('Article Data: ', outputData);
-        alert('Check the developer console (Ctrl + Shift + I) to see your structured article data!');
-      });
+      const title = document.getElementById('article-title').value;
+      if(!title) { alert('Please enter an article title.'); return; }
+      
+      // TinyMCE extracts data as pure HTML string, unlike EditorJS's JSON
+      const content = tinymce.activeEditor.getContent();
+      
+      console.log('Article Data: ', { title: title, content: content });
+      alert('Data extracted successfully! Check the developer console.');
     });
   </script>
 </body>

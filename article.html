@@ -33,10 +33,12 @@
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/simple-image@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
 
   <script>
     if (window.module) {
@@ -45,17 +47,36 @@
   </script>
 
   <script>
-    // We activated the new tools inside this configuration
     const editor = new EditorJS({
       holder: 'editor-container',
       placeholder: 'Start writing your tech article here...',
       tools: {
-        header: { class: Header, inlineToolbar: true },
+        header: { class: Header, inlineToolbar: ['link', 'bold', 'italic', 'underline'] },
         list: { class: EditorjsList, inlineToolbar: true },
-        image: { class: SimpleImage, inlineToolbar: true },
         code: { class: CodeTool, placeholder: 'Paste your C or Python code here...' },
         table: { class: Table, inlineToolbar: true },
-        Marker: { class: Marker, shortcut: 'CTRL+SHIFT+M' }
+        Marker: { class: Marker, shortcut: 'CTRL+SHIFT+M' },
+        underline: { class: Underline, shortcut: 'CTRL+U' },
+        
+        // Custom Local Image Uploader
+        image: {
+          class: ImageTool,
+          config: {
+            uploader: {
+              uploadByFile(file) {
+                return new Promise((resolve, reject) => {
+                  const reader = new FileReader();
+                  reader.readAsDataURL(file);
+                  reader.onload = () => resolve({
+                    success: 1,
+                    file: { url: reader.result }
+                  });
+                  reader.onerror = error => reject(error);
+                });
+              }
+            }
+          }
+        }
       }
     });
 

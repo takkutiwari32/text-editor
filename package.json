@@ -1,0 +1,23 @@
+{
+  "name": "tech-blog-editor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/takkutiwari32/text-editor.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/takkutiwari32/text-editor/issues"
+  },
+  "homepage": "https://github.com/takkutiwari32/text-editor#readme",
+  "devDependencies": {
+    "electron": "^41.0.2"
+  }
+}

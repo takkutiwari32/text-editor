@@ -33,6 +33,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/simple-image@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
 
   <script>
     if (window.module) {
@@ -41,13 +45,17 @@
   </script>
 
   <script>
-
+    // We activated the new tools inside this configuration
     const editor = new EditorJS({
       holder: 'editor-container',
       placeholder: 'Start writing your tech article here...',
       tools: {
         header: { class: Header, inlineToolbar: true },
-        list: { class: EditorjsList, inlineToolbar: true }
+        list: { class: EditorjsList, inlineToolbar: true },
+        image: { class: SimpleImage, inlineToolbar: true },
+        code: { class: CodeTool, placeholder: 'Paste your C or Python code here...' },
+        table: { class: Table, inlineToolbar: true },
+        Marker: { class: Marker, shortcut: 'CTRL+SHIFT+M' }
       }
     });
 

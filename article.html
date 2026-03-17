@@ -80,8 +80,39 @@
 
       <div class="settings-group">
         <label>Font Style (Family)</label>
-        <input type="text" id="style-font" class="setting-input" placeholder="e.g. Courier, monospace">
-      </div>
+        <select id="style-font" class="setting-input" style="cursor: pointer; width: 100%;">
+          <option value="">Default Theme Font</option>
+          
+          <optgroup label="Coding & Tech (Monospace)">
+            <option value="Consolas, monospace">Consolas (IDE Default)</option>
+            <option value="'Courier New', Courier, monospace">Courier New</option>
+            <option value="'Lucida Console', Monaco, monospace">Lucida Console</option>
+          </optgroup>
+          
+          <optgroup label="Modern Editorial (Sans-Serif)">
+            <option value="'Segoe UI', Roboto, Helvetica, Arial, sans-serif">Segoe UI</option>
+            <option value="Verdana, Geneva, sans-serif">Verdana</option>
+            <option value="'Trebuchet MS', Helvetica, sans-serif">Trebuchet MS</option>
+            <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+            <option value="'Century Gothic', sans-serif">Century Gothic</option>
+            <option value="Arial, Helvetica, sans-serif">Arial</option>
+          </optgroup>
+          
+          <optgroup label="Classic News (Serif)">
+            <option value="Georgia, serif">Georgia</option>
+            <option value="Garamond, serif">Garamond</option>
+            <option value="'Palatino Linotype', 'Book Antiqua', Palatino, serif">Palatino Linotype</option>
+            <option value="Cambria, Georgia, serif">Cambria</option>
+            <option value="'Times New Roman', Times, serif">Times New Roman</option>
+          </optgroup>
+          
+          <optgroup label="Display & Heavy">
+            <option value="Impact, fantasy">Impact</option>
+            <option value="'Arial Black', Gadget, sans-serif">Arial Black</option>
+            <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+          </optgroup>
+        </select>
+      </div> 
 
       <button class="btn-secondary" id="apply-style-btn" style="margin-top: 10px; width: 100%;">Apply to Highlighted Text</button>
 

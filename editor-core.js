@@ -371,3 +371,17 @@ document.getElementById('editor-container').addEventListener('keydown', (e) => {
     document.execCommand('insertLineBreak');
   }
 }, true); // The 'true' forces our code to strike first
+
+// --- 8. DYNAMIC CANVAS WIDTH ENGINE ---
+const widthSlider = document.getElementById('canvas-width-slider');
+const widthDisplay = document.getElementById('width-display');
+
+widthSlider.addEventListener('input', (e) => {
+  const newWidth = e.target.value + '%';
+  
+  // Physically rewrite the CSS root variable in real-time
+  document.documentElement.style.setProperty('--editor-width', newWidth);
+  
+  // Update the visual text readout (e.g. "80%")
+  widthDisplay.innerText = newWidth;
+});

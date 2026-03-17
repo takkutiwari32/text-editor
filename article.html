@@ -6,14 +6,20 @@
   <link rel="stylesheet" href="style.css">
   
   <style>
-    /* Shatter the default 650px limit */
+    :root {
+      --editor-width: 80%;
+    }
+    
+    /* Shatter the default 650px limit and bind to our custom variable */
     .ce-block__content, 
     .ce-toolbar__content {
-      max-width: 90% !important; 
+      max-width: var(--editor-width) !important; 
+      transition: max-width 0.1s ease-out; /* Buttery smooth slider animation */
     }
   </style>
 </head>
 <body>
+
   <nav class="top-bar">
     <div class="logo-section">
       <span class="logo-text">PRO CMS</span>
@@ -105,7 +111,6 @@
           height: 450px; 
         }
 
-        /* THE TOGGLE SWITCH CSS */
         .switch {
           position: relative;
           display: inline-block;
@@ -181,6 +186,11 @@
       
       <div class="sidebar-title" style="margin-bottom: 15px;">Typography Engine</div>
       
+      <div class="typo-row" style="margin-bottom: 15px;">
+        <label style="display: flex; justify-content: space-between;">Canvas Width <span id="width-display" style="color: var(--text-muted);">80%</span></label>
+        <input type="range" id="canvas-width-slider" min="40" max="100" value="80" style="width: 100%; margin-top: 5px; cursor: pointer;">
+      </div>
+
       <div class="typo-row">
         <label>Font Color</label>
         <input type="color" id="style-color" value="#f85149" class="typo-color">

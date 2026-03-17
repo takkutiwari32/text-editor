@@ -161,3 +161,33 @@ ipcRenderer.on('save-response', (event, response) => {
     alert('System Error saving file: ' + response.error);
   }
 });
+// --- 6. TYPOGRAPHY ENGINE LOGIC ---
+document.getElementById('apply-style-btn').addEventListener('click', () => {
+  const color = document.getElementById('style-color').value;
+  const size = document.getElementById('style-size').value;
+  const font = document.getElementById('style-font').value;
+
+  const selection = window.getSelection();
+  
+  // Check if the user actually highlighted something
+  if (!selection.rangeCount || selection.isCollapsed) {
+    alert('Please highlight some text in the editor first!');
+    return;
+  }
+
+  const range = selection.getRangeAt(0);
+  const span = document.createElement('span');
+  
+  // Apply the custom styles
+  if (color) span.style.color = color;
+  if (size) span.style.fontSize = size;
+  if (font) span.style.fontFamily = font;
+
+  // Surgically extract the highlighted text and wrap it in our custom span
+  try {
+    span.appendChild(range.extractContents());
+    range.insertNode(span);
+  } catch (err) {
+    alert('Could not apply style. Ensure you are highlighting text inside a single block.');
+  }
+});

@@ -32,7 +32,7 @@
           <span class="tool-name">Heading</span>
         </button>
         <button class="tool-card" id="tool-image">
-          <span class="tool-icon">🖼</span>
+          <span class="tool-icon">*</span>
           <span class="tool-name">Image</span>
         </button>
         <button class="tool-card" id="tool-code">
@@ -48,11 +48,11 @@
           <span class="tool-name">List</span>
         </button>
         <button class="tool-card" id="tool-audio">
-          <span class="tool-icon">🎵</span>
+          <span class="tool-icon">∬</span>
           <span class="tool-name">Audio</span>
         </button>
         <button class="tool-card" id="tool-draw">
-          <span class="tool-icon">🖍️</span>
+          <span class="tool-icon">✎</span>
           <span class="tool-name">Draw</span>
         </button>
       </div>
@@ -66,7 +66,26 @@
 
     <aside class="right-sidebar">
       <div class="sidebar-title">Post Properties</div>
+      <div class="sidebar-title">Typography Engine</div>
       
+      <div class="settings-group">
+        <label>Font Color</label>
+        <input type="color" id="style-color" value="#f85149" style="width: 100%; height: 35px; border: none; cursor: pointer; background: transparent;">
+      </div>
+      
+      <div class="settings-group">
+        <label>Font Size</label>
+        <input type="text" id="style-size" class="setting-input" placeholder="e.g. 24px or 1.5rem">
+      </div>
+
+      <div class="settings-group">
+        <label>Font Style (Family)</label>
+        <input type="text" id="style-font" class="setting-input" placeholder="e.g. Courier, monospace">
+      </div>
+
+      <button class="btn-secondary" id="apply-style-btn" style="margin-top: 10px; width: 100%;">Apply to Highlighted Text</button>
+
+      <hr style="border: 1px solid var(--border-color); margin: 20px 0; width: 100%;">
       <div class="settings-group">
         <label>URL Slug</label>
         <input type="text" class="setting-input" placeholder="e.g. /my-new-post">

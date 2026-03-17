@@ -24,7 +24,7 @@
 
   <div class="app-body">
     
-<aside class="left-sidebar">
+    <aside class="left-sidebar">
       <div class="sidebar-title">Add Elements</div>
       <div class="tool-grid">
         <button class="tool-card" id="tool-header">
@@ -57,6 +57,7 @@
         </button>
       </div>
     </aside>
+
     <main class="editor-canvas">
       <div class="document-container">
         <input type="text" id="article-title" class="document-title" placeholder="Enter an epic tech title...">
@@ -65,19 +66,9 @@
     </main>
 
     <aside class="right-sidebar">
-      <div class="sidebar-title">Post Properties</div>
-      <div class="sidebar-title">Typography Engine</div>
+      <div class="sidebar-title" style="margin-bottom: 15px;">Post Properties</div>
       
-<div class="sidebar-title" style="margin-bottom: 15px;">Typography Engine</div>
-      
-      <div class="typo-row">
-        <label>Font Color</label>
-        <input type="color" id="style-color" value="#f85149" class="typo-color">
-      </div>
-      
-      <div class="typo-row">
-        <label>Font Size</label>
-<div class="sidebar-title" style="margin-bottom: 15px;">Typography Engine</div>
+      <div class="sidebar-title" style="margin-bottom: 15px;">Typography Engine</div>
       
       <div class="typo-row">
         <label>Font Color</label>
@@ -125,48 +116,8 @@
         </select>
       </div>
 
-      <hr style="border: 1px solid var(--border-color); margin: 20px 0; width: 100%;">        <input type="text" id="style-size" class="typo-input" placeholder="e.g. 24px">
-      </div>
-
-      <div class="typo-row">
-        <label>Font Style</label>
-        <select id="style-font" class="typo-input" style="cursor: pointer;">
-          <option value="">Theme Default</option>
-          
-          <optgroup label="Coding & Tech (Monospace)">
-            <option value="Consolas, monospace">Consolas (IDE Default)</option>
-            <option value="'Courier New', Courier, monospace">Courier New</option>
-            <option value="'Lucida Console', Monaco, monospace">Lucida Console</option>
-          </optgroup>
-          
-          <optgroup label="Modern Editorial (Sans-Serif)">
-            <option value="'Segoe UI', Roboto, Helvetica, Arial, sans-serif">Segoe UI</option>
-            <option value="Verdana, Geneva, sans-serif">Verdana</option>
-            <option value="'Trebuchet MS', Helvetica, sans-serif">Trebuchet MS</option>
-            <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
-            <option value="'Century Gothic', sans-serif">Century Gothic</option>
-            <option value="Arial, Helvetica, sans-serif">Arial</option>
-          </optgroup>
-          
-          <optgroup label="Classic News (Serif)">
-            <option value="Georgia, serif">Georgia</option>
-            <option value="Garamond, serif">Garamond</option>
-            <option value="'Palatino Linotype', 'Book Antiqua', Palatino, serif">Palatino Linotype</option>
-            <option value="Cambria, Georgia, serif">Cambria</option>
-            <option value="'Times New Roman', Times, serif">Times New Roman</option>
-          </optgroup>
-          
-          <optgroup label="Display & Heavy">
-            <option value="Impact, fantasy">Impact</option>
-            <option value="'Arial Black', Gadget, sans-serif">Arial Black</option>
-            <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
-          </optgroup>
-        </select>
-      </div>
-
       <hr style="border: 1px solid var(--border-color); margin: 20px 0; width: 100%;">
-
-      <hr style="border: 1px solid var(--border-color); margin: 20px 0; width: 100%;">
+      
       <div class="settings-group">
         <label>URL Slug</label>
         <input type="text" class="setting-input" placeholder="e.g. /my-new-post">

@@ -54,14 +54,14 @@ class SimpleDrawTool {
     const canvas = document.createElement('canvas');
     canvas.width = 750; canvas.height = 400;
     canvas.style.border = '2px dashed #30363d';
-    canvas.style.background = '#ffffff'; // White canvas for drawing
+    canvas.style.background = '#ffffff'; 
     canvas.style.cursor = 'crosshair';
     canvas.style.borderRadius = '8px';
     
     const ctx = canvas.getContext('2d');
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#d32f2f'; // Primary Red Marker
+    ctx.strokeStyle = '#d32f2f'; 
     
     if (this.data && this.data.image) {
       const img = new Image();
@@ -86,7 +86,6 @@ class SimpleDrawTool {
   
   save(blockContent) {
     const canvas = blockContent.querySelector('canvas');
-    // Converts the raw drawing into a Base64 image string for the JSON!
     return { image: canvas.toDataURL('image/png') };
   }
 }
@@ -117,8 +116,8 @@ const editor = new EditorJS({
         }
       }
     },
-    audio: SimpleAudioTool, // Registering our custom audio engine
-    draw: SimpleDrawTool    // Registering our custom drawing engine
+    audio: SimpleAudioTool, 
+    draw: SimpleDrawTool    
   },
   onChange: () => {
     editor.save().then((outputData) => {
@@ -148,12 +147,10 @@ document.getElementById('publish-btn').addEventListener('click', () => {
   if(!title) { alert('Please enter an article title first.'); return; }
   
   editor.save().then((outputData) => {
-    // Blast the data over IPC to the Node.js backend instead of just logging it
     ipcRenderer.send('save-article', { title: title, content: outputData });
   });
 });
 
-// Listen for the Node.js backend to confirm the file was physically written
 ipcRenderer.on('save-response', (event, response) => {
   if(response.success) {
     alert('Success! Article physically saved to your OS at:\n' + response.path);
@@ -161,26 +158,21 @@ ipcRenderer.on('save-response', (event, response) => {
     alert('System Error saving file: ' + response.error);
   }
 });
-// --- 6. TYPOGRAPHY ENGINE WITH PHYSICAL DOM ANCHORS ---
 
-// Silently inject a physical anchor, but clear it if the user just clicks away
+// --- 6. TYPOGRAPHY ENGINE WITH PHYSICAL DOM ANCHORS ---
 document.querySelector('.document-container').addEventListener('mouseup', () => {
   const selection = window.getSelection();
   
-  // 1. ALWAYS clear any old abandoned targets the moment you click anywhere
   const oldTarget = document.getElementById('pending-style-target');
   if (oldTarget) {
       oldTarget.removeAttribute('id');
       oldTarget.style.backgroundColor = ''; 
   }
 
-  // 2. ONLY wrap a new anchor if text is actively being highlighted
   if (selection.rangeCount > 0 && !selection.isCollapsed) {
     const range = selection.getRangeAt(0);
     const span = document.createElement('span');
     span.id = 'pending-style-target';
-    
-    // Give it a subtle red background so you know it is locked and ready
     span.style.backgroundColor = 'rgba(248, 81, 73, 0.2)'; 
 
     try {
@@ -193,23 +185,15 @@ document.querySelector('.document-container').addEventListener('mouseup', () => 
   }
 });
 
-// --- AUTO-APPLY TYPOGRAPHY LOGIC ---
-
-// Helper function to surgically inject styles
 function applyTypography(type, value) {
   const targetSpan = document.getElementById('pending-style-target');
-  if (!targetSpan) return; // Fail silently if nothing is anchored
+  if (!targetSpan) return; 
 
   if (type === 'color') targetSpan.style.color = value;
   if (type === 'size') targetSpan.style.fontSize = value;
   if (type === 'font') targetSpan.style.fontFamily = value;
-  
-  // We DO NOT remove the 'pending-style-target' ID here.
-  // This allows you to chain commands (e.g. pick a color, then immediately type a size).
-  // The anchor will naturally reset the next time you highlight a new word.
 }
 
-// 1. Font Color: Apply on Enter, Double-Click, OR when the OS Color Dialog closes
 const colorInput = document.getElementById('style-color');
 colorInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') applyTypography('color', colorInput.value);
@@ -218,22 +202,20 @@ colorInput.addEventListener('dblclick', () => {
   applyTypography('color', colorInput.value);
 });
 colorInput.addEventListener('change', () => {
-  applyTypography('color', colorInput.value); // Triggers the moment you close the Windows color picker
+  applyTypography('color', colorInput.value); 
 });
 
-// 2. Font Size: Apply instantly on pressing Enter
 const sizeInput = document.getElementById('style-size');
 sizeInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') applyTypography('size', sizeInput.value);
 });
 
-// 3. Font Style: Apply instantly the moment a dropdown option is clicked
 const fontInput = document.getElementById('style-font');
 fontInput.addEventListener('change', () => {
   applyTypography('font', fontInput.value);
 });
 
-// --- AI CO-PILOT CLOUD BRIDGE (BACKTICK-FREE) ---
+// --- AI CO-PILOT CLOUD BRIDGE ---
 document.getElementById('ai-send-btn').addEventListener('click', async () => {
   const inputField = document.getElementById('ai-chat-input');
   const prompt = inputField.value.trim();
@@ -249,7 +231,6 @@ document.getElementById('ai-send-btn').addEventListener('click', async () => {
   chatWindow.scrollTop = chatWindow.scrollHeight;
 
   try {
-    // Ping the secure Node.js backend instead of localhost
     const data = await ipcRenderer.invoke('fetch-cloud-ai', prompt);
     document.getElementById(loadingId).remove();
     
@@ -324,3 +305,69 @@ document.getElementById('ai-grammar-btn').addEventListener('click', async () => 
     grammarBtn.style.opacity = "1";
   }, 2500);
 });
+
+// --- GHOST AUTO-CORRECT ENGINE (DEBOUNCE ARCHITECTURE) ---
+let isGhostEngineActive = false;
+let ghostTypingTimer;
+const GHOST_PAUSE_DURATION = 3000; 
+
+document.getElementById('ai-auto-toggle').addEventListener('change', (e) => {
+  isGhostEngineActive = e.target.checked;
+  const chatWindow = document.getElementById('ai-chat-window');
+  
+  if (isGhostEngineActive) {
+    chatWindow.innerHTML += "<div><strong style='color: #58a6ff;'>System:</strong> Ghost Auto-Correct ARMED. AI will engage when you pause typing.</div>";
+  } else {
+    chatWindow.innerHTML += "<div><strong style='color: #8b949e;'>System:</strong> Ghost Auto-Correct DISARMED. Manual mode active.</div>";
+  }
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+});
+
+document.getElementById('editor-container').addEventListener('keyup', (e) => {
+  if (!isGhostEngineActive) return;
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') return;
+
+  const activeBlock = e.target.closest('.cdx-block');
+  if (!activeBlock) return;
+
+  clearTimeout(ghostTypingTimer);
+
+  ghostTypingTimer = setTimeout(async () => {
+    
+    const rawText = activeBlock.innerText.trim();
+    if (rawText.length < 5) return; 
+
+    const originalBg = activeBlock.style.backgroundColor;
+    activeBlock.style.backgroundColor = 'rgba(88, 166, 255, 0.1)';
+    activeBlock.style.transition = 'background-color 0.3s ease';
+
+    const strictPrompt = "You are a strict proofreader. Fix all spelling and grammar errors in the following text. Do not add any conversational filler. Do not explain the changes. Do not use quotes. Return strictly the corrected text and nothing else. Text: " + rawText;
+
+    try {
+      const data = await ipcRenderer.invoke('fetch-cloud-ai', strictPrompt);
+      
+      if (!data.error) {
+          activeBlock.innerHTML = data.response.trim();
+          activeBlock.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    } catch (error) {
+      console.error("Ghost Engine Bridge Failure");
+    }
+
+    activeBlock.style.backgroundColor = originalBg;
+
+  }, GHOST_PAUSE_DURATION);
+});
+// --- 7. THE KEYBOARD HIJACKER (NUCLEAR DOM INJECTOR) ---
+document.getElementById('editor-container').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    
+    // 1. Violently and completely kill the event before EditorJS wakes up
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    // 2. Bypass EditorJS entirely and command the Chrome V8 engine to inject a raw soft-break
+    document.execCommand('insertLineBreak');
+  }
+}, true); // The 'true' forces our code to strike first

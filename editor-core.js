@@ -1,4 +1,5 @@
 // --- 1. CUSTOM AUDIO ENGINE ---
+const { ipcRenderer } = require('electron');
 class SimpleAudioTool {
   static get toolbox() { return { title: 'Audio', icon: '🎵' }; }
   constructor({data}) { this.data = data; }
@@ -147,7 +148,16 @@ document.getElementById('publish-btn').addEventListener('click', () => {
   if(!title) { alert('Please enter an article title first.'); return; }
   
   editor.save().then((outputData) => {
-    console.log('Final Article Data: ', { title: title, content: outputData });
-    alert('Custom engines successfully fired! Check Developer Console.');
+    // Blast the data over IPC to the Node.js backend instead of just logging it
+    ipcRenderer.send('save-article', { title: title, content: outputData });
   });
+});
+
+// Listen for the Node.js backend to confirm the file was physically written
+ipcRenderer.on('save-response', (event, response) => {
+  if(response.success) {
+    alert('Success! Article physically saved to your OS at:\n' + response.path);
+  } else {
+    alert('System Error saving file: ' + response.error);
+  }
 });

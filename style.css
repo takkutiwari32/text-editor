@@ -1,12 +1,12 @@
-/* 1. Core Variables & Theme (Keeping the signature red accent) */
+/* 1. Core Variables & Theme (Premium Dark Mode) */
 :root {
-  --bg-color: #f0f2f5;
-  --surface-color: #ffffff;
-  --border-color: #e4e6eb;
-  --text-main: #1c1e21;
-  --text-muted: #65676b;
-  --primary-accent: #d32f2f;
-  --hover-accent: #b71c1c;
+  --bg-color: #0d1117;        /* Deep GitHub Dark background */
+  --surface-color: #161b22;   /* Slightly lighter surface for sidebars/canvas */
+  --border-color: #30363d;    /* Subtle dark borders */
+  --text-main: #c9d1d9;       /* Crisp off-white text */
+  --text-muted: #8b949e;      /* Dimmer text for secondary labels */
+  --primary-accent: #f85149;  /* Vibrant red accent for dark mode */
+  --hover-accent: #da3633;
   --sidebar-width: 260px;
   --topbar-height: 60px;
 }

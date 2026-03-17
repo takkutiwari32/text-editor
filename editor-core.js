@@ -161,52 +161,74 @@ ipcRenderer.on('save-response', (event, response) => {
     alert('System Error saving file: ' + response.error);
   }
 });
-// --- 6. TYPOGRAPHY ENGINE WITH SELECTION MEMORY ---
-let savedSelectionRange = null;
+// --- 6. TYPOGRAPHY ENGINE WITH PHYSICAL DOM ANCHORS ---
 
-// Silently record the exact text coordinates the moment the mouse lifts
+// Silently inject a physical anchor, but clear it if the user just clicks away
 document.getElementById('editor-container').addEventListener('mouseup', () => {
   const selection = window.getSelection();
-  if (selection.rangeCount > 0 && !selection.isCollapsed) {
-    savedSelectionRange = selection.getRangeAt(0).cloneRange();
-    console.log('Text coordinates locked into memory.');
-  }
-});
-
-// Also record it if you use Shift+Arrow Keys to highlight
-document.getElementById('editor-container').addEventListener('keyup', () => {
-  const selection = window.getSelection();
-  if (selection.rangeCount > 0 && !selection.isCollapsed) {
-    savedSelectionRange = selection.getRangeAt(0).cloneRange();
-  }
-});
-
-document.getElementById('apply-style-btn').addEventListener('click', () => {
-  const color = document.getElementById('style-color').value;
-  const size = document.getElementById('style-size').value;
-  const font = document.getElementById('style-font').value;
-
-  // Verify our system actually saved a memory
-  if (!savedSelectionRange) {
-    alert('Please highlight some text in the editor first!');
-    return;
-  }
-
-  const span = document.createElement('span');
   
-  if (color) span.style.color = color;
-  if (size) span.style.fontSize = size;
-  if (font) span.style.fontFamily = font;
-
-  try {
-    // Surgically inject the CSS using the saved coordinates, not the live window
-    span.appendChild(savedSelectionRange.extractContents());
-    savedSelectionRange.insertNode(span);
-    
-    // Wipe the memory clean so we don't accidentally style the wrong text later
-    savedSelectionRange = null;
-    window.getSelection().removeAllRanges();
-  } catch (err) {
-    alert('System error: Ensure you are highlighting text inside a single block.');
+  // 1. ALWAYS clear any old abandoned targets the moment you click anywhere
+  const oldTarget = document.getElementById('pending-style-target');
+  if (oldTarget) {
+      oldTarget.removeAttribute('id');
+      oldTarget.style.backgroundColor = ''; 
   }
+
+  // 2. ONLY wrap a new anchor if text is actively being highlighted
+  if (selection.rangeCount > 0 && !selection.isCollapsed) {
+    const range = selection.getRangeAt(0);
+    const span = document.createElement('span');
+    span.id = 'pending-style-target';
+    
+    // Give it a subtle red background so you know it is locked and ready
+    span.style.backgroundColor = 'rgba(248, 81, 73, 0.2)'; 
+
+    try {
+      span.appendChild(range.extractContents());
+      range.insertNode(span);
+      console.log('Target locked into physical DOM.');
+    } catch (err) {
+      console.log('Cross-block selection prevented.');
+    }
+  }
+});
+
+// --- AUTO-APPLY TYPOGRAPHY LOGIC ---
+
+// Helper function to surgically inject styles
+function applyTypography(type, value) {
+  const targetSpan = document.getElementById('pending-style-target');
+  if (!targetSpan) return; // Fail silently if nothing is anchored
+
+  if (type === 'color') targetSpan.style.color = value;
+  if (type === 'size') targetSpan.style.fontSize = value;
+  if (type === 'font') targetSpan.style.fontFamily = value;
+  
+  // We DO NOT remove the 'pending-style-target' ID here.
+  // This allows you to chain commands (e.g. pick a color, then immediately type a size).
+  // The anchor will naturally reset the next time you highlight a new word.
+}
+
+// 1. Font Color: Apply on Enter, Double-Click, OR when the OS Color Dialog closes
+const colorInput = document.getElementById('style-color');
+colorInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') applyTypography('color', colorInput.value);
+});
+colorInput.addEventListener('dblclick', () => {
+  applyTypography('color', colorInput.value);
+});
+colorInput.addEventListener('change', () => {
+  applyTypography('color', colorInput.value); // Triggers the moment you close the Windows color picker
+});
+
+// 2. Font Size: Apply instantly on pressing Enter
+const sizeInput = document.getElementById('style-size');
+sizeInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') applyTypography('size', sizeInput.value);
+});
+
+// 3. Font Style: Apply instantly the moment a dropdown option is clicked
+const fontInput = document.getElementById('style-font');
+fontInput.addEventListener('change', () => {
+  applyTypography('font', fontInput.value);
 });

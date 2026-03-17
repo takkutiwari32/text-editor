@@ -97,14 +97,21 @@ body {
   overflow-y: auto; display: flex; justify-content: center;
 }
 .document-container {
-  width: 100%; max-width: 850px; background: var(--surface-color);
-  padding: 60px 80px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-  border: 1px solid var(--border-color); min-height: 100%;
+  width: 100%; max-width: 850px; 
+  background: #ffffff; /* Forced White Paper */
+  padding: 60px 80px; border-radius: 8px; 
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4); /* Stronger shadow to lift it off the dark background */
+  border: none; min-height: 100%;
 }
 .document-title {
   width: 100%; font-size: 3rem; font-weight: 800; border: none; outline: none;
-  margin-bottom: 30px; color: var(--text-main);
-  border-bottom: 2px solid var(--border-color); padding-bottom: 15px;
+  margin-bottom: 30px; 
+  color: #111111; /* Dark text for light background */
+  border-bottom: 2px solid #eeeeee; padding-bottom: 15px;
+  background: transparent;
 }
-.document-title::placeholder { color: #d0d0d0; }
-#editor-container { font-size: 1.15rem; line-height: 1.7; color: #2c2e33; }
+.document-title::placeholder { color: #bbbbbb; }
+#editor-container { font-size: 1.15rem; line-height: 1.7; color: #111111; }
+
+/* Ensure EditorJS text overrides the dark theme body color */
+.codex-editor { color: #111111 !important; }

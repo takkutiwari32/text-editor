@@ -283,3 +283,82 @@ document.getElementById('publish-btn').addEventListener('click', () => {
     console.log("Publish engine engaged. Compiling document payload...");
     document.querySelector('.save-status').innerText = 'Draft status: Saved to Local OS';
 });
+// --- AI GRAMMAR FIXER (SURGICAL BLOCK OVERWRITE) ---
+// --- THE MEMORY ANCHOR ---
+let lastActiveBlock = null;
+
+// Constantly track the last block the user clicked or typed in
+document.addEventListener('click', (e) => {
+  const block = e.target.closest('.cdx-block');
+  if (block) {
+    lastActiveBlock = block;
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  const block = e.target.closest('.cdx-block');
+  if (block) {
+    lastActiveBlock = block;
+  }
+});
+
+// --- AI GRAMMAR FIXER (SURGICAL BLOCK OVERWRITE) ---
+document.getElementById('ai-grammar-btn').addEventListener('click', async () => {
+  
+  if (!lastActiveBlock) {
+    alert("System Error: Click inside a specific paragraph first so the AI knows what to fix.");
+    return;
+  }
+
+  const originalText = lastActiveBlock.innerText.trim();
+  if (!originalText) return;
+
+  const grammarBtn = document.getElementById('ai-grammar-btn');
+  const originalBtnText = grammarBtn.innerText;
+  
+  // UI Loading State
+  grammarBtn.innerText = "Processing Neural Grammar...";
+  grammarBtn.style.opacity = "0.7";
+  const originalText = focusedBlock.innerText.trim();
+  if (!originalText) return;
+
+  const grammarBtn = document.getElementById('ai-grammar-btn');
+  const originalBtnText = grammarBtn.innerText;
+  
+  // UI Loading State
+  grammarBtn.innerText = "Processing Neural Grammar...";
+  grammarBtn.style.opacity = "0.7";
+
+  // 2. Strict Zero-Tolerance Prompt Engineering (NO BACKTICKS)
+  const strictPrompt = "You are a strict proofreader. Fix all spelling and grammar errors in the following text. Do not add any conversational filler. Do not explain the changes. Do not use quotes. Return strictly the corrected text and nothing else. Text: " + originalText;
+
+  try {
+    const response = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'phi3',
+        prompt: strictPrompt,
+        stream: false
+      })
+    });
+
+    const data = await response.json();
+    
+    // 3. Surgically inject the AI text back into the EditorJS DOM
+    focusedBlock.innerHTML = data.response.trim();
+    
+    // Force EditorJS to recognize the DOM manipulation so it saves correctly
+    focusedBlock.dispatchEvent(new Event('input', { bubbles: true }));
+    
+    grammarBtn.innerText = "Grammar Fixed!";
+  } catch (error) {
+    grammarBtn.innerText = "Local Engine Offline";
+  }
+
+  // Reset the button UI
+  setTimeout(() => {
+    grammarBtn.innerText = originalBtnText;
+    grammarBtn.style.opacity = "1";
+  }, 2500);
+});

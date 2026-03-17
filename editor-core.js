@@ -161,33 +161,52 @@ ipcRenderer.on('save-response', (event, response) => {
     alert('System Error saving file: ' + response.error);
   }
 });
-// --- 6. TYPOGRAPHY ENGINE LOGIC ---
+// --- 6. TYPOGRAPHY ENGINE WITH SELECTION MEMORY ---
+let savedSelectionRange = null;
+
+// Silently record the exact text coordinates the moment the mouse lifts
+document.getElementById('editor-container').addEventListener('mouseup', () => {
+  const selection = window.getSelection();
+  if (selection.rangeCount > 0 && !selection.isCollapsed) {
+    savedSelectionRange = selection.getRangeAt(0).cloneRange();
+    console.log('Text coordinates locked into memory.');
+  }
+});
+
+// Also record it if you use Shift+Arrow Keys to highlight
+document.getElementById('editor-container').addEventListener('keyup', () => {
+  const selection = window.getSelection();
+  if (selection.rangeCount > 0 && !selection.isCollapsed) {
+    savedSelectionRange = selection.getRangeAt(0).cloneRange();
+  }
+});
+
 document.getElementById('apply-style-btn').addEventListener('click', () => {
   const color = document.getElementById('style-color').value;
   const size = document.getElementById('style-size').value;
   const font = document.getElementById('style-font').value;
 
-  const selection = window.getSelection();
-  
-  // Check if the user actually highlighted something
-  if (!selection.rangeCount || selection.isCollapsed) {
+  // Verify our system actually saved a memory
+  if (!savedSelectionRange) {
     alert('Please highlight some text in the editor first!');
     return;
   }
 
-  const range = selection.getRangeAt(0);
   const span = document.createElement('span');
   
-  // Apply the custom styles
   if (color) span.style.color = color;
   if (size) span.style.fontSize = size;
   if (font) span.style.fontFamily = font;
 
-  // Surgically extract the highlighted text and wrap it in our custom span
   try {
-    span.appendChild(range.extractContents());
-    range.insertNode(span);
+    // Surgically inject the CSS using the saved coordinates, not the live window
+    span.appendChild(savedSelectionRange.extractContents());
+    savedSelectionRange.insertNode(span);
+    
+    // Wipe the memory clean so we don't accidentally style the wrong text later
+    savedSelectionRange = null;
+    window.getSelection().removeAllRanges();
   } catch (err) {
-    alert('Could not apply style. Ensure you are highlighting text inside a single block.');
+    alert('System error: Ensure you are highlighting text inside a single block.');
   }
 });

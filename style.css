@@ -94,16 +94,19 @@ body {
 /* 7. Center Canvas: The Isolated Writing Area */
 .editor-canvas {
   flex: 1; background: var(--bg-color); 
-  padding: 20px; /* This creates the thin dark stripe around the canvas */
+  padding: 20px; 
   overflow-y: auto; display: flex; justify-content: center;
+  align-items: flex-start; /* FIX: Tells the canvas to grow natively from the top down */
 }
 .document-container {
   width: 100%; 
-  max-width: 100%; /* Removed the 850px limit so it expands */
+  max-width: 100%; 
   background: #ffffff; /* Forced White Paper */
   padding: 60px 80px; border-radius: 8px; 
   box-shadow: 0 8px 30px rgba(0,0,0,0.4); 
-  border: none; min-height: 100%;
+  border: none; 
+  min-height: calc(100vh - 140px); /* Keeps it looking like a full page when empty */
+  height: max-content; /* FIX: Forces the white background to wrap endless content */
 }
 .document-title {
   width: 100%; font-size: 3rem; font-weight: 800; border: none; outline: none;

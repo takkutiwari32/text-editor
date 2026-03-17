@@ -232,3 +232,95 @@ const fontInput = document.getElementById('style-font');
 fontInput.addEventListener('change', () => {
   applyTypography('font', fontInput.value);
 });
+
+// --- AI CO-PILOT CLOUD BRIDGE (BACKTICK-FREE) ---
+document.getElementById('ai-send-btn').addEventListener('click', async () => {
+  const inputField = document.getElementById('ai-chat-input');
+  const prompt = inputField.value.trim();
+  if (!prompt) return;
+
+  const chatWindow = document.getElementById('ai-chat-window');
+  
+  chatWindow.innerHTML += "<div><strong style='color: #58a6ff;'>You:</strong> " + prompt + "</div>";
+  inputField.value = '';
+  
+  const loadingId = 'loading-' + Date.now();
+  chatWindow.innerHTML += "<div id='" + loadingId + "' style='color: var(--text-muted);'><em>Cloud AI is thinking...</em></div>";
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+
+  try {
+    // Ping the secure Node.js backend instead of localhost
+    const data = await ipcRenderer.invoke('fetch-cloud-ai', prompt);
+    document.getElementById(loadingId).remove();
+    
+    if (data.error) {
+        chatWindow.innerHTML += "<div style='color: red;'><strong>System Error:</strong> " + data.error + "</div>";
+    } else {
+        chatWindow.innerHTML += "<div><strong style='color: #f85149;'>Cloud AI:</strong> " + data.response + "</div>";
+    }
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  } catch (error) {
+    document.getElementById(loadingId).remove();
+    chatWindow.innerHTML += "<div style='color: red;'><strong>System Error:</strong> IPC bridge failure.</div>";
+  }
+});
+
+document.getElementById('ai-chat-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('ai-send-btn').click();
+});
+
+// --- THE MEMORY ANCHOR ---
+let lastActiveBlock = null;
+
+document.addEventListener('click', (e) => {
+  const block = e.target.closest('.cdx-block');
+  if (block) {
+    lastActiveBlock = block;
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  const block = e.target.closest('.cdx-block');
+  if (block) {
+    lastActiveBlock = block;
+  }
+});
+
+// --- AI GRAMMAR FIXER (CLOUD OVERWRITE) ---
+document.getElementById('ai-grammar-btn').addEventListener('click', async () => {
+  
+  if (!lastActiveBlock) {
+    alert("System Error: Click inside a specific paragraph first so the AI knows what to fix.");
+    return;
+  }
+
+  const originalText = lastActiveBlock.innerText.trim();
+  if (!originalText) return;
+
+  const grammarBtn = document.getElementById('ai-grammar-btn');
+  const originalBtnText = grammarBtn.innerText;
+  
+  grammarBtn.innerText = "Processing Cloud Grammar...";
+  grammarBtn.style.opacity = "0.7";
+
+  const strictPrompt = "You are a strict proofreader. Fix all spelling and grammar errors in the following text. Do not add any conversational filler. Do not explain the changes. Do not use quotes. Return strictly the corrected text and nothing else. Text: " + originalText;
+
+  try {
+    const data = await ipcRenderer.invoke('fetch-cloud-ai', strictPrompt);
+    
+    if (data.error) {
+        grammarBtn.innerText = "API Error";
+    } else {
+        lastActiveBlock.innerHTML = data.response.trim();
+        lastActiveBlock.dispatchEvent(new Event('input', { bubbles: true }));
+        grammarBtn.innerText = "Grammar Fixed!";
+    }
+  } catch (error) {
+    grammarBtn.innerText = "Bridge Offline";
+  }
+
+  setTimeout(() => {
+    grammarBtn.innerText = originalBtnText;
+    grammarBtn.style.opacity = "1";
+  }, 2500);
+});

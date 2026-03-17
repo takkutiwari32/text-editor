@@ -56,11 +56,69 @@
           <span class="tool-name">Draw</span>
         </button>
       </div>
+
+      <style>
+        .ai-flyout {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 260px; 
+          background-color: #0d1117;
+          border-top: 1px solid var(--border-color);
+          border-right: 1px solid var(--border-color);
+          padding: 15px;
+          transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          z-index: 9999; 
+          box-sizing: border-box;
+          border-top-right-radius: 8px;
+        }
+        
+        .ai-flyout:hover {
+          width: 25vw; 
+          box-shadow: 10px 0 20px rgba(0,0,0,0.6);
+        }
+
+        #ai-chat-window {
+          height: 250px;
+          overflow-y: auto;
+          background: #161b22;
+          border: 1px solid var(--border-color);
+          border-radius: 4px;
+          padding: 10px;
+          margin-bottom: 10px;
+          font-size: 0.85rem;
+          color: var(--text-main);
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          transition: height 0.3s ease;
+        }
+
+        .ai-flyout:hover #ai-chat-window {
+          height: 450px; 
+        }
+      </style>
+
+      <div class="ai-flyout">
+        <div class="sidebar-title" style="margin-bottom: 10px;">Cloud Co-Pilot</div>
+        <div id="ai-chat-window">
+          <div style="color: var(--text-muted); font-style: italic;">System: Secure Cloud Bridge Online. Waiting for prompt...</div>
+        </div>
+        
+        <div style="display: flex; gap: 5px;">
+          <input type="text" id="ai-chat-input" class="setting-input" placeholder="Ask Co-Pilot..." style="flex-grow: 1;">
+          <button id="ai-send-btn" class="btn-primary" style="padding: 5px 10px; min-width: 40px;">Go</button>
+        </div>
+
+        <div style="margin-top: 8px;">
+          <button id="ai-grammar-btn" class="btn-secondary" style="width: 100%; font-size: 0.8rem; border-color: #58a6ff; color: #58a6ff;">✨ Fix Active Block Grammar</button>
+        </div>
+      </div>
     </aside>
 
     <main class="editor-canvas">
       <div class="document-container">
-        <input type="text" id="article-title" class="document-title" placeholder="Enter an epic tech title...">
+       <h1 id="article-title" class="document-title" contenteditable="true" data-placeholder="Enter an epic tech title..."></h1>
         <div id="editor-container"></div>
       </div>
     </main>
@@ -84,34 +142,19 @@
         <label>Font Style</label>
         <select id="style-font" class="typo-input" style="cursor: pointer;">
           <option value="">Theme Default</option>
-          
           <optgroup label="Coding & Tech (Monospace)">
             <option value="Consolas, monospace">Consolas (IDE Default)</option>
             <option value="'Courier New', Courier, monospace">Courier New</option>
             <option value="'Lucida Console', Monaco, monospace">Lucida Console</option>
           </optgroup>
-          
           <optgroup label="Modern Editorial (Sans-Serif)">
             <option value="'Segoe UI', Roboto, Helvetica, Arial, sans-serif">Segoe UI</option>
             <option value="Verdana, Geneva, sans-serif">Verdana</option>
-            <option value="'Trebuchet MS', Helvetica, sans-serif">Trebuchet MS</option>
-            <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
-            <option value="'Century Gothic', sans-serif">Century Gothic</option>
             <option value="Arial, Helvetica, sans-serif">Arial</option>
           </optgroup>
-          
           <optgroup label="Classic News (Serif)">
             <option value="Georgia, serif">Georgia</option>
-            <option value="Garamond, serif">Garamond</option>
-            <option value="'Palatino Linotype', 'Book Antiqua', Palatino, serif">Palatino Linotype</option>
-            <option value="Cambria, Georgia, serif">Cambria</option>
             <option value="'Times New Roman', Times, serif">Times New Roman</option>
-          </optgroup>
-          
-          <optgroup label="Display & Heavy">
-            <option value="Impact, fantasy">Impact</option>
-            <option value="'Arial Black', Gadget, sans-serif">Arial Black</option>
-            <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
           </optgroup>
         </select>
       </div>
@@ -137,7 +180,6 @@
   </div>
 
   <script>if (typeof module === 'object') { window.module = module; module = undefined; }</script>
-  
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
@@ -146,9 +188,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
-
   <script>if (window.module) { module = window.module; }</script>
-  
   <script src="editor-core.js"></script>
 
 </body>

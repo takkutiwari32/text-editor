@@ -4,9 +4,16 @@
   <meta charset="UTF-8">
   <title>Tech Blog Pro CMS</title>
   <link rel="stylesheet" href="style.css">
+  
+  <style>
+    /* Shatter the default 650px limit */
+    .ce-block__content, 
+    .ce-toolbar__content {
+      max-width: 90% !important; 
+    }
+  </style>
 </head>
 <body>
-
   <nav class="top-bar">
     <div class="logo-section">
       <span class="logo-text">PRO CMS</span>
@@ -97,6 +104,44 @@
         .ai-flyout:hover #ai-chat-window {
           height: 450px; 
         }
+
+        /* THE TOGGLE SWITCH CSS */
+        .switch {
+          position: relative;
+          display: inline-block;
+          width: 40px;
+          height: 20px;
+        }
+        .switch input { 
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+        .slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background-color: #30363d;
+          transition: .4s;
+          border-radius: 20px;
+        }
+        .slider:before {
+          position: absolute;
+          content: "";
+          height: 14px;
+          width: 14px;
+          left: 3px;
+          bottom: 3px;
+          background-color: white;
+          transition: .4s;
+          border-radius: 50%;
+        }
+        input:checked + .slider {
+          background-color: #58a6ff;
+        }
+        input:checked + .slider:before {
+          transform: translateX(20px);
+        }
       </style>
 
       <div class="ai-flyout">
@@ -112,6 +157,14 @@
 
         <div style="margin-top: 8px;">
           <button id="ai-grammar-btn" class="btn-secondary" style="width: 100%; font-size: 0.8rem; border-color: #58a6ff; color: #58a6ff;">✨ Fix Active Block Grammar</button>
+        </div>
+
+        <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #30363d; padding-top: 10px;">
+          <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: bold;">Ghost Auto-Correct</span>
+          <label class="switch">
+            <input type="checkbox" id="ai-auto-toggle">
+            <span class="slider"></span>
+          </label>
         </div>
       </div>
     </aside>

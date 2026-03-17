@@ -144,7 +144,7 @@ document.getElementById('tool-draw').addEventListener('click', () => { editor.bl
 
 // --- 5. PUBLISH LOGIC ---
 document.getElementById('publish-btn').addEventListener('click', () => {
-  const title = document.getElementById('article-title').value;
+  const title = document.getElementById('article-title').innerText.trim();
   if(!title) { alert('Please enter an article title first.'); return; }
   
   editor.save().then((outputData) => {
@@ -164,7 +164,7 @@ ipcRenderer.on('save-response', (event, response) => {
 // --- 6. TYPOGRAPHY ENGINE WITH PHYSICAL DOM ANCHORS ---
 
 // Silently inject a physical anchor, but clear it if the user just clicks away
-document.getElementById('editor-container').addEventListener('mouseup', () => {
+document.querySelector('.document-container').addEventListener('mouseup', () => {
   const selection = window.getSelection();
   
   // 1. ALWAYS clear any old abandoned targets the moment you click anywhere

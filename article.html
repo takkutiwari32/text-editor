@@ -56,11 +56,22 @@
           <span class="tool-name">Draw</span>
         </button>
       </div>
+      <hr style="border: 1px solid var(--border-color); margin: 20px 0; width: 100%;">
+      
+      <div class="sidebar-title">AI Co-Pilot (Phi-3)</div>
+      <div id="ai-chat-window" style="height: 280px; overflow-y: auto; background: #0d1117; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; margin-bottom: 10px; font-size: 0.8rem; color: var(--text-main); display: flex; flex-direction: column; gap: 8px;">
+        <div style="color: var(--text-muted); font-style: italic;">System: Local Phi-3 engine online. Waiting for prompt...</div>
+      </div>
+      
+      <div style="display: flex; gap: 5px;">
+        <input type="text" id="ai-chat-input" class="setting-input" placeholder="Ask Co-Pilot..." style="flex-grow: 1;">
+        <button id="ai-send-btn" class="btn-primary" style="padding: 5px 10px; min-width: 40px;">Go</button>
+      </div>
     </aside>
 
     <main class="editor-canvas">
       <div class="document-container">
-        <input type="text" id="article-title" class="document-title" placeholder="Enter an epic tech title...">
+       <h1 id="article-title" class="document-title" contenteditable="true" data-placeholder="Enter an epic tech title..."></h1>
         <div id="editor-container"></div>
       </div>
     </main>

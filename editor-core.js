@@ -232,3 +232,54 @@ const fontInput = document.getElementById('style-font');
 fontInput.addEventListener('change', () => {
   applyTypography('font', fontInput.value);
 });
+// --- AI CO-PILOT NEURAL BRIDGE (BACKTICK-FREE VERSION) ---
+document.getElementById('ai-send-btn').addEventListener('click', async () => {
+  const inputField = document.getElementById('ai-chat-input');
+  const prompt = inputField.value.trim();
+  if (!prompt) return;
+
+  const chatWindow = document.getElementById('ai-chat-window');
+  
+  // 1. Render User Message
+  chatWindow.innerHTML += "<div><strong style='color: #58a6ff;'>You:</strong> " + prompt + "</div>";
+  inputField.value = '';
+  
+  // 2. Render Loading State
+  const loadingId = 'loading-' + Date.now();
+  chatWindow.innerHTML += "<div id='" + loadingId + "' style='color: var(--text-muted);'><em>Phi-3 is thinking...</em></div>";
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+
+  // 3. Fire payload to local Ubuntu server
+  try {
+    const response = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'phi3',
+        prompt: prompt,
+        stream: false 
+      })
+    });
+
+    const data = await response.json();
+    document.getElementById(loadingId).remove();
+    
+    // 4. Render AI Response
+    chatWindow.innerHTML += "<div><strong style='color: #f85149;'>Phi-3:</strong> " + data.response + "</div>";
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  } catch (error) {
+    document.getElementById(loadingId).remove();
+    chatWindow.innerHTML += "<div style='color: red;'><strong>System Error:</strong> Connection to local engine failed. Is Ollama running?</div>";
+  }
+});
+
+// Allow pressing Enter to send prompts
+document.getElementById('ai-chat-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('ai-send-btn').click();
+});
+
+// --- CORE PUBLISH LOGIC ---
+document.getElementById('publish-btn').addEventListener('click', () => {
+    console.log("Publish engine engaged. Compiling document payload...");
+    document.querySelector('.save-status').innerText = 'Draft status: Saved to Local OS';
+});

@@ -54,14 +54,14 @@ class SimpleDrawTool {
     const canvas = document.createElement('canvas');
     canvas.width = 750; canvas.height = 400;
     canvas.style.border = '2px dashed #30363d';
-    canvas.style.background = '#ffffff'; // White canvas for drawing
+    canvas.style.background = '#ffffff'; 
     canvas.style.cursor = 'crosshair';
     canvas.style.borderRadius = '8px';
     
     const ctx = canvas.getContext('2d');
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#d32f2f'; // Primary Red Marker
+    ctx.strokeStyle = '#d32f2f'; 
     
     if (this.data && this.data.image) {
       const img = new Image();
@@ -86,7 +86,6 @@ class SimpleDrawTool {
   
   save(blockContent) {
     const canvas = blockContent.querySelector('canvas');
-    // Converts the raw drawing into a Base64 image string for the JSON!
     return { image: canvas.toDataURL('image/png') };
   }
 }
@@ -117,8 +116,8 @@ const editor = new EditorJS({
         }
       }
     },
-    audio: SimpleAudioTool, // Registering our custom audio engine
-    draw: SimpleDrawTool    // Registering our custom drawing engine
+    audio: SimpleAudioTool, 
+    draw: SimpleDrawTool    
   },
   onChange: () => {
     editor.save().then((outputData) => {
@@ -148,12 +147,10 @@ document.getElementById('publish-btn').addEventListener('click', () => {
   if(!title) { alert('Please enter an article title first.'); return; }
   
   editor.save().then((outputData) => {
-    // Blast the data over IPC to the Node.js backend instead of just logging it
     ipcRenderer.send('save-article', { title: title, content: outputData });
   });
 });
 
-// Listen for the Node.js backend to confirm the file was physically written
 ipcRenderer.on('save-response', (event, response) => {
   if(response.success) {
     alert('Success! Article physically saved to your OS at:\n' + response.path);
@@ -161,26 +158,21 @@ ipcRenderer.on('save-response', (event, response) => {
     alert('System Error saving file: ' + response.error);
   }
 });
-// --- 6. TYPOGRAPHY ENGINE WITH PHYSICAL DOM ANCHORS ---
 
-// Silently inject a physical anchor, but clear it if the user just clicks away
+// --- 6. TYPOGRAPHY ENGINE WITH PHYSICAL DOM ANCHORS ---
 document.querySelector('.document-container').addEventListener('mouseup', () => {
   const selection = window.getSelection();
   
-  // 1. ALWAYS clear any old abandoned targets the moment you click anywhere
   const oldTarget = document.getElementById('pending-style-target');
   if (oldTarget) {
       oldTarget.removeAttribute('id');
       oldTarget.style.backgroundColor = ''; 
   }
 
-  // 2. ONLY wrap a new anchor if text is actively being highlighted
   if (selection.rangeCount > 0 && !selection.isCollapsed) {
     const range = selection.getRangeAt(0);
     const span = document.createElement('span');
     span.id = 'pending-style-target';
-    
-    // Give it a subtle red background so you know it is locked and ready
     span.style.backgroundColor = 'rgba(248, 81, 73, 0.2)'; 
 
     try {
@@ -193,23 +185,15 @@ document.querySelector('.document-container').addEventListener('mouseup', () => 
   }
 });
 
-// --- AUTO-APPLY TYPOGRAPHY LOGIC ---
-
-// Helper function to surgically inject styles
 function applyTypography(type, value) {
   const targetSpan = document.getElementById('pending-style-target');
-  if (!targetSpan) return; // Fail silently if nothing is anchored
+  if (!targetSpan) return; 
 
   if (type === 'color') targetSpan.style.color = value;
   if (type === 'size') targetSpan.style.fontSize = value;
   if (type === 'font') targetSpan.style.fontFamily = value;
-  
-  // We DO NOT remove the 'pending-style-target' ID here.
-  // This allows you to chain commands (e.g. pick a color, then immediately type a size).
-  // The anchor will naturally reset the next time you highlight a new word.
 }
 
-// 1. Font Color: Apply on Enter, Double-Click, OR when the OS Color Dialog closes
 const colorInput = document.getElementById('style-color');
 colorInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') applyTypography('color', colorInput.value);
@@ -218,21 +202,20 @@ colorInput.addEventListener('dblclick', () => {
   applyTypography('color', colorInput.value);
 });
 colorInput.addEventListener('change', () => {
-  applyTypography('color', colorInput.value); // Triggers the moment you close the Windows color picker
+  applyTypography('color', colorInput.value); 
 });
 
-// 2. Font Size: Apply instantly on pressing Enter
 const sizeInput = document.getElementById('style-size');
 sizeInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') applyTypography('size', sizeInput.value);
 });
 
-// 3. Font Style: Apply instantly the moment a dropdown option is clicked
 const fontInput = document.getElementById('style-font');
 fontInput.addEventListener('change', () => {
   applyTypography('font', fontInput.value);
 });
-// --- AI CO-PILOT NEURAL BRIDGE (BACKTICK-FREE VERSION) ---
+
+// --- AI CO-PILOT NEURAL BRIDGE ---
 document.getElementById('ai-send-btn').addEventListener('click', async () => {
   const inputField = document.getElementById('ai-chat-input');
   const prompt = inputField.value.trim();
@@ -240,16 +223,13 @@ document.getElementById('ai-send-btn').addEventListener('click', async () => {
 
   const chatWindow = document.getElementById('ai-chat-window');
   
-  // 1. Render User Message
   chatWindow.innerHTML += "<div><strong style='color: #58a6ff;'>You:</strong> " + prompt + "</div>";
   inputField.value = '';
   
-  // 2. Render Loading State
   const loadingId = 'loading-' + Date.now();
   chatWindow.innerHTML += "<div id='" + loadingId + "' style='color: var(--text-muted);'><em>Phi-3 is thinking...</em></div>";
   chatWindow.scrollTop = chatWindow.scrollHeight;
 
-  // 3. Fire payload to local Ubuntu server
   try {
     const response = await fetch('http://localhost:11434/api/generate', {
       method: 'POST',
@@ -264,7 +244,6 @@ document.getElementById('ai-send-btn').addEventListener('click', async () => {
     const data = await response.json();
     document.getElementById(loadingId).remove();
     
-    // 4. Render AI Response
     chatWindow.innerHTML += "<div><strong style='color: #f85149;'>Phi-3:</strong> " + data.response + "</div>";
     chatWindow.scrollTop = chatWindow.scrollHeight;
   } catch (error) {
@@ -273,21 +252,13 @@ document.getElementById('ai-send-btn').addEventListener('click', async () => {
   }
 });
 
-// Allow pressing Enter to send prompts
 document.getElementById('ai-chat-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') document.getElementById('ai-send-btn').click();
 });
 
-// --- CORE PUBLISH LOGIC ---
-document.getElementById('publish-btn').addEventListener('click', () => {
-    console.log("Publish engine engaged. Compiling document payload...");
-    document.querySelector('.save-status').innerText = 'Draft status: Saved to Local OS';
-});
-// --- AI GRAMMAR FIXER (SURGICAL BLOCK OVERWRITE) ---
 // --- THE MEMORY ANCHOR ---
 let lastActiveBlock = null;
 
-// Constantly track the last block the user clicked or typed in
 document.addEventListener('click', (e) => {
   const block = e.target.closest('.cdx-block');
   if (block) {
@@ -316,20 +287,9 @@ document.getElementById('ai-grammar-btn').addEventListener('click', async () => 
   const grammarBtn = document.getElementById('ai-grammar-btn');
   const originalBtnText = grammarBtn.innerText;
   
-  // UI Loading State
-  grammarBtn.innerText = "Processing Neural Grammar...";
-  grammarBtn.style.opacity = "0.7";
-  const originalText = focusedBlock.innerText.trim();
-  if (!originalText) return;
-
-  const grammarBtn = document.getElementById('ai-grammar-btn');
-  const originalBtnText = grammarBtn.innerText;
-  
-  // UI Loading State
   grammarBtn.innerText = "Processing Neural Grammar...";
   grammarBtn.style.opacity = "0.7";
 
-  // 2. Strict Zero-Tolerance Prompt Engineering (NO BACKTICKS)
   const strictPrompt = "You are a strict proofreader. Fix all spelling and grammar errors in the following text. Do not add any conversational filler. Do not explain the changes. Do not use quotes. Return strictly the corrected text and nothing else. Text: " + originalText;
 
   try {
@@ -345,18 +305,14 @@ document.getElementById('ai-grammar-btn').addEventListener('click', async () => 
 
     const data = await response.json();
     
-    // 3. Surgically inject the AI text back into the EditorJS DOM
-    focusedBlock.innerHTML = data.response.trim();
-    
-    // Force EditorJS to recognize the DOM manipulation so it saves correctly
-    focusedBlock.dispatchEvent(new Event('input', { bubbles: true }));
+    lastActiveBlock.innerHTML = data.response.trim();
+    lastActiveBlock.dispatchEvent(new Event('input', { bubbles: true }));
     
     grammarBtn.innerText = "Grammar Fixed!";
   } catch (error) {
     grammarBtn.innerText = "Local Engine Offline";
   }
 
-  // Reset the button UI
   setTimeout(() => {
     grammarBtn.innerText = originalBtnText;
     grammarBtn.style.opacity = "1";

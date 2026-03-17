@@ -13,34 +13,56 @@
     }
     body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; padding: 0; background-color: var(--bg-gray); color: #1a1a1a; overflow-x: hidden; }
     
+    /* The Wix-Style Fixed Top Toolbar */
     .top-app-bar {
       position: fixed; top: 0; left: 0; right: 0; height: 60px;
       background: var(--editor-white); border-bottom: 1px solid var(--border-gray);
       display: flex; align-items: center; padding: 0 1rem; z-index: 1000;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
-    .app-logo { font-size: 1.2rem; font-weight: bold; color: var(--primary-red); margin-right: 2rem; }
+    .app-logo { font-size: 1.2rem; font-weight: bold; color: var(--primary-red); margin-right: 2rem; border-right: 1px solid #ccc; padding-right: 20px; }
+    
+    /* Custom API Buttons */
+    .toolbar-actions { display: flex; gap: 5px; }
+    .tool-btn {
+      background: #f8f9fa; border: 1px solid var(--border-gray); padding: 6px 12px;
+      cursor: pointer; border-radius: 4px; font-size: 0.9rem; font-weight: 500; color: #333;
+      transition: all 0.2s;
+    }
+    .tool-btn:hover { background-color: #e2e6ea; border-color: #ccc; }
+    
     .publish-btn {
       background-color: var(--primary-red); color: white; margin-left: auto;
       font-weight: bold; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer;
     }
     .publish-btn:hover { background-color: var(--hover-red); }
 
-    .main-wrapper { display: flex; margin-top: 60px; min-height: calc(100vh - 60px); justify-content: center; }
-    .content-container { width: 900px; max-width: 100%; background: var(--editor-white); padding: 2rem; margin-top: 2rem; margin-bottom: 2rem; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border: 1px solid var(--border-gray); }
+    /* The Canvas */
+    .main-wrapper { display: flex; margin-top: 60px; min-height: calc(100vh - 60px); justify-content: center; padding-bottom: 40px; }
+    .content-container { width: 900px; max-width: 100%; background: var(--editor-white); padding: 3rem 4rem; margin-top: 2rem; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid var(--border-gray); }
     
     .article-title-input {
-      width: 100%; font-size: 2.5rem; font-weight: bold; border: none; outline: none;
-      margin-bottom: 1rem; color: #000; font-family: 'Segoe UI Light', sans-serif;
+      width: 100%; font-size: 2.8rem; font-weight: bold; border: none; outline: none;
+      margin-bottom: 2rem; color: #111; font-family: 'Segoe UI', sans-serif;
+      border-bottom: 2px solid #eee; padding-bottom: 10px;
     }
+    .article-title-input::placeholder { color: #ccc; }
     
-    #editor-container { min-height: 500px; }
+    #editor-container { min-height: 500px; font-size: 1.1rem; line-height: 1.6; }
   </style>
 </head>
 <body>
+  
   <div class="top-app-bar">
     <div class="app-logo">Tech Blog CMS</div>
-    <button class="publish-btn" id="publish-btn">Publish</button>
+    <div class="toolbar-actions">
+      <button class="tool-btn" id="add-header">Text Header</button>
+      <button class="tool-btn" id="add-image">Insert Image</button>
+      <button class="tool-btn" id="add-code">Code Block</button>
+      <button class="tool-btn" id="add-table">Data Table</button>
+      <button class="tool-btn" id="add-list">Bullet List</button>
+    </div>
+    <button class="publish-btn" id="publish-btn">Publish to Local</button>
   </div>
 
   <div class="main-wrapper">
@@ -57,8 +79,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
 
   <script>if (window.module) { module = window.module; }</script>
@@ -66,14 +88,14 @@
   <script>
     const editor = new EditorJS({
       holder: 'editor-container',
-      placeholder: 'Start writing your industry-standard tech article here...',
+      placeholder: 'Click here or use the top toolbar to start building your article...',
       tools: {
         header: { class: Header, inlineToolbar: ['link', 'bold', 'italic', 'underline', 'Marker'] },
         list: { class: EditorjsList, inlineToolbar: true },
         code: { class: CodeTool },
         table: { class: Table, inlineToolbar: true },
-        underline: { class: Underline },
         Marker: { class: Marker },
+        underline: { class: Underline },
         image: {
           class: ImageTool,
           config: {
@@ -92,13 +114,21 @@
       }
     });
 
+    // --- MAGIC: Wiring the Custom GUI Buttons to EditorJS API ---
+    document.getElementById('add-header').addEventListener('click', () => { editor.blocks.insert('header'); });
+    document.getElementById('add-image').addEventListener('click', () => { editor.blocks.insert('image'); });
+    document.getElementById('add-code').addEventListener('click', () => { editor.blocks.insert('code'); });
+    document.getElementById('add-table').addEventListener('click', () => { editor.blocks.insert('table'); });
+    document.getElementById('add-list').addEventListener('click', () => { editor.blocks.insert('list'); });
+
+    // Publish Logic
     document.getElementById('publish-btn').addEventListener('click', () => {
       const title = document.getElementById('article-title').value;
       if(!title) { alert('Please enter an article title.'); return; }
       
       editor.save().then((outputData) => {
         console.log('Article Data: ', { title: title, content: outputData });
-        alert('Check the console! Ready for local file saving next.');
+        alert('Check the developer console. Next step is local saving!');
       });
     });
   </script>

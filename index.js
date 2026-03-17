@@ -55,7 +55,8 @@ ipcMain.handle('fetch-cloud-ai', async (event, prompt) => {
   }
 
   try {
-    const cloudUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey;
+    // UPGRADED ENDPOINT: Swapped to the current active gemini-2.5-flash
+    const cloudUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
     
     const response = await fetch(cloudUrl, {
       method: 'POST',
@@ -67,13 +68,19 @@ ipcMain.handle('fetch-cloud-ai', async (event, prompt) => {
 
     const data = await response.json();
     
+    // --- DIAGNOSTIC SURGERY ---
+    if (data.error && data.error.message) {
+        return { error: "Cloud API Error: " + data.error.message };
+    }
+    
     if (data.candidates && data.candidates[0].content.parts[0].text) {
       return { response: data.candidates[0].content.parts[0].text };
     } else {
-      return { error: "Cloud server returned an unexpected format." };
+      console.log("RAW CLOUD REJECTION: ", data);
+      return { error: "Format still unexpected. Check terminal for raw dump." };
     }
     
   } catch (err) {
-    return { error: "Cloud connection failed. Check your internet." };
+    return { error: "Cloud connection physically failed. Check your internet." };
   }
 });

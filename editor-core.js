@@ -178,7 +178,6 @@ document.querySelector('.document-container').addEventListener('mouseup', () => 
     try {
       span.appendChild(range.extractContents());
       range.insertNode(span);
-      console.log('Target locked into physical DOM.');
     } catch (err) {
       console.log('Cross-block selection prevented.');
     }
@@ -267,7 +266,7 @@ document.addEventListener('keyup', (e) => {
   }
 });
 
-// --- AI GRAMMAR FIXER (CLOUD OVERWRITE) ---
+// --- AI GRAMMAR FIXER ---
 document.getElementById('ai-grammar-btn').addEventListener('click', async () => {
   
   if (!lastActiveBlock) {
@@ -306,7 +305,54 @@ document.getElementById('ai-grammar-btn').addEventListener('click', async () => 
   }, 2500);
 });
 
-// --- GHOST AUTO-CORRECT ENGINE (DEBOUNCE ARCHITECTURE) ---
+// --- AI FORMATTING AGENT (TARGET LOCK) ---
+document.getElementById('ai-format-btn').addEventListener('click', async () => {
+  const inputField = document.getElementById('ai-chat-input');
+  const command = inputField.value.trim();
+
+  if (!command) {
+    alert("System Error: Tell the AI what formatting to apply in the chat input first (e.g., 'Make it red and bold').");
+    return;
+  }
+
+  if (!lastActiveBlock) {
+    alert("System Error: Click inside a specific paragraph first so the AI knows what to target.");
+    return;
+  }
+
+  const originalHTML = lastActiveBlock.innerHTML;
+  if (!originalHTML) return;
+
+  const formatBtn = document.getElementById('ai-format-btn');
+  const originalBtnText = formatBtn.innerText;
+
+  formatBtn.innerText = "Executing AI Format...";
+  formatBtn.style.opacity = "0.7";
+
+  const strictPrompt = "You are a hardcore HTML and CSS injection engine. The user command is: " + command + ". Here is the raw HTML of the text block: " + originalHTML + ". Inject the correct standard HTML tags (like <b>, <i>, <u>) or inline CSS spans (<span style='color: colorName; font-size: size;'>) to satisfy the user's command. Keep all existing text intact. Return strictly the modified HTML code and absolutely nothing else. Do not use markdown blocks, backticks, or explanations.";
+
+  try {
+    const data = await ipcRenderer.invoke('fetch-cloud-ai', strictPrompt);
+    
+    if (data.error) {
+        formatBtn.innerText = "API Error";
+    } else {
+        lastActiveBlock.innerHTML = data.response.trim();
+        lastActiveBlock.dispatchEvent(new Event('input', { bubbles: true }));
+        formatBtn.innerText = "Format Applied!";
+        inputField.value = ''; 
+    }
+  } catch (error) {
+    formatBtn.innerText = "Bridge Offline";
+  }
+
+  setTimeout(() => {
+    formatBtn.innerText = originalBtnText;
+    formatBtn.style.opacity = "1";
+  }, 2500);
+});
+
+// --- GHOST AUTO-CORRECT ENGINE ---
 let isGhostEngineActive = false;
 let ghostTypingTimer;
 const GHOST_PAUSE_DURATION = 3000; 
@@ -358,67 +404,16 @@ document.getElementById('editor-container').addEventListener('keyup', (e) => {
 
   }, GHOST_PAUSE_DURATION);
 });
-// --- AI FORMATTING AGENT (TARGET LOCK) ---
-document.getElementById('ai-format-btn').addEventListener('click', async () => {
-  const inputField = document.getElementById('ai-chat-input');
-  const command = inputField.value.trim();
 
-  if (!command) {
-    alert("System Error: Tell the AI what formatting to apply in the chat input first (e.g., 'Make it red and bold').");
-    return;
-  }
-
-  if (!lastActiveBlock) {
-    alert("System Error: Click inside a specific paragraph first so the AI knows what to target.");
-    return;
-  }
-
-  const originalHTML = lastActiveBlock.innerHTML;
-  if (!originalHTML) return;
-
-  const formatBtn = document.getElementById('ai-format-btn');
-  const originalBtnText = formatBtn.innerText;
-
-  formatBtn.innerText = "Executing AI Format...";
-  formatBtn.style.opacity = "0.7";
-
-  // The hardcore system prompt instructing the AI to act as a DOM parser
-  const strictPrompt = "You are a hardcore HTML and CSS injection engine. The user command is: " + command + ". Here is the raw HTML of the text block: " + originalHTML + ". Inject the correct standard HTML tags (like <b>, <i>, <u>) or inline CSS spans (<span style='color: colorName; font-size: size;'>) to satisfy the user's command. Keep all existing text intact. Return strictly the modified HTML code and absolutely nothing else. Do not use markdown blocks, backticks, or explanations.";
-
-  try {
-    const data = await ipcRenderer.invoke('fetch-cloud-ai', strictPrompt);
-    
-    if (data.error) {
-        formatBtn.innerText = "API Error";
-    } else {
-        // Surgically inject the AI-generated HTML tags directly into the active block
-        lastActiveBlock.innerHTML = data.response.trim();
-        lastActiveBlock.dispatchEvent(new Event('input', { bubbles: true }));
-        formatBtn.innerText = "Format Applied!";
-        inputField.value = ''; // Clear the command
-    }
-  } catch (error) {
-    formatBtn.innerText = "Bridge Offline";
-  }
-
-  setTimeout(() => {
-    formatBtn.innerText = originalBtnText;
-    formatBtn.style.opacity = "1";
-  }, 2500);
-});
 // --- 7. THE KEYBOARD HIJACKER (NUCLEAR DOM INJECTOR) ---
 document.getElementById('editor-container').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
-    
-    // 1. Violently and completely kill the event before EditorJS wakes up
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-
-    // 2. Bypass EditorJS entirely and command the Chrome V8 engine to inject a raw soft-break
     document.execCommand('insertLineBreak');
   }
-}, true); // The 'true' forces our code to strike first
+}, true); 
 
 // --- 8. DYNAMIC CANVAS WIDTH ENGINE ---
 const widthSlider = document.getElementById('canvas-width-slider');
@@ -426,10 +421,6 @@ const widthDisplay = document.getElementById('width-display');
 
 widthSlider.addEventListener('input', (e) => {
   const newWidth = e.target.value + '%';
-  
-  // Physically rewrite the CSS root variable in real-time
   document.documentElement.style.setProperty('--editor-width', newWidth);
-  
-  // Update the visual text readout (e.g. "80%")
   widthDisplay.innerText = newWidth;
 });

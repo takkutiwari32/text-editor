@@ -15,13 +15,25 @@
       max-width: var(--editor-width) !important; 
       transition: max-width 0.1s ease-out; 
     }
+
+    /* THE BYOK MODAL CSS */
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center;
+    }
+    .modal-box {
+      background: #161b22; padding: 25px; border-radius: 8px; border: 1px solid #30363d;
+      width: 450px; max-width: 90%; color: #c9d1d9; box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+    }
+    .modal-box h2 { margin-top: 0; color: #58a6ff; }
   </style>
 </head>
 <body>
 
   <nav class="top-bar">
-    <div class="logo-section">
+    <div class="logo-section" style="display: flex; align-items: center;">
       <span class="logo-text">PRO CMS</span>
+      <button id="settings-btn" class="icon-btn" style="margin-left: 15px; cursor: pointer; background: none; border: none; font-size: 1.2rem;" title="API Settings">⚙️</button>
     </div>
     <div class="center-controls">
       <button class="icon-btn" id="undo-btn" title="Undo">↺</button>
@@ -71,81 +83,24 @@
 
       <style>
         .ai-flyout {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          width: 260px; 
-          background-color: #0d1117;
-          border-top: 1px solid var(--border-color);
-          border-right: 1px solid var(--border-color);
-          padding: 15px;
-          transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-          z-index: 9999; 
-          box-sizing: border-box;
-          border-top-right-radius: 8px;
+          position: fixed; bottom: 0; left: 0; width: 260px; 
+          background-color: #0d1117; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color);
+          padding: 15px; transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 9999; 
+          box-sizing: border-box; border-top-right-radius: 8px;
         }
-        
-        .ai-flyout:hover {
-          width: 25vw; 
-          box-shadow: 10px 0 20px rgba(0,0,0,0.6);
-        }
-
+        .ai-flyout:hover { width: 25vw; box-shadow: 10px 0 20px rgba(0,0,0,0.6); }
         #ai-chat-window {
-          height: 250px;
-          overflow-y: auto;
-          background: #161b22;
-          border: 1px solid var(--border-color);
-          border-radius: 4px;
-          padding: 10px;
-          margin-bottom: 10px;
-          font-size: 0.85rem;
-          color: var(--text-main);
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          transition: height 0.3s ease;
+          height: 250px; overflow-y: auto; background: #161b22; border: 1px solid var(--border-color);
+          border-radius: 4px; padding: 10px; margin-bottom: 10px; font-size: 0.85rem; color: var(--text-main);
+          display: flex; flex-direction: column; gap: 8px; transition: height 0.3s ease;
         }
-
-        .ai-flyout:hover #ai-chat-window {
-          height: 450px; 
-        }
-
-        .switch {
-          position: relative;
-          display: inline-block;
-          width: 40px;
-          height: 20px;
-        }
-        .switch input { 
-          opacity: 0;
-          width: 0;
-          height: 0;
-        }
-        .slider {
-          position: absolute;
-          cursor: pointer;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background-color: #30363d;
-          transition: .4s;
-          border-radius: 20px;
-        }
-        .slider:before {
-          position: absolute;
-          content: "";
-          height: 14px;
-          width: 14px;
-          left: 3px;
-          bottom: 3px;
-          background-color: white;
-          transition: .4s;
-          border-radius: 50%;
-        }
-        input:checked + .slider {
-          background-color: #58a6ff;
-        }
-        input:checked + .slider:before {
-          transform: translateX(20px);
-        }
+        .ai-flyout:hover #ai-chat-window { height: 450px; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #30363d; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #58a6ff; }
+        input:checked + .slider:before { transform: translateX(20px); }
       </style>
 
       <div class="ai-flyout">
@@ -186,7 +141,6 @@
 
     <aside class="right-sidebar">
       <div class="sidebar-title" style="margin-bottom: 15px;">Post Properties</div>
-      
       <div class="sidebar-title" style="margin-bottom: 15px;">Typography Engine</div>
       
       <div class="typo-row" style="margin-bottom: 15px;">
@@ -198,29 +152,22 @@
         <label>Font Color</label>
         <input type="color" id="style-color" value="#f85149" class="typo-color">
       </div>
-      
       <div class="typo-row">
         <label>Font Size</label>
         <input type="text" id="style-size" class="typo-input" placeholder="e.g. 24px">
       </div>
-
       <div class="typo-row">
         <label>Font Style</label>
         <select id="style-font" class="typo-input" style="cursor: pointer;">
           <option value="">Theme Default</option>
           <optgroup label="Coding & Tech (Monospace)">
             <option value="Consolas, monospace">Consolas (IDE Default)</option>
-            <option value="'Courier New', Courier, monospace">Courier New</option>
-            <option value="'Lucida Console', Monaco, monospace">Lucida Console</option>
           </optgroup>
           <optgroup label="Modern Editorial (Sans-Serif)">
             <option value="'Segoe UI', Roboto, Helvetica, Arial, sans-serif">Segoe UI</option>
-            <option value="Verdana, Geneva, sans-serif">Verdana</option>
-            <option value="Arial, Helvetica, sans-serif">Arial</option>
           </optgroup>
           <optgroup label="Classic News (Serif)">
             <option value="Georgia, serif">Georgia</option>
-            <option value="'Times New Roman', Times, serif">Times New Roman</option>
           </optgroup>
         </select>
       </div>
@@ -231,12 +178,10 @@
         <label>URL Slug</label>
         <input type="text" class="setting-input" placeholder="e.g. /my-new-post">
       </div>
-      
       <div class="settings-group">
         <label>Tags (Comma separated)</label>
         <input type="text" class="setting-input" placeholder="C, Python, Linux">
       </div>
-      
       <div class="stats-box">
         <div class="stat-row">Words: <span id="word-count">0</span></div>
         <div class="stat-row">Est. Read: <span id="read-time">0 min</span></div>
@@ -245,6 +190,30 @@
 
   </div>
 
+<div id="api-modal" class="modal-overlay">
+    <div class="modal-box" style="width: 600px; text-align: center; padding: 40px;">
+      <h2 style="font-size: 2rem; margin-bottom: 10px;">Welcome to Pro CMS</h2>
+      <p style="font-size: 1rem; color: #8b949e; line-height: 1.6; margin-bottom: 25px;">
+        To keep this software a one-time purchase with <strong>zero monthly subscription fees</strong>, Pro CMS runs natively on your personal Google account. 
+        <br><br>
+        Click the button below to generate a free API key from Google AI Studio. We securely lock this key to your local hardware—it never touches our servers.
+      </p>
+      
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" style="display: inline-block; background-color: #238636; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-bottom: 25px; transition: 0.2s;">
+        1. Get Free Google API Key ↗
+      </a>
+
+      <div style="text-align: left;">
+        <label style="display: block; color: #c9d1d9; margin-bottom: 8px; font-weight: bold;">2. Paste Your Key Here:</label>
+        <input type="password" id="api-key-input" class="setting-input" placeholder="AIzaSy..." style="width: 100%; padding: 12px; font-size: 1.1rem; margin-bottom: 20px; box-sizing: border-box;">
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+        <button id="close-modal-btn" class="btn-secondary" style="opacity: 0.5;">Skip for now (AI Disabled)</button>
+        <button id="save-api-btn" class="btn-primary" style="padding: 10px 30px; font-size: 1.1rem;">Initialize Engine</button>
+      </div>
+    </div>
+  </div>
   <script>if (typeof module === 'object') { window.module = module; module = undefined; }</script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>

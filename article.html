@@ -156,22 +156,55 @@
         <label>Font Size</label>
         <input type="text" id="style-size" class="typo-input" placeholder="e.g. 24px">
       </div>
-      <div class="typo-row">
+<div class="typo-row">
         <label>Font Style</label>
         <select id="style-font" class="typo-input" style="cursor: pointer;">
           <option value="">Theme Default</option>
+          
           <optgroup label="Coding & Tech (Monospace)">
             <option value="Consolas, monospace">Consolas (IDE Default)</option>
+            <option value="'Courier New', Courier, monospace">Courier New</option>
+            <option value="'Lucida Console', Monaco, monospace">Lucida Console</option>
+            <option value="'Fira Code', 'Cascadia Code', monospace">Fira Code / Cascadia</option>
+            <option value="'Source Code Pro', monospace">Source Code Pro</option>
+            <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+            <option value="'Inconsolata', monospace">Inconsolata</option>
           </optgroup>
+          
           <optgroup label="Modern Editorial (Sans-Serif)">
+            <option value="system-ui, -apple-system, BlinkMacSystemFont, sans-serif">Native System UI</option>
             <option value="'Segoe UI', Roboto, Helvetica, Arial, sans-serif">Segoe UI</option>
+            <option value="'Helvetica Neue', Helvetica, Arial, sans-serif">Helvetica Neue</option>
+            <option value="Calibri, sans-serif">Calibri</option>
+            <option value="Verdana, Geneva, sans-serif">Verdana</option>
+            <option value="Arial, Helvetica, sans-serif">Arial</option>
+            <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+            <option value="Tahoma, sans-serif">Tahoma</option>
+            <option value="'Lucida Sans', sans-serif">Lucida Sans</option>
+            <option value="Futura, 'Trebuchet MS', Arial, sans-serif">Futura</option>
+            <option value="'Century Gothic', sans-serif">Century Gothic</option>
           </optgroup>
+          
           <optgroup label="Classic News (Serif)">
             <option value="Georgia, serif">Georgia</option>
+            <option value="'Times New Roman', Times, serif">Times New Roman</option>
+            <option value="Garamond, serif">Garamond</option>
+            <option value="'Palatino Linotype', 'Book Antiqua', Palatino, serif">Palatino</option>
+            <option value="Baskerville, 'Baskerville Old Face', 'Hoefler Text', Garamond, serif">Baskerville</option>
+            <option value="'Playfair Display', serif">Playfair Display</option>
+            <option value="Merriweather, serif">Merriweather</option>
+            <option value="Cambria, serif">Cambria</option>
+          </optgroup>
+
+          <optgroup label="Creative & Display">
+            <option value="Impact, Charcoal, sans-serif">Impact (Bold)</option>
+            <option value="'Arial Black', Gadget, sans-serif">Arial Black</option>
+            <option value="'Comic Sans MS', cursive, sans-serif">Comic Sans</option>
+            <option value="'Brush Script MT', cursive">Brush Script</option>
+            <option value="Papyrus, fantasy">Papyrus</option>
           </optgroup>
         </select>
       </div>
-
       <hr style="border: 1px solid var(--border-color); margin: 20px 0; width: 100%;">
       
       <div class="settings-group">

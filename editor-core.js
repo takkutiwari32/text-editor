@@ -1,4 +1,4 @@
-const { ipcRenderer } = require('electron');
+const { ipcRenderer  } = require('electron');
 const { shell } = require('electron'); // Required to open external links safely
 
 // --- BYOK: LOCAL STORAGE ENGINE & FIRST-BOOT INTERCEPTOR ---
@@ -13,6 +13,18 @@ window.addEventListener('DOMContentLoaded', () => {
     // If no key exists, violently interrupt the user and force the onboarding screen
     document.getElementById('api-modal').style.display = 'flex';
   }
+});
+
+// 1.5 Native OS Browser Routing
+document.getElementById('get-key-btn').addEventListener('click', () => {
+  // This violently forces Windows to open their real default browser (Chrome/Edge)
+  shell.openExternal('https://aistudio.google.com/app/apikey');
+});
+
+// 2. Manual Settings Trigger
+document.getElementById('settings-btn').addEventListener('click', () => {
+  document.getElementById('api-key-input').value = getLocalApiKey();
+  document.getElementById('api-modal').style.display = 'flex';
 });
 
 // 2. Manual Settings Trigger

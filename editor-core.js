@@ -1,5 +1,6 @@
-const { ipcRenderer  } = require('electron');
-const { shell } = require('electron'); // Required to open external links safely
+const { ipcRenderer, shell } = require('electron');
+const { exec } = require('child_process');
+const os = require('os');
 
 // --- BYOK: LOCAL STORAGE ENGINE & FIRST-BOOT INTERCEPTOR ---
 function getLocalApiKey() {
@@ -10,21 +11,19 @@ function getLocalApiKey() {
 window.addEventListener('DOMContentLoaded', () => {
   const existingKey = getLocalApiKey();
   if (!existingKey) {
-    // If no key exists, violently interrupt the user and force the onboarding screen
     document.getElementById('api-modal').style.display = 'flex';
   }
 });
 
-// 1.5 Native OS Browser Routing
+// 1.5 Native OS Browser Routing (With WSL Matrix Bypass)
 document.getElementById('get-key-btn').addEventListener('click', () => {
-  // This violently forces Windows to open their real default browser (Chrome/Edge)
-  shell.openExternal('https://aistudio.google.com/app/apikey');
-});
-
-// 2. Manual Settings Trigger
-document.getElementById('settings-btn').addEventListener('click', () => {
-  document.getElementById('api-key-input').value = getLocalApiKey();
-  document.getElementById('api-modal').style.display = 'flex';
+  const targetUrl = 'https://aistudio.google.com/app/apikey';
+  
+  if (os.release().toLowerCase().includes('microsoft') || os.release().toLowerCase().includes('wsl')) {
+      exec(`explorer.exe "${targetUrl}"`);
+  } else {
+      shell.openExternal(targetUrl);
+  }
 });
 
 // 2. Manual Settings Trigger
@@ -48,6 +47,7 @@ document.getElementById('save-api-btn').addEventListener('click', () => {
   document.getElementById('api-modal').style.display = 'none';
   alert('Hardware Sync Complete: Pro CMS AI Engine is now online.');
 });
+
 // --- 1. CUSTOM AUDIO ENGINE ---
 class SimpleAudioTool {
   static get toolbox() { return { title: 'Audio', icon: '🎵' }; }

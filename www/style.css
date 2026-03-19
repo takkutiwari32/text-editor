@@ -163,49 +163,57 @@ body {
 .typo-color::-webkit-color-swatch-wrapper { padding: 0; }
 .typo-color::-webkit-color-swatch { border: none; border-radius: 3px; }
 /* =========================================
-   MOBILE OVERRIDE (MAX 768PX)
+   MOBILE MATRIX OVERRIDE (MAX 768PX)
    ========================================= */
 @media screen and (max-width: 768px) {
     
-    /* 1. Cloak the desktop sidebars */
-    .left-sidebar, 
-    .right-sidebar {
-        display: none !important;
-    }
-
-    /* 2. Force the main editor canvas to take the full screen */
-    .app-body {
-        display: block !important; 
-    }
+    /* 1. Fix Top Bar and Viewport */
+    .top-bar { flex-wrap: wrap !important; height: auto !important; padding: 10px !important; }
+    body, html, .app-body { overflow-x: hidden !important; max-width: 100vw !important; }
     
-    .editor-canvas {
-        width: 100% !important;
-        padding: 10px !important;
-    }
-
-    .document-container {
-        padding: 20px !important; /* Shrinks the massive 80px desktop padding */
-        min-height: calc(100vh - 80px) !important;
-    }
+    /* 2. Un-crush the Editor Canvas & Fix Typography */
+    .editor-canvas { width: 100% !important; padding: 10px !important; }
+    .document-container { padding: 20px !important; min-height: 85vh !important; width: 100% !important; }
+    .document-title { font-size: 28px !important; line-height: 1.3 !important; word-wrap: break-word !important; margin-bottom: 15px !important; }
     
-    /* 3. Protect and wrap the top nav bar */
-    .top-bar {
-        flex-wrap: wrap !important;
-        height: auto !important;
-        padding: 10px !important;
-    } /* <-- The previously missing bracket is fixed here */
-
-    /* 4. Lock the horizontal axis to prevent side-scrolling */
-    body, html, .app-body {
-        overflow-x: hidden !important;
-        max-width: 100vw !important;
+    /* 3. The FAB Button */
+    .mobile-fab {
+        position: fixed; bottom: 20px; right: 20px; z-index: 10000;
+        background: var(--primary-accent); color: white; border: none;
+        border-radius: 30px; padding: 15px 25px; font-size: 1.1rem; font-weight: bold;
+        box-shadow: 0 5px 15px rgba(248, 81, 73, 0.4); cursor: pointer; transition: 0.2s;
     }
 
-    /* 5. Target the EXACT class to scale down the massive title */
-    .document-title {
-        font-size: 24px !important; /* Drops 3rem down to mobile size */
-        margin-bottom: 15px !important;
-        word-wrap: break-word !important;
-        max-width: 100% !important;
+    /* 4. The Unified Sliding Drawer */
+    .mobile-drawer {
+        position: fixed; bottom: 0; left: 0; width: 100%; height: 75vh;
+        background: var(--surface-color); z-index: 9000;
+        border-top: 2px solid var(--primary-accent); border-radius: 20px 20px 0 0;
+        transform: translateY(120%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 80px;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
     }
+    .mobile-drawer.open { transform: translateY(0); }
+
+    /* 5. Reformat Sidebars to fit perfectly inside the Drawer */
+    .mobile-drawer .left-sidebar, .mobile-drawer .right-sidebar {
+        width: 100% !important; border: none !important; padding: 20px !important;
+        display: flex !important; height: auto !important; overflow-y: visible !important;
+    }
+    /* 6. Force AI Flyout into the Mobile Drawer Flow */
+    .ai-flyout { 
+        position: relative !important; 
+        width: 100% !important; 
+        border: none !important; 
+        padding: 0 0 40px 0 !important; 
+        box-shadow: none !important;
+        display: block !important;
+        margin-top: 20px !important;
+    }
+    .ai-flyout:hover { width: 100% !important; box-shadow: none !important; }
+    
+    /* Let the chat window expand naturally on mobile */
+    #ai-chat-window { height: 250px !important; }
+    .ai-flyout:hover #ai-chat-window { height: 250px !important; }
+
 }

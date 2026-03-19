@@ -21,8 +21,36 @@ const ipcRenderer = {
   },
   send: (channel, payload) => {
     if (channel === 'save-article') {
-      // Temporarily intercepting the Publish button until we build the Android File System bridge
-      alert("Article Data Ready! Mobile Native Save protocol is next on the list.");
+      
+      const safeTitle = payload.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const fileName = safeTitle + '.json';
+      const fileContent = JSON.stringify(payload.content, null, 2);
+
+      try {
+        // 1. Check if we are running inside the Android Native Container
+        if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
+          window.Capacitor.Plugins.Filesystem.writeFile({
+            path: fileName,
+            data: fileContent,
+            directory: 'DOCUMENTS', // Saves directly to Android/Documents
+            encoding: 'utf8'
+          }).then(() => {
+            alert('Hardware Sync Complete!\nArticle saved to your phone\'s Documents folder as:\n' + fileName);
+          }).catch((err) => {
+            alert('Android OS Write Error: ' + err.message);
+          });
+        } else {
+          // 2. Fallback if you are testing in a standard desktop browser
+          const a = document.createElement('a');
+          a.href = "data:text/json;charset=utf-8," + encodeURIComponent(fileContent);
+          a.download = fileName;
+          document.body.appendChild(a); 
+          a.click(); 
+          document.body.removeChild(a);
+        }
+      } catch (error) {
+        alert("System Error: " + error.message);
+      }
     }
   },
   on: () => {}

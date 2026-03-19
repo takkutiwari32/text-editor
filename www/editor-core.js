@@ -300,4 +300,47 @@ if (lineHeightSlider && lineHeightDisplay) {
     document.documentElement.style.setProperty('--editor-line-height', newHeight); 
     lineHeightDisplay.innerText = newHeight;
   });
+  // --- 10. THE OS INTENT INTERCEPTOR (FILE READER) ---
+async function loadFileFromOS(contentUrl) {
+  try {
+    // 1. Ask the native Android Filesystem to read the raw content URI
+    const result = await window.Capacitor.Plugins.Filesystem.readFile({
+      path: contentUrl,
+      encoding: 'utf8'
+    });
+    
+    // 2. Safety check: Android sometimes forces base64 encoding. Decode if necessary.
+    let fileText = result.data;
+    if (!fileText.trim().startsWith('{')) {
+      fileText = atob(fileText);
+    }
+    
+    // 3. Parse the raw JSON back into EditorJS blocks
+    const parsedData = JSON.parse(fileText);
+    
+    // 4. Inject the physical data into the visual canvas
+    editor.isReady.then(() => {
+      editor.render(parsedData);
+      alert('Article Successfully Loaded into Canvas!');
+    });
+  } catch (error) {
+    alert('System Error unpacking file: ' + error.message);
+  }
+}
+
+// Listen for "Cold Boot" (App was closed)
+if (window.Capacitor && window.Capacitor.Plugins.App) {
+  window.Capacitor.Plugins.App.getLaunchUrl().then(ret => {
+    if (ret && ret.url) {
+      loadFileFromOS(ret.url);
+    }
+  });
+
+  // Listen for "Warm Boot" (App was in the background)
+  window.Capacitor.Plugins.App.addListener('appUrlOpen', event => {
+    if (event && event.url) {
+      loadFileFromOS(event.url);
+    }
+  });
+}
 }

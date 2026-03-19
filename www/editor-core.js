@@ -21,26 +21,36 @@ const ipcRenderer = {
   },
   send: (channel, payload) => {
     if (channel === 'save-article') {
-      
-      const safeTitle = payload.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      const fileName = safeTitle + '.json';
+      const suggestedName = payload.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      let customName = prompt("Name your save file:", suggestedName);
+      if (customName === null) return; 
+
+      const fileName = customName.endsWith('.json') ? customName : customName + '.json';
       const fileContent = JSON.stringify(payload.content, null, 2);
+      
+      // Convert standard JSON text into Base64 so Java can handle it safely
+      const base64Json = btoa(unescape(encodeURIComponent(fileContent)));
 
       try {
-        // 1. Check if we are running inside the Android Native Container
-        if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
-          window.Capacitor.Plugins.Filesystem.writeFile({
-            path: fileName,
-            data: fileContent,
-            directory: 'DOCUMENTS', // Saves directly to Android/Documents
-            encoding: 'utf8'
+        // 1. Explicitly register the custom Java bridge
+        const NativeStorage = window.Capacitor ? window.Capacitor.registerPlugin('NativeStorage') : null;
+
+        if (NativeStorage) {
+          // Fire the Custom Java Bridge
+          NativeStorage.saveFile({
+            filename: fileName,
+            data: base64Json,
+            mimeType: "application/json"
           }).then(() => {
-            alert('Hardware Sync Complete!\nArticle saved to your phone\'s Documents folder as:\n' + fileName);
+            alert('Hardware Sync Complete!\nFile saved to your chosen location.');
           }).catch((err) => {
-            alert('Android OS Write Error: ' + err.message);
+            if(err.message !== "Save cancelled by user") {
+              alert('Android OS Write Error: ' + err.message);
+            }
           });
         } else {
-          // 2. Fallback if you are testing in a standard desktop browser
+          // Diagnostic Tripwire & Desktop Fallback
+          alert("WARNING: Java Bridge not found. Falling back to desktop download.");
           const a = document.createElement('a');
           a.href = "data:text/json;charset=utf-8," + encodeURIComponent(fileContent);
           a.download = fileName;
@@ -51,20 +61,18 @@ const ipcRenderer = {
       } catch (error) {
         alert("System Error: " + error.message);
       }
-    }
-  },
   on: () => {}
 };
 
-// Override the desktop shell commands so the BYOK "Get API Key" button opens the phone's web browser
+// Override the desktop shell commands
 const shell = { openExternal: (url) => window.open(url, '_blank') };
 const os = { release: () => 'android' };
+
 // --- BYOK: LOCAL STORAGE ENGINE & FIRST-BOOT INTERCEPTOR ---
 function getLocalApiKey() {
   return localStorage.getItem('gemini_api_key') || '';
 }
 
-// 1. The First-Boot Auto-Trigger
 window.addEventListener('DOMContentLoaded', () => {
   const existingKey = getLocalApiKey();
   if (!existingKey) {
@@ -72,10 +80,8 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// 1.5 Native OS Browser Routing (With WSL Matrix Bypass)
 document.getElementById('get-key-btn').addEventListener('click', () => {
   const targetUrl = 'https://aistudio.google.com/app/apikey';
-  
   if (os.release().toLowerCase().includes('microsoft') || os.release().toLowerCase().includes('wsl')) {
       exec(`explorer.exe "${targetUrl}"`);
   } else {
@@ -83,13 +89,11 @@ document.getElementById('get-key-btn').addEventListener('click', () => {
   }
 });
 
-// 2. Manual Settings Trigger
 document.getElementById('settings-btn').addEventListener('click', () => {
   document.getElementById('api-key-input').value = getLocalApiKey();
   document.getElementById('api-modal').style.display = 'flex';
 });
 
-// 3. UI Handlers
 document.getElementById('close-modal-btn').addEventListener('click', () => {
   document.getElementById('api-modal').style.display = 'none';
 });
@@ -109,7 +113,6 @@ document.getElementById('save-api-btn').addEventListener('click', () => {
 class SimpleAudioTool {
   static get toolbox() { return { title: 'Audio', icon: '🎵' }; }
   constructor({data}) { this.data = data; }
-  
   render() {
     const wrapper = document.createElement('div');
     wrapper.style.padding = '15px'; wrapper.style.background = '#161b22'; wrapper.style.border = '1px solid #30363d'; wrapper.style.borderRadius = '6px';
@@ -278,18 +281,12 @@ document.getElementById('editor-container').addEventListener('keyup', (e) => {
   }, GHOST_PAUSE_DURATION);
 });
 
-// --- 7. THE KEYBOARD HIJACKER (NUCLEAR DOM INJECTOR) ---
-document.getElementById('editor-container').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); document.execCommand('insertLineBreak');
-  }
-}, true); 
-
 // --- 8. DYNAMIC CANVAS WIDTH ENGINE ---
 const widthSlider = document.getElementById('canvas-width-slider'); const widthDisplay = document.getElementById('width-display');
 widthSlider.addEventListener('input', (e) => {
   const newWidth = e.target.value + '%'; document.documentElement.style.setProperty('--editor-width', newWidth); widthDisplay.innerText = newWidth;
 });
+
 // --- 9. DYNAMIC LINE SPACING ENGINE ---
 const lineHeightSlider = document.getElementById('line-height-slider'); 
 const lineHeightDisplay = document.getElementById('line-height-display');
@@ -300,25 +297,23 @@ if (lineHeightSlider && lineHeightDisplay) {
     document.documentElement.style.setProperty('--editor-line-height', newHeight); 
     lineHeightDisplay.innerText = newHeight;
   });
-  // --- 10. THE OS INTENT INTERCEPTOR (FILE READER) ---
+}
+
+// --- 10. THE OS INTENT INTERCEPTOR (FILE READER) ---
 async function loadFileFromOS(contentUrl) {
   try {
-    // 1. Ask the native Android Filesystem to read the raw content URI
     const result = await window.Capacitor.Plugins.Filesystem.readFile({
       path: contentUrl,
       encoding: 'utf8'
     });
     
-    // 2. Safety check: Android sometimes forces base64 encoding. Decode if necessary.
     let fileText = result.data;
     if (!fileText.trim().startsWith('{')) {
       fileText = atob(fileText);
     }
     
-    // 3. Parse the raw JSON back into EditorJS blocks
     const parsedData = JSON.parse(fileText);
     
-    // 4. Inject the physical data into the visual canvas
     editor.isReady.then(() => {
       editor.render(parsedData);
     });
@@ -327,7 +322,6 @@ async function loadFileFromOS(contentUrl) {
   }
 }
 
-// Listen for "Cold Boot" (App was closed)
 if (window.Capacitor && window.Capacitor.Plugins.App) {
   window.Capacitor.Plugins.App.getLaunchUrl().then(ret => {
     if (ret && ret.url) {
@@ -335,7 +329,6 @@ if (window.Capacitor && window.Capacitor.Plugins.App) {
     }
   });
 
-  // Listen for "Warm Boot" (App was in the background)
   window.Capacitor.Plugins.App.addListener('appUrlOpen', event => {
     if (event && event.url) {
       loadFileFromOS(event.url);
@@ -343,21 +336,22 @@ if (window.Capacitor && window.Capacitor.Plugins.App) {
   });
 }
 
-}
 // --- 11. EXPORT TO PDF ENGINE ---
 document.getElementById('export-pdf-btn').addEventListener('click', async () => {
   const titleText = document.getElementById('article-title').innerText.trim() || 'Untitled_Article';
-  const safeTitle = titleText.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  const fileName = safeTitle + '.pdf';
-
-  // Target the entire white canvas (Title + Editor blocks)
+  const suggestedName = titleText.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  
+  let customName = prompt("Name your PDF file:", suggestedName);
+  if (customName === null) return; 
+  
+  const fileName = customName.endsWith('.pdf') ? customName : customName + '.pdf';
   const element = document.querySelector('.document-container');
   
   const opt = {
-    margin:       [15, 15, 15, 15], // Top, Right, Bottom, Left margins in mm
+    margin:       [15, 15, 15, 15], 
     filename:     fileName,
     image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true }, // High-res scaling
+    html2canvas:  { scale: 2, useCORS: true }, 
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
@@ -365,29 +359,30 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
   const originalText = exportBtn.innerText;
   exportBtn.innerText = "Generating...";
   exportBtn.disabled = true;
-
-  try {
-    // 1. Tell html2pdf to generate the file as a raw data string instead of a web download
+ try {
     const pdfDataUri = await html2pdf().set(opt).from(element).outputPdf('datauristring');
-    
-    // 2. Strip the header to get the pure Base64 binary payload
-    const base64Data = pdfDataUri.split(',')[1];
+    const base64Data = pdfDataUri.split(',')[1]; 
 
-    // 3. Command the Android Hardware to write the PDF
-    if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
-      await window.Capacitor.Plugins.Filesystem.writeFile({
-        path: fileName,
+    // 1. Explicitly register the custom Java bridge
+    const NativeStorage = window.Capacitor ? window.Capacitor.registerPlugin('NativeStorage') : null;
+
+    if (NativeStorage) {
+      await NativeStorage.saveFile({
+        filename: fileName,
         data: base64Data,
-        directory: 'DOCUMENTS' 
-        // Note: No 'encoding' parameter here tells Capacitor this is binary data, not text
+        mimeType: "application/pdf"
       });
-      alert('Success! PDF Exported to your Android Documents folder.');
+      alert('Success! PDF saved to your chosen location.');
     } else {
-      // Fallback for Desktop testing
+      // Diagnostic Tripwire & Desktop Fallback
+      alert("WARNING: Java Bridge not found. Falling back to desktop download.");
       html2pdf().set(opt).from(element).save();
     }
-  } catch (error) {
-    alert("System Error generating PDF: " + error.message);
+  } 
+ catch (error) {
+    if(error.message !== "Save cancelled by user") {
+      alert("System Error generating PDF: " + error.message);
+    }
   }
   
   exportBtn.innerText = originalText;

@@ -262,3 +262,14 @@ const widthSlider = document.getElementById('canvas-width-slider'); const widthD
 widthSlider.addEventListener('input', (e) => {
   const newWidth = e.target.value + '%'; document.documentElement.style.setProperty('--editor-width', newWidth); widthDisplay.innerText = newWidth;
 });
+// --- 9. DYNAMIC LINE SPACING ENGINE ---
+const lineHeightSlider = document.getElementById('line-height-slider'); 
+const lineHeightDisplay = document.getElementById('line-height-display');
+
+if (lineHeightSlider && lineHeightDisplay) {
+  lineHeightSlider.addEventListener('input', (e) => {
+    const newHeight = e.target.value; 
+    document.documentElement.style.setProperty('--editor-line-height', newHeight); 
+    lineHeightDisplay.innerText = newHeight;
+  });
+}

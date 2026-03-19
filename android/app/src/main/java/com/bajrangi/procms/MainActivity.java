@@ -1,13 +1,5 @@
-package com.bajrangi.procms;// Keep your original package name!
+package com.bajrangi.procms;
 
-import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 
-public class MainActivity extends BridgeActivity {
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        // Register our custom Java Bridge
-        registerPlugin(NativeStoragePlugin.class); 
-    }
-}
+public class MainActivity extends BridgeActivity {}

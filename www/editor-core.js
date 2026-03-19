@@ -321,7 +321,6 @@ async function loadFileFromOS(contentUrl) {
     // 4. Inject the physical data into the visual canvas
     editor.isReady.then(() => {
       editor.render(parsedData);
-      alert('Article Successfully Loaded into Canvas!');
     });
   } catch (error) {
     alert('System Error unpacking file: ' + error.message);
@@ -343,4 +342,54 @@ if (window.Capacitor && window.Capacitor.Plugins.App) {
     }
   });
 }
+
 }
+// --- 11. EXPORT TO PDF ENGINE ---
+document.getElementById('export-pdf-btn').addEventListener('click', async () => {
+  const titleText = document.getElementById('article-title').innerText.trim() || 'Untitled_Article';
+  const safeTitle = titleText.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  const fileName = safeTitle + '.pdf';
+
+  // Target the entire white canvas (Title + Editor blocks)
+  const element = document.querySelector('.document-container');
+  
+  const opt = {
+    margin:       [15, 15, 15, 15], // Top, Right, Bottom, Left margins in mm
+    filename:     fileName,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true }, // High-res scaling
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  const exportBtn = document.getElementById('export-pdf-btn');
+  const originalText = exportBtn.innerText;
+  exportBtn.innerText = "Generating...";
+  exportBtn.disabled = true;
+
+  try {
+    // 1. Tell html2pdf to generate the file as a raw data string instead of a web download
+    const pdfDataUri = await html2pdf().set(opt).from(element).outputPdf('datauristring');
+    
+    // 2. Strip the header to get the pure Base64 binary payload
+    const base64Data = pdfDataUri.split(',')[1];
+
+    // 3. Command the Android Hardware to write the PDF
+    if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
+      await window.Capacitor.Plugins.Filesystem.writeFile({
+        path: fileName,
+        data: base64Data,
+        directory: 'DOCUMENTS' 
+        // Note: No 'encoding' parameter here tells Capacitor this is binary data, not text
+      });
+      alert('Success! PDF Exported to your Android Documents folder.');
+    } else {
+      // Fallback for Desktop testing
+      html2pdf().set(opt).from(element).save();
+    }
+  } catch (error) {
+    alert("System Error generating PDF: " + error.message);
+  }
+  
+  exportBtn.innerText = originalText;
+  exportBtn.disabled = false;
+});

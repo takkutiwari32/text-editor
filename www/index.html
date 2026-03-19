@@ -38,9 +38,9 @@
       <button class="icon-btn" id="undo-btn" title="Undo">↺</button>
       <button class="icon-btn" id="redo-btn" title="Redo">↻</button>
       <span class="save-status">Draft status: Unsaved</span>
-    </div>
-    <div class="action-section">
+    </div> <div class="action-section">
       <button class="btn-secondary" id="preview-btn">Preview</button>
+      <button class="btn-secondary" id="export-pdf-btn" style="border-color: #58a6ff; color: #58a6ff;">Export PDF</button>
       <button class="btn-primary" id="publish-btn">Save to Local OS</button>
     </div>
   </nav>
@@ -226,8 +226,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
 
   <script>if (window.module) { module = window.module; }</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   
   <script src="editor-core.js"></script>
+  
   <script>
     if (window.innerWidth <= 768) {
         const drawer = document.createElement('div');
@@ -251,6 +253,7 @@
             drawer.classList.toggle('open');
             fab.innerHTML = drawer.classList.contains('open') ? '❌ Close' : '🛠️ Tools';
         });
+        
         // --- TOP BAR KEBAB MENU INJECTION ---
         const topBar = document.querySelector('.top-bar');
         

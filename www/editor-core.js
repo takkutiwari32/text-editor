@@ -20,24 +20,27 @@ const ipcRenderer = {
     }
   },
   send: (channel, payload) => {
-    if (channel === 'save-article') {
+if (channel === 'save-article') {
       
-      // Generate a suggested default name from the title
-      const suggestedName = payload.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      
-      // 1. Intercept and ask the user for a custom name
-      let customName = prompt("Name your save file (it will be saved to your Documents folder):", suggestedName);
-      
-      // If the user clicks "Cancel" on the prompt, abort the save entirely
-      if (customName === null) return; 
-      
-      // Ensure the file ends with .json
-      const fileName = customName.endsWith('.json') ? customName : customName + '.json';
-      // Combine both the Title and the Editor Canvas into one JSON package
+      // 1. Check if we already have an open file in memory
+      let fileName = window.currentOpenFile;
+
+      // 2. If no file is open, ask the user for a name (First-time Save)
+      if (!fileName) {
+        const suggestedName = payload.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        let customName = prompt("Name your save file (it will be saved to your Documents folder):", suggestedName);
+        if (!customName) return; 
+
+        fileName = customName.endsWith('.json') ? customName : customName + '.json';
+      }
+
+      // 3. Package the title, the file name, and the canvas data together
       const fullPackage = {
         articleTitle: payload.title,
+        fileName: fileName, // The file remembers its own name!
         editorData: payload.content
       };
+      
       const fileContent = JSON.stringify(fullPackage, null, 2);
 
       try {
@@ -48,12 +51,15 @@ const ipcRenderer = {
             directory: 'DOCUMENTS', 
             encoding: 'utf8'
           }).then(() => {
-            alert('Hardware Sync Complete!\nSaved as: ' + fileName + '\nLocation: Documents Folder');
+            // 4. Lock the filename into the app's active memory
+            window.currentOpenFile = fileName;
+            alert('Hardware Sync Complete!\nSuccessfully saved to Documents: ' + fileName);
           }).catch((err) => {
             alert('Android OS Write Error: ' + err.message);
           });
         } else {
           // Desktop Fallback
+          window.currentOpenFile = fileName;
           const a = document.createElement('a');
           a.href = "data:text/json;charset=utf-8," + encodeURIComponent(fileContent);
           a.download = fileName;
@@ -313,7 +319,7 @@ if (lineHeightSlider && lineHeightDisplay) {
     document.documentElement.style.setProperty('--editor-line-height', newHeight); 
     lineHeightDisplay.innerText = newHeight;
   });
-  // --- 10. THE OS INTENT INTERCEPTOR (FILE READER) ---
+ // --- 10. THE OS INTENT INTERCEPTOR (FILE READER) ---
 async function loadFileFromOS(contentUrl) {
   try {
     const result = await window.Capacitor.Plugins.Filesystem.readFile({
@@ -329,15 +335,23 @@ async function loadFileFromOS(contentUrl) {
     const parsedData = JSON.parse(fileText);
     
     editor.isReady.then(() => {
-      // Check if this is our new "Full Package" format with the title
+      // Check if this is a modern file with Title and Name tracking
       if (parsedData.articleTitle && parsedData.editorData) {
         document.getElementById('article-title').innerText = parsedData.articleTitle;
         editor.render(parsedData.editorData);
+        
+        // Restore the filename into the app's memory so the next save overwrites silently
+        if (parsedData.fileName) {
+          window.currentOpenFile = parsedData.fileName;
+        } else {
+          window.currentOpenFile = null;
+        }
       } 
-      // Fallback for your older files that only have the raw canvas data
+      // Fallback for older files
       else {
         document.getElementById('article-title').innerText = "Restored Article";
         editor.render(parsedData);
+        window.currentOpenFile = null; 
       }
     });
   } catch (error) {

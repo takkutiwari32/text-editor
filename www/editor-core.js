@@ -485,55 +485,140 @@ if (window.Capacitor && window.Capacitor.Plugins.App) {
     }
   });
 }
-
-// --- 11. EXPORT TO PDF ENGINE ---
+// --- 11. NATIVE VECTOR PDF EXPORT ENGINE ---
 document.getElementById('export-pdf-btn').addEventListener('click', async () => {
   const titleText = document.getElementById('article-title').innerText.trim() || 'Untitled_Article';
   const suggestedName = titleText.replace(/[^a-z0-9]/gi, '_').toLowerCase();
   
-  // 1. Intercept and ask the user for a custom name
-  let customName = prompt("Name your PDF file (it will be saved to your Documents folder):", suggestedName);
-  
-  // If the user clicks "Cancel", abort
-  if (customName === null) return; 
+  let customName = prompt("Name your Native PDF file:", suggestedName);
+  if (!customName) return; 
   
   const fileName = customName.endsWith('.pdf') ? customName : customName + '.pdf';
-
-  // Target the entire white canvas (Title + Editor blocks)
-  const element = document.querySelector('.document-container');
   
-  const opt = {
-    margin:       [15, 15, 15, 15], 
-    filename:     fileName,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true }, 
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-
   const exportBtn = document.getElementById('export-pdf-btn');
   const originalText = exportBtn.innerText;
-  exportBtn.innerText = "Generating...";
+  exportBtn.innerText = "Compiling...";
   exportBtn.disabled = true;
 
   try {
-    const pdfDataUri = await html2pdf().set(opt).from(element).outputPdf('datauristring');
-    const base64Data = pdfDataUri.split(',')[1];
+    // 1. Grab the latest live data directly from the Editor canvas
+    const outputData = await editor.save();
+    
+    // 2. Define the exact typography and styling for the native PDF
+    const docDefinition = {
+      content: [
+        { text: titleText, style: 'mainTitle' } 
+      ],
+      styles: {
+        mainTitle: { fontSize: 26, bold: true, margin: [0, 0, 0, 20], color: '#111111' },
+        paragraph: { fontSize: 12, margin: [0, 0, 0, 15], lineHeight: 1.5 },
+        h1: { fontSize: 20, bold: true, margin: [0, 15, 0, 10] },
+        h2: { fontSize: 18, bold: true, margin: [0, 15, 0, 10] },
+        h3: { fontSize: 16, bold: true, margin: [0, 15, 0, 10] },
+        code: { font: 'Courier', fontSize: 10, background: '#f4f4f4', margin: [0, 5, 0, 15] },
+        list: { margin: [0, 0, 0, 15] }
+      }
+    };
 
-    if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
-      await window.Capacitor.Plugins.Filesystem.writeFile({
-        path: fileName,
-        data: base64Data,
-        directory: 'DOCUMENTS' 
-      });
-      alert('Success! PDF saved as ' + fileName + ' in your Android Documents folder.');
-    } else {
-      // Desktop Fallback
-      html2pdf().set(opt).from(element).save();
-    }
+    const cleanText = (html) => {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      return tmp.textContent || tmp.innerText || '';
+    };
+
+    // 3. The Smart Compiler Loop: Translate all blocks, handle objects, and size images properly
+    outputData.blocks.forEach(block => {
+      try {
+        switch (block.type) {
+          case 'paragraph':
+            if (block.data.text) docDefinition.content.push({ text: cleanText(block.data.text), style: 'paragraph' });
+            break;
+            
+          case 'header':
+            if (block.data.text) docDefinition.content.push({ text: cleanText(block.data.text), style: 'h' + block.data.level });
+            break;
+            
+          case 'list':
+            if (block.data.items && block.data.items.length > 0) {
+              // FIX 1: Detect if the list item is a complex Object or a simple String, and extract the text
+              const items = block.data.items.map(i => {
+                const itemText = typeof i === 'object' ? (i.content || '') : i;
+                return cleanText(itemText) || ' ';
+              }); 
+              if (block.data.style === 'ordered') docDefinition.content.push({ ol: items, style: 'list' });
+              else docDefinition.content.push({ ul: items, style: 'list' });
+            }
+            break;
+            
+          case 'code':
+            if (block.data.code) docDefinition.content.push({ text: cleanText(block.data.code), style: 'code' });
+            break;
+            
+          case 'draw':
+            // FIX 2: Added "fit: [350, 300]" to proportionately scale the drawing down so it looks neat
+            if (block.data.image) {
+              docDefinition.content.push({ image: block.data.image, fit: [350, 300], margin: [0, 10, 0, 15] });
+            }
+            break;
+            
+          case 'image':
+            // FIX 3: Add native support for Image blocks (if they are saved as Base64 data)
+            const imgUrl = block.data.file ? block.data.file.url : block.data.url;
+            if (imgUrl && imgUrl.startsWith('data:image')) {
+                docDefinition.content.push({ image: imgUrl, fit: [450, 400], margin: [0, 10, 0, 15] });
+            } else {
+                // If it's a physical OS file path instead of base64, PDFMake can't read it easily.
+                docDefinition.content.push({ text: `[ Image linked from OS ]`, color: '#888888', italics: true, margin: [0, 5, 0, 15] });
+            }
+            break;
+            
+          case 'table':
+            if (block.data.content && block.data.content.length > 0) {
+              const tableBody = block.data.content.map(row => row.map(cell => cleanText(cell) || ' '));
+              docDefinition.content.push({ table: { body: tableBody }, margin: [0, 10, 0, 15] });
+            }
+            break;
+            
+          default:
+            // Audio blocks and unknowns hit this fallback safely
+            docDefinition.content.push({ 
+              text: `[ ${block.type} attachment saved in CMS ]`, 
+              color: '#888888', 
+              italics: true, 
+              margin: [0, 5, 0, 15] 
+            });
+        }
+      } catch (err) {
+        console.log("Safely skipped a broken block", err);
+      }
+    });
+    // 4. Generate the actual PDF file as a Base64 string
+    const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+    
+    pdfDocGenerator.getBase64(async (base64Data) => {
+      try {
+        if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
+          await window.Capacitor.Plugins.Filesystem.writeFile({
+            path: fileName,
+            data: base64Data,
+            directory: 'DOCUMENTS'
+          });
+          
+          alert('Success! Native PDF compiled and saved to Documents:\n' + fileName);
+        } else {
+          pdfDocGenerator.download(fileName);
+        }
+      } catch (err) {
+        alert('Android OS Write Error: ' + err.message);
+      }
+      
+      exportBtn.innerText = originalText;
+      exportBtn.disabled = false;
+    });
+    
   } catch (error) {
-    alert("System Error generating PDF: " + error.message);
+    alert("System Error compiling PDF: " + error.message);
+    exportBtn.innerText = originalText;
+    exportBtn.disabled = false;
   }
-  
-  exportBtn.innerText = originalText;
-  exportBtn.disabled = false;
 });

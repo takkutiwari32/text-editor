@@ -20,7 +20,7 @@ const ipcRenderer = {
     }
   },
   send: (channel, payload) => {
-if (channel === 'save-article') {
+    if (channel === 'save-article') {
       
       // 1. Check if we have an open file AND the user didn't click "Save As"
       let fileName = payload.isSaveAs ? null : window.currentOpenFile;
@@ -48,8 +48,6 @@ if (channel === 'save-article') {
       };
       
       const fileContent = JSON.stringify(fullPackage, null, 2);
-
-      // ... (The rest of the try/catch Capacitor Filesystem block remains exactly the same)
 
       try {
         if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
@@ -86,6 +84,7 @@ if (channel === 'save-article') {
 // Override the desktop shell commands so the BYOK "Get API Key" button opens the phone's web browser
 const shell = { openExternal: (url) => window.open(url, '_blank') };
 const os = { release: () => 'android' };
+
 // --- BYOK: LOCAL STORAGE ENGINE & FIRST-BOOT INTERCEPTOR ---
 function getLocalApiKey() {
   return localStorage.getItem('gemini_api_key') || '';
@@ -151,21 +150,88 @@ class SimpleAudioTool {
   save(blockContent) { const audio = blockContent.querySelector('audio'); return { url: audio ? audio.src : '' }; }
 }
 
-// --- 2. CUSTOM DRAWING ENGINE ---
+// --- 2. CUSTOM DRAWING ENGINE (UPGRADED FOR MOBILE RESPONSIVENESS) ---
 class SimpleDrawTool {
   static get toolbox() { return { title: 'Draw', icon: '🖍️' }; }
   constructor({data}) { this.data = data; }
   render() {
     const wrapper = document.createElement('div');
-    const canvas = document.createElement('canvas'); canvas.width = 750; canvas.height = 400; canvas.style.border = '2px dashed #30363d'; canvas.style.background = '#ffffff'; canvas.style.cursor = 'crosshair'; canvas.style.borderRadius = '8px';
-    const ctx = canvas.getContext('2d'); ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.strokeStyle = '#d32f2f'; 
-    if (this.data && this.data.image) { const img = new Image(); img.src = this.data.image; img.onload = () => ctx.drawImage(img, 0, 0); }
+    wrapper.style.width = '100%';
+    wrapper.style.overflow = 'hidden';
+
+    const canvas = document.createElement('canvas'); 
+    canvas.width = 800; 
+    canvas.height = 400; 
+    
+    // Visually scale the canvas to perfectly fit whatever screen size it is on
+    canvas.style.width = '100%'; 
+    canvas.style.height = 'auto'; 
+    canvas.style.border = '2px dashed #30363d'; 
+    canvas.style.background = '#ffffff'; 
+    canvas.style.cursor = 'crosshair'; 
+    canvas.style.borderRadius = '8px';
+    canvas.style.touchAction = 'none'; // CRITICAL: Stops the phone from scrolling while you draw
+
+    const ctx = canvas.getContext('2d'); 
+    ctx.lineWidth = 4; 
+    ctx.lineCap = 'round'; 
+    ctx.strokeStyle = '#d32f2f'; 
+    
+    if (this.data && this.data.image) { 
+      const img = new Image(); img.src = this.data.image; 
+      img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height); 
+    }
+    
     let isDrawing = false;
-    canvas.addEventListener('mousedown', (e) => { isDrawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
-    canvas.addEventListener('mousemove', (e) => { if(isDrawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } });
-    canvas.addEventListener('mouseup', () => { isDrawing = false; }); canvas.addEventListener('mouseout', () => { isDrawing = false; });
-    const hint = document.createElement('div'); hint.innerText = "Freehand Drawing Canvas (Red Marker)"; hint.style.fontSize = "0.8rem"; hint.style.color = "#8b949e"; hint.style.marginTop = "5px";
-    wrapper.appendChild(canvas); wrapper.appendChild(hint); return wrapper;
+
+    // Helper math function to calculate exactly where your finger is on the scaled canvas
+    const getPos = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    };
+
+    const startDraw = (e) => {
+      isDrawing = true;
+      const pos = getPos(e);
+      ctx.beginPath(); 
+      ctx.moveTo(pos.x, pos.y);
+    };
+
+    const draw = (e) => {
+      if(!isDrawing) return;
+      e.preventDefault(); // Prevents screen drag
+      const pos = getPos(e);
+      ctx.lineTo(pos.x, pos.y); 
+      ctx.stroke();
+    };
+
+    const stopDraw = () => { isDrawing = false; };
+
+    // Desktop Mouse Support
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDraw); 
+    canvas.addEventListener('mouseout', stopDraw);
+
+    // Mobile Finger Touch Support
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDraw);
+
+    const hint = document.createElement('div'); 
+    hint.innerText = "Responsive Canvas (Red Marker) - Swipe to draw"; 
+    hint.style.fontSize = "0.8rem"; hint.style.color = "#8b949e"; hint.style.marginTop = "5px";
+    
+    wrapper.appendChild(canvas); 
+    wrapper.appendChild(hint); 
+    return wrapper;
   }
   save(blockContent) { const canvas = blockContent.querySelector('canvas'); return { image: canvas.toDataURL('image/png') }; }
 }
@@ -319,18 +385,12 @@ document.getElementById('editor-container').addEventListener('keyup', (e) => {
   }, GHOST_PAUSE_DURATION);
 });
 
-// --- 7. THE KEYBOARD HIJACKER (NUCLEAR DOM INJECTOR) ---
-document.getElementById('editor-container').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); document.execCommand('insertLineBreak');
-  }
-}, true); 
-
 // --- 8. DYNAMIC CANVAS WIDTH ENGINE ---
 const widthSlider = document.getElementById('canvas-width-slider'); const widthDisplay = document.getElementById('width-display');
 widthSlider.addEventListener('input', (e) => {
   const newWidth = e.target.value + '%'; document.documentElement.style.setProperty('--editor-width', newWidth); widthDisplay.innerText = newWidth;
 });
+
 // --- 9. DYNAMIC LINE SPACING ENGINE ---
 const lineHeightSlider = document.getElementById('line-height-slider'); 
 const lineHeightDisplay = document.getElementById('line-height-display');
@@ -341,7 +401,9 @@ if (lineHeightSlider && lineHeightDisplay) {
     document.documentElement.style.setProperty('--editor-line-height', newHeight); 
     lineHeightDisplay.innerText = newHeight;
   });
- // --- 10. THE OS INTENT INTERCEPTOR (FILE READER) ---
+}
+
+// --- 10. THE OS INTENT INTERCEPTOR (FILE READER) ---
 async function loadFileFromOS(contentUrl) {
   try {
     const result = await window.Capacitor.Plugins.Filesystem.readFile({
@@ -397,7 +459,6 @@ if (window.Capacitor && window.Capacitor.Plugins.App) {
   });
 }
 
-}
 // --- 11. EXPORT TO PDF ENGINE ---
 document.getElementById('export-pdf-btn').addEventListener('click', async () => {
   const titleText = document.getElementById('article-title').innerText.trim() || 'Untitled_Article';

@@ -663,7 +663,106 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
     });
   } catch (error) { alert("System Error compiling PDF: " + error.message); exportBtn.innerText = originalText; exportBtn.disabled = false; }
 });
+// --- 11.5 PLAIN TEXT EXPORT ENGINE ---
+document.getElementById('export-txt-btn').addEventListener('click', async () => {
+  const exportBtn = document.getElementById('export-txt-btn');
+  const originalText = exportBtn.innerText;
+  exportBtn.innerText = "Extracting..."; 
+  exportBtn.disabled = true;
 
+  try {
+    const outputData = await editor.save();
+    
+    // 1. Figure out the file name
+    const titleText = getDocumentTitle(outputData);
+    const suggestedName = titleText.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    
+    let customName = prompt("Name your Plain Text file:", suggestedName);
+    if (!customName) { exportBtn.innerText = originalText; exportBtn.disabled = false; return; }
+    
+    const fileName = customName.endsWith('.txt') ? customName : customName + '.txt';
+
+    // 2. Helper function to strip out bold/italic/underline HTML tags
+    const cleanText = (html) => { 
+        const tmp = document.createElement('div'); 
+        tmp.innerHTML = html; 
+        return tmp.textContent || tmp.innerText || ''; 
+    };
+
+    let plainText = "";
+
+    // 3. The Extraction Loop
+    outputData.blocks.forEach(block => {
+      try {
+        switch (block.type) {
+          case 'paragraph': 
+          case 'header': 
+            plainText += cleanText(block.data.text) + "\n\n";
+            break;
+            
+          case 'list':
+            if (block.data.items && block.data.items.length > 0) {
+              block.data.items.forEach((item, index) => {
+                const itemText = cleanText(typeof item === 'object' ? (item.content || '') : item);
+                const prefix = block.data.style === 'ordered' ? `${index + 1}. ` : "- ";
+                plainText += prefix + itemText + "\n";
+              });
+              plainText += "\n";
+            }
+            break;
+            
+          case 'code': 
+            plainText += "--- CODE ---\n" + cleanText(block.data.code) + "\n------------\n\n";
+            break;
+            
+          case 'table':
+            if (block.data.content && block.data.content.length > 0) {
+              block.data.content.forEach(row => {
+                 const rowText = row.map(cell => cleanText(cell)).join(" | ");
+                 plainText += rowText + "\n";
+              });
+              plainText += "\n";
+            }
+            break;
+            
+          case 'image':
+          case 'draw':
+          case 'audio':
+            // We can't save pictures in a .txt file, so we leave a placeholder!
+            plainText += `[ Media Attachment: ${block.type} ]\n\n`;
+            break;
+        }
+      } catch (err) { console.log("Safely skipped a broken block", err); }
+    });
+
+    // Clean up trailing empty space
+    plainText = plainText.trim();
+
+    // 4. Save to Android OS or Desktop
+    if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
+      await window.Capacitor.Plugins.Filesystem.writeFile({ 
+          path: fileName, 
+          data: plainText, 
+          directory: 'DOCUMENTS',
+          encoding: 'utf8'
+      });
+      alert('Success! Plain Text file saved to Documents:\n' + fileName);
+    } else { 
+        // Desktop Browser Fallback
+        const a = document.createElement('a');
+        a.href = "data:text/plain;charset=utf-8," + encodeURIComponent(plainText);
+        a.download = fileName;
+        document.body.appendChild(a); 
+        a.click(); 
+        document.body.removeChild(a);
+    }
+  } catch (error) { 
+      alert("System Error extracting text: " + error.message); 
+  } finally {
+      exportBtn.innerText = originalText; 
+      exportBtn.disabled = false; 
+  }
+});
 // --- 12. GHOST UX: PRECISION SLIDER ISOLATION ---
 window.addEventListener('load', () => {
   const allSliders = document.querySelectorAll('input[type="range"]');

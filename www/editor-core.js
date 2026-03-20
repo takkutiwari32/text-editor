@@ -22,13 +22,19 @@ const ipcRenderer = {
   send: (channel, payload) => {
 if (channel === 'save-article') {
       
-      // 1. Check if we already have an open file in memory
-      let fileName = window.currentOpenFile;
+      // 1. Check if we have an open file AND the user didn't click "Save As"
+      let fileName = payload.isSaveAs ? null : window.currentOpenFile;
 
-      // 2. If no file is open, ask the user for a name (First-time Save)
+      // 2. If no file is open, OR if they clicked Save As, ask for a name
       if (!fileName) {
         const suggestedName = payload.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        let customName = prompt("Name your save file (it will be saved to your Documents folder):", suggestedName);
+        
+        // Change the prompt text so the user knows what is happening
+        const promptMessage = payload.isSaveAs 
+          ? "SAVE AS - Enter a name for the new copy:" 
+          : "Name your save file (it will be saved to your Documents folder):";
+          
+        let customName = prompt(promptMessage, suggestedName);
         if (!customName) return; 
 
         fileName = customName.endsWith('.json') ? customName : customName + '.json';
@@ -37,11 +43,13 @@ if (channel === 'save-article') {
       // 3. Package the title, the file name, and the canvas data together
       const fullPackage = {
         articleTitle: payload.title,
-        fileName: fileName, // The file remembers its own name!
+        fileName: fileName, 
         editorData: payload.content
       };
       
       const fileContent = JSON.stringify(fullPackage, null, 2);
+
+      // ... (The rest of the try/catch Capacitor Filesystem block remains exactly the same)
 
       try {
         if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
@@ -189,12 +197,26 @@ document.getElementById('tool-list').addEventListener('click', () => { editor.bl
 document.getElementById('tool-audio').addEventListener('click', () => { editor.blocks.insert('audio'); });
 document.getElementById('tool-draw').addEventListener('click', () => { editor.blocks.insert('draw'); });
 
-// --- 5. PUBLISH LOGIC ---
+// --- 5. PUBLISH LOGIC (SAVE & SAVE AS) ---
+
+// Standard Save (Overwrites if memory exists)
 document.getElementById('publish-btn').addEventListener('click', () => {
   const title = document.getElementById('article-title').innerText.trim();
   if(!title) { alert('Please enter an article title first.'); return; }
-  editor.save().then((outputData) => { ipcRenderer.send('save-article', { title: title, content: outputData }); });
+  editor.save().then((outputData) => { 
+    ipcRenderer.send('save-article', { title: title, content: outputData, isSaveAs: false }); 
+  });
 });
+
+// Save As (Forces a new name prompt)
+document.getElementById('save-as-btn').addEventListener('click', () => {
+  const title = document.getElementById('article-title').innerText.trim();
+  if(!title) { alert('Please enter an article title first.'); return; }
+  editor.save().then((outputData) => { 
+    ipcRenderer.send('save-article', { title: title, content: outputData, isSaveAs: true }); 
+  });
+});
+
 ipcRenderer.on('save-response', (event, response) => {
   if(response.success) { alert('Success! Article physically saved to your OS at:\n' + response.path); } else { alert('System Error saving file: ' + response.error); }
 });

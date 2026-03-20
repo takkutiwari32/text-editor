@@ -272,21 +272,32 @@ document.getElementById('tool-audio').addEventListener('click', () => { editor.b
 document.getElementById('tool-draw').addEventListener('click', () => { editor.blocks.insert('draw'); });
 
 // --- 5. PUBLISH LOGIC (SAVE & SAVE AS) ---
+// --- 5. PUBLISH LOGIC (SAVE & SAVE AS) ---
 
-// Standard Save (Overwrites if memory exists)
+// NEW HELPER: Reads the first block of the canvas to suggest a file name
+const getDocumentTitle = (outputData) => {
+  if (outputData.blocks && outputData.blocks.length > 0 && outputData.blocks[0].data && outputData.blocks[0].data.text) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = outputData.blocks[0].data.text;
+    const text = tmp.textContent || tmp.innerText || '';
+    // Grabs the first 30 characters of the first line
+    return text.substring(0, 30).trim() || "Untitled_Document";
+  }
+  return "Untitled_Document";
+};
+
+// Standard Save
 document.getElementById('publish-btn').addEventListener('click', () => {
-  const title = document.getElementById('article-title').innerText.trim();
-  if(!title) { alert('Please enter an article title first.'); return; }
   editor.save().then((outputData) => { 
+    const title = getDocumentTitle(outputData);
     ipcRenderer.send('save-article', { title: title, content: outputData, isSaveAs: false }); 
   });
 });
 
-// Save As (Forces a new name prompt)
+// Save As
 document.getElementById('save-as-btn').addEventListener('click', () => {
-  const title = document.getElementById('article-title').innerText.trim();
-  if(!title) { alert('Please enter an article title first.'); return; }
   editor.save().then((outputData) => { 
+    const title = getDocumentTitle(outputData);
     ipcRenderer.send('save-article', { title: title, content: outputData, isSaveAs: true }); 
   });
 });
@@ -421,46 +432,32 @@ async function loadFileFromOS(contentUrl) {
     
     let fileText = result.data;
     
-    // Android sometimes base64 encodes the data. We decode it if it looks like base64.
     if (!fileText.trim().startsWith('{') && !fileText.includes(' ')) {
-      try { fileText = atob(fileText); } catch(e) { /* It was just normal text */ }
+      try { fileText = atob(fileText); } catch(e) { }
     }
     
     let parsedData;
 
     try {
-      // ATTEMPT 1: Try to read it as our native .json Pro CMS blueprint
       parsedData = JSON.parse(fileText);
     } catch (e) {
-      // ATTEMPT 2: It failed to parse as JSON. Treat it as a raw .txt file!
-      
-      // Split the text into an array of lines, ignoring empty spaces
       const lines = fileText.split('\n').filter(line => line.trim().length > 0);
-      
-      // Convert each line into an EditorJS Paragraph block
       const textBlocks = lines.map(line => {
-        return {
-          type: "paragraph",
-          data: { text: line }
-        };
+        return { type: "paragraph", data: { text: line } };
       });
-
-      // Package it up so the app thinks it's a normal CMS file
       parsedData = {
         articleTitle: "Imported Text Document",
         editorData: { blocks: textBlocks },
-        fileName: null // Set to null so the user is forced to "Save As" a new .json
+        fileName: null
       };
     }
     
     editor.isReady.then(() => {
       if (parsedData.articleTitle && parsedData.editorData) {
-        document.getElementById('article-title').innerText = parsedData.articleTitle;
         editor.render(parsedData.editorData);
         window.currentOpenFile = parsedData.fileName || null;
       } else {
-        // Legacy .json fallback
-        document.getElementById('article-title').innerText = "Restored Article";
+        // Legacy .json fallback (Removed the crashing title lookup)
         editor.render(parsedData);
         window.currentOpenFile = null; 
       }
@@ -470,40 +467,42 @@ async function loadFileFromOS(contentUrl) {
   }
 }
 
-// Listen for "Cold Boot" (App was closed)
+// Listen for "Cold Boot"
 if (window.Capacitor && window.Capacitor.Plugins.App) {
   window.Capacitor.Plugins.App.getLaunchUrl().then(ret => {
-    if (ret && ret.url) {
-      loadFileFromOS(ret.url);
-    }
+    if (ret && ret.url) loadFileFromOS(ret.url);
   });
 
-  // Listen for "Warm Boot" (App was in the background)
+  // Listen for "Warm Boot"
   window.Capacitor.Plugins.App.addListener('appUrlOpen', event => {
-    if (event && event.url) {
-      loadFileFromOS(event.url);
-    }
+    if (event && event.url) loadFileFromOS(event.url);
   });
 }
+
 // --- 11. NATIVE VECTOR PDF EXPORT ENGINE ---
 document.getElementById('export-pdf-btn').addEventListener('click', async () => {
-  const titleText = document.getElementById('article-title').innerText.trim() || 'Untitled_Article';
-  const suggestedName = titleText.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  
-  let customName = prompt("Name your Native PDF file:", suggestedName);
-  if (!customName) return; 
-  
-  const fileName = customName.endsWith('.pdf') ? customName : customName + '.pdf';
-  
   const exportBtn = document.getElementById('export-pdf-btn');
   const originalText = exportBtn.innerText;
   exportBtn.innerText = "Compiling...";
   exportBtn.disabled = true;
 
   try {
-    // 1. Grab the latest live data directly from the Editor canvas
+    // 1. Grab data FIRST so we can figure out the title
     const outputData = await editor.save();
     
+    // Use our new smart extractor
+    const titleText = getDocumentTitle(outputData);
+    const suggestedName = titleText.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    
+    let customName = prompt("Name your Native PDF file:", suggestedName);
+    if (!customName) {
+      exportBtn.innerText = originalText;
+      exportBtn.disabled = false;
+      return; 
+    }
+    
+    const fileName = customName.endsWith('.pdf') ? customName : customName + '.pdf';
+
     // 2. Define the exact typography and styling for the native PDF
     const docDefinition = {
       content: [
@@ -526,7 +525,7 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
       return tmp.textContent || tmp.innerText || '';
     };
 
-    // 3. The Smart Compiler Loop: Translate all blocks, handle objects, and size images properly
+    // 3. The Smart Compiler Loop
     outputData.blocks.forEach(block => {
       try {
         switch (block.type) {
@@ -540,7 +539,6 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
             
           case 'list':
             if (block.data.items && block.data.items.length > 0) {
-              // FIX 1: Detect if the list item is a complex Object or a simple String, and extract the text
               const items = block.data.items.map(i => {
                 const itemText = typeof i === 'object' ? (i.content || '') : i;
                 return cleanText(itemText) || ' ';
@@ -555,19 +553,16 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
             break;
             
           case 'draw':
-            // FIX 2: Added "fit: [350, 300]" to proportionately scale the drawing down so it looks neat
             if (block.data.image) {
               docDefinition.content.push({ image: block.data.image, fit: [350, 300], margin: [0, 10, 0, 15] });
             }
             break;
             
           case 'image':
-            // FIX 3: Add native support for Image blocks (if they are saved as Base64 data)
             const imgUrl = block.data.file ? block.data.file.url : block.data.url;
             if (imgUrl && imgUrl.startsWith('data:image')) {
                 docDefinition.content.push({ image: imgUrl, fit: [450, 400], margin: [0, 10, 0, 15] });
             } else {
-                // If it's a physical OS file path instead of base64, PDFMake can't read it easily.
                 docDefinition.content.push({ text: `[ Image linked from OS ]`, color: '#888888', italics: true, margin: [0, 5, 0, 15] });
             }
             break;
@@ -580,7 +575,6 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
             break;
             
           default:
-            // Audio blocks and unknowns hit this fallback safely
             docDefinition.content.push({ 
               text: `[ ${block.type} attachment saved in CMS ]`, 
               color: '#888888', 
@@ -592,6 +586,7 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
         console.log("Safely skipped a broken block", err);
       }
     });
+
     // 4. Generate the actual PDF file as a Base64 string
     const pdfDocGenerator = pdfMake.createPdf(docDefinition);
     

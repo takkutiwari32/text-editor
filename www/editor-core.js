@@ -441,10 +441,19 @@ async function loadFileFromOS(contentUrl) {
     try {
       parsedData = JSON.parse(fileText);
     } catch (e) {
-      const lines = fileText.split('\n').filter(line => line.trim().length > 0);
-      const textBlocks = lines.map(line => {
-        return { type: "paragraph", data: { text: line } };
-      });
+      // ATTEMPT 2: Treat it as a raw .txt file!
+      
+      // Replace standard text line-breaks (\n) with HTML line-breaks (<br>)
+      // so EditorJS keeps the entire document inside one giant paragraph block.
+      const singleBlockText = fileText.replace(/\n/g, '<br>');
+      
+      const textBlocks = [
+        { 
+          type: "paragraph", 
+          data: { text: singleBlockText } 
+        }
+      ];
+      
       parsedData = {
         articleTitle: "Imported Text Document",
         editorData: { blocks: textBlocks },

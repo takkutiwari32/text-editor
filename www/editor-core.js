@@ -626,3 +626,31 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
     exportBtn.disabled = false;
   }
 });
+// --- 12. GHOST UX: FADE MENU WHILE SLIDING ---
+window.addEventListener('load', () => {
+  // Target your dynamic mobile drawer (or the desktop sidebar as a fallback)
+  const toolsMenu = document.querySelector('.mobile-drawer') || document.querySelector('.right-sidebar'); 
+  
+  if (toolsMenu) {
+    // 1. Give the menu a smooth CSS transition so it fades instead of flickering
+    toolsMenu.style.transition = "opacity 0.2s ease-in-out";
+    
+    // 2. Automatically find EVERY slider in your app
+    const allSliders = document.querySelectorAll('input[type="range"]');
+    
+    allSliders.forEach(slider => {
+      // 3. When the user touches or clicks the slider -> Fade Out
+      slider.addEventListener('touchstart', () => { toolsMenu.style.opacity = "0.15"; }, {passive: true});
+      slider.addEventListener('mousedown', () => { toolsMenu.style.opacity = "0.15"; });
+      
+      // 4. When the user lets go -> Fade In
+      slider.addEventListener('touchend', () => { toolsMenu.style.opacity = "1"; });
+      slider.addEventListener('mouseup', () => { toolsMenu.style.opacity = "1"; });
+      
+      // Fallback: If they drag their finger off the menu before letting go
+      slider.addEventListener('touchcancel', () => { toolsMenu.style.opacity = "1"; });
+    });
+  } else {
+    console.warn("Ghost UX Error: Could not find the tools menu.");
+  }
+});

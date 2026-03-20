@@ -401,26 +401,76 @@ ipcRenderer.on('save-response', (event, response) => {
   if(response.success) { alert('Success! Article physically saved to your OS at:\n' + response.path); } else { alert('System Error saving file: ' + response.error); }
 });
 
-// --- 6. TYPOGRAPHY ENGINE ---
-document.querySelector('.document-container').addEventListener('mouseup', () => {
-  const selection = window.getSelection();
-  const oldTarget = document.getElementById('pending-style-target');
-  if (oldTarget) { oldTarget.removeAttribute('id'); oldTarget.style.backgroundColor = ''; }
-  if (selection.rangeCount > 0 && !selection.isCollapsed) {
-    const range = selection.getRangeAt(0); const span = document.createElement('span'); span.id = 'pending-style-target'; span.style.backgroundColor = 'rgba(248, 81, 73, 0.2)'; 
-    try { span.appendChild(range.extractContents()); range.insertNode(span); } catch (err) { }
-  }
+// --- 6. TYPOGRAPHY ENGINE (MOBILE & DESKTOP FIX) ---
+let selectionTimeout;
+
+// 1. Listen for the native mobile text selection handles
+document.addEventListener('selectionchange', () => {
+  clearTimeout(selectionTimeout);
+  
+  selectionTimeout = setTimeout(() => {
+    const selection = window.getSelection();
+    const oldTarget = document.getElementById('pending-style-target');
+    
+    // THE FIX: If you tap away and the selection collapses, instantly clear the red highlight!
+    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+      if (oldTarget) {
+        oldTarget.removeAttribute('id');
+        oldTarget.style.backgroundColor = 'transparent';
+      }
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    if (!range.commonAncestorContainer.parentElement || !range.commonAncestorContainer.parentElement.closest('.ce-block')) return;
+
+    if (oldTarget) { 
+      oldTarget.removeAttribute('id'); 
+      oldTarget.style.backgroundColor = 'transparent'; 
+    }
+
+    const span = document.createElement('span'); 
+    span.id = 'pending-style-target'; 
+    span.style.backgroundColor = 'rgba(248, 81, 73, 0.2)'; 
+    
+    try { 
+      span.appendChild(range.extractContents()); 
+      range.insertNode(span); 
+    } catch (err) { console.warn("Typography Lock Failed", err); }
+    
+  }, 400); 
 });
+
+// 2. The Apply Function
 function applyTypography(type, value) {
-  const targetSpan = document.getElementById('pending-style-target'); if (!targetSpan) return; 
-  if (type === 'color') targetSpan.style.color = value; if (type === 'size') targetSpan.style.fontSize = value; if (type === 'font') targetSpan.style.fontFamily = value;
+  const targetSpan = document.getElementById('pending-style-target'); 
+  if (!targetSpan) {
+    alert("Please highlight some text in the editor first!");
+    return; 
+  }
+  
+  // Apply the actual CSS
+  if (type === 'color') targetSpan.style.color = value; 
+  if (type === 'size') targetSpan.style.fontSize = value; 
+  if (type === 'font') targetSpan.style.fontFamily = value;
+
+  // Force the red highlight background to disappear so it looks clean
+  targetSpan.style.backgroundColor = 'transparent';
+  
+  // CRITICAL: Tell EditorJS that the block was modified so it saves the data
+  const activeBlock = targetSpan.closest('.cdx-block');
+  if (activeBlock) activeBlock.dispatchEvent(new Event('input', { bubbles: true }));
 }
+
+// 3. Wire up the UI Inputs
 const colorInput = document.getElementById('style-color');
-colorInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyTypography('color', colorInput.value); });
-colorInput.addEventListener('dblclick', () => { applyTypography('color', colorInput.value); });
-colorInput.addEventListener('change', () => { applyTypography('color', colorInput.value); });
+// Use 'input' instead of 'change' so color updates in real-time as you drag the color picker
+colorInput.addEventListener('input', () => { applyTypography('color', colorInput.value); });
+
 const sizeInput = document.getElementById('style-size');
+sizeInput.addEventListener('change', () => { applyTypography('size', sizeInput.value); });
 sizeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') applyTypography('size', sizeInput.value); });
+
 const fontInput = document.getElementById('style-font');
 fontInput.addEventListener('change', () => { applyTypography('font', fontInput.value); });
 

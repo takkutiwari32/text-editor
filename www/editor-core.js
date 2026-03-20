@@ -420,27 +420,46 @@ async function loadFileFromOS(contentUrl) {
     });
     
     let fileText = result.data;
-    if (!fileText.trim().startsWith('{')) {
-      fileText = atob(fileText);
+    
+    // Android sometimes base64 encodes the data. We decode it if it looks like base64.
+    if (!fileText.trim().startsWith('{') && !fileText.includes(' ')) {
+      try { fileText = atob(fileText); } catch(e) { /* It was just normal text */ }
     }
     
-    const parsedData = JSON.parse(fileText);
+    let parsedData;
+
+    try {
+      // ATTEMPT 1: Try to read it as our native .json Pro CMS blueprint
+      parsedData = JSON.parse(fileText);
+    } catch (e) {
+      // ATTEMPT 2: It failed to parse as JSON. Treat it as a raw .txt file!
+      
+      // Split the text into an array of lines, ignoring empty spaces
+      const lines = fileText.split('\n').filter(line => line.trim().length > 0);
+      
+      // Convert each line into an EditorJS Paragraph block
+      const textBlocks = lines.map(line => {
+        return {
+          type: "paragraph",
+          data: { text: line }
+        };
+      });
+
+      // Package it up so the app thinks it's a normal CMS file
+      parsedData = {
+        articleTitle: "Imported Text Document",
+        editorData: { blocks: textBlocks },
+        fileName: null // Set to null so the user is forced to "Save As" a new .json
+      };
+    }
     
     editor.isReady.then(() => {
-      // Check if this is a modern file with Title and Name tracking
       if (parsedData.articleTitle && parsedData.editorData) {
         document.getElementById('article-title').innerText = parsedData.articleTitle;
         editor.render(parsedData.editorData);
-        
-        // Restore the filename into the app's memory so the next save overwrites silently
-        if (parsedData.fileName) {
-          window.currentOpenFile = parsedData.fileName;
-        } else {
-          window.currentOpenFile = null;
-        }
-      } 
-      // Fallback for older files
-      else {
+        window.currentOpenFile = parsedData.fileName || null;
+      } else {
+        // Legacy .json fallback
         document.getElementById('article-title').innerText = "Restored Article";
         editor.render(parsedData);
         window.currentOpenFile = null; 

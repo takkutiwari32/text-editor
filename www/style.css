@@ -277,3 +277,33 @@ body {
     /* 9. Scale down massive title font */
     .document-title { font-size: 28px !important; line-height: 1.3 !important; }
 }
+/* =========================================
+   10. GHOST UX: PRECISION SLIDER ISOLATION (FIXED)
+========================================= */
+/* 1. Strip the drawer and sidebars of all colors and borders */
+body.is-sliding .mobile-drawer,
+body.is-sliding .left-sidebar,
+body.is-sliding .right-sidebar {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-top-color: transparent !important;
+}
+
+/* 2. Hide only the direct contents, NOT the wrappers */
+body.is-sliding .left-sidebar > *,
+body.is-sliding .right-sidebar > *,
+body.is-sliding .ai-flyout {
+    opacity: 0 !important;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* 3. Force the active slider row to stay visible and give it a slight background so you can read the label */
+body.is-sliding .right-sidebar > .active-slider-row {
+    opacity: 1 !important;
+    pointer-events: auto;
+    background: rgba(22, 27, 34, 0.85) !important; 
+    padding: 10px;
+    border-radius: 8px;
+    transition: opacity 0.2s ease-in-out;
+}

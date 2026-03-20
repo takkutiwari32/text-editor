@@ -626,31 +626,32 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
     exportBtn.disabled = false;
   }
 });
-// --- 12. GHOST UX: FADE MENU WHILE SLIDING ---
+// --- 12. GHOST UX: PRECISION SLIDER ISOLATION ---
 window.addEventListener('load', () => {
-  // Target your dynamic mobile drawer (or the desktop sidebar as a fallback)
-  const toolsMenu = document.querySelector('.mobile-drawer') || document.querySelector('.right-sidebar'); 
+  const allSliders = document.querySelectorAll('input[type="range"]');
   
-  if (toolsMenu) {
-    // 1. Give the menu a smooth CSS transition so it fades instead of flickering
-    toolsMenu.style.transition = "opacity 0.2s ease-in-out";
+  allSliders.forEach(slider => {
+    // Find the specific container holding this exact slider
+    const parentRow = slider.closest('.typo-row');
     
-    // 2. Automatically find EVERY slider in your app
-    const allSliders = document.querySelectorAll('input[type="range"]');
+    // When touched: Trigger isolation mode
+    const startSlide = () => {
+      document.body.classList.add('is-sliding');
+      if (parentRow) parentRow.classList.add('active-slider-row');
+    };
     
-    allSliders.forEach(slider => {
-      // 3. When the user touches or clicks the slider -> Fade Out
-      slider.addEventListener('touchstart', () => { toolsMenu.style.opacity = "0.15"; }, {passive: true});
-      slider.addEventListener('mousedown', () => { toolsMenu.style.opacity = "0.15"; });
-      
-      // 4. When the user lets go -> Fade In
-      slider.addEventListener('touchend', () => { toolsMenu.style.opacity = "1"; });
-      slider.addEventListener('mouseup', () => { toolsMenu.style.opacity = "1"; });
-      
-      // Fallback: If they drag their finger off the menu before letting go
-      slider.addEventListener('touchcancel', () => { toolsMenu.style.opacity = "1"; });
-    });
-  } else {
-    console.warn("Ghost UX Error: Could not find the tools menu.");
-  }
+    // When released: Restore the full menu
+    const stopSlide = () => {
+      document.body.classList.remove('is-sliding');
+      if (parentRow) parentRow.classList.remove('active-slider-row');
+    };
+
+    // Wire up the touch and mouse sensors
+    slider.addEventListener('touchstart', startSlide, {passive: true});
+    slider.addEventListener('mousedown', startSlide);
+    
+    slider.addEventListener('touchend', stopSlide);
+    slider.addEventListener('mouseup', stopSlide);
+    slider.addEventListener('touchcancel', stopSlide);
+  });
 });

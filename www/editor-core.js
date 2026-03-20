@@ -150,85 +150,93 @@ class SimpleAudioTool {
   save(blockContent) { const audio = blockContent.querySelector('audio'); return { url: audio ? audio.src : '' }; }
 }
 
-// --- 2. CUSTOM DRAWING ENGINE (UPGRADED FOR MOBILE RESPONSIVENESS) ---
+// --- 2. CUSTOM DRAWING ENGINE ---
 class SimpleDrawTool {
   static get toolbox() { return { title: 'Draw', icon: '🖍️' }; }
   constructor({data}) { this.data = data; }
   render() {
     const wrapper = document.createElement('div');
     wrapper.style.width = '100%';
-    wrapper.style.overflow = 'hidden';
+    wrapper.style.overflow = 'hidden'; 
+
+    // --- NEW COLOR GRID UI ---
+    const toolbar = document.createElement('div');
+    toolbar.style.display = 'flex';
+    toolbar.style.gap = '12px';
+    toolbar.style.padding = '10px 0';
+    toolbar.style.alignItems = 'center';
+
+    // The Color Palette (Red, Blue, Green, Yellow, Black, White/Eraser)
+    const colors = ['#d32f2f', '#1976d2', '#388e3c', '#fbc02d', '#000000', '#ffffff']; 
+    let activeColorBtn = null;
 
     const canvas = document.createElement('canvas'); 
-    canvas.width = 800; 
-    canvas.height = 400; 
-    
-    // Visually scale the canvas to perfectly fit whatever screen size it is on
-    canvas.style.width = '100%'; 
-    canvas.style.height = 'auto'; 
+    canvas.width = 800; canvas.height = 400; 
+    canvas.style.width = '100%'; canvas.style.height = 'auto'; 
     canvas.style.border = '2px dashed #30363d'; 
     canvas.style.background = '#ffffff'; 
     canvas.style.cursor = 'crosshair'; 
     canvas.style.borderRadius = '8px';
-    canvas.style.touchAction = 'none'; // CRITICAL: Stops the phone from scrolling while you draw
+    canvas.style.touchAction = 'none'; 
 
     const ctx = canvas.getContext('2d'); 
-    ctx.lineWidth = 4; 
-    ctx.lineCap = 'round'; 
-    ctx.strokeStyle = '#d32f2f'; 
-    
+    ctx.lineWidth = 4; ctx.lineCap = 'round'; 
+    ctx.strokeStyle = colors[0]; // Default to Red
+
+    // Build the interactive color buttons
+    colors.forEach((color, index) => {
+      const colorBtn = document.createElement('div');
+      colorBtn.style.width = '24px'; colorBtn.style.height = '24px';
+      colorBtn.style.borderRadius = '50%'; 
+      colorBtn.style.backgroundColor = color;
+      colorBtn.style.cursor = 'pointer';
+      colorBtn.style.border = '2px solid transparent';
+      
+      // Give the white "eraser" a grey border so it doesn't vanish on white backgrounds
+      if (color === '#ffffff') colorBtn.style.border = '2px solid #e1e4e8'; 
+
+      // Highlight the first color by default
+      if (index === 0) {
+        colorBtn.style.boxShadow = '0 0 0 2px #58a6ff';
+        activeColorBtn = colorBtn;
+      }
+
+      // Wire up the tap to change ink color
+      colorBtn.addEventListener('click', () => {
+        ctx.strokeStyle = color;
+        if (activeColorBtn) activeColorBtn.style.boxShadow = 'none'; // Remove old glow
+        colorBtn.style.boxShadow = '0 0 0 2px #58a6ff'; // Add new glow
+        activeColorBtn = colorBtn;
+      });
+      toolbar.appendChild(colorBtn);
+    });
+
     if (this.data && this.data.image) { 
       const img = new Image(); img.src = this.data.image; 
       img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height); 
     }
     
     let isDrawing = false;
-
-    // Helper math function to calculate exactly where your finger is on the scaled canvas
     const getPos = (e) => {
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      return {
-        x: (clientX - rect.left) * scaleX,
-        y: (clientY - rect.top) * scaleY
-      };
+      return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
     };
 
-    const startDraw = (e) => {
-      isDrawing = true;
-      const pos = getPos(e);
-      ctx.beginPath(); 
-      ctx.moveTo(pos.x, pos.y);
-    };
-
-    const draw = (e) => {
-      if(!isDrawing) return;
-      e.preventDefault(); // Prevents screen drag
-      const pos = getPos(e);
-      ctx.lineTo(pos.x, pos.y); 
-      ctx.stroke();
-    };
-
+    const startDraw = (e) => { isDrawing = true; const pos = getPos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); };
+    const draw = (e) => { if(!isDrawing) return; e.preventDefault(); const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); };
     const stopDraw = () => { isDrawing = false; };
 
-    // Desktop Mouse Support
-    canvas.addEventListener('mousedown', startDraw);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDraw); 
-    canvas.addEventListener('mouseout', stopDraw);
+    canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDraw); canvas.addEventListener('mouseout', stopDraw);
+    canvas.addEventListener('touchstart', startDraw, { passive: false }); canvas.addEventListener('touchmove', draw, { passive: false }); canvas.addEventListener('touchend', stopDraw);
 
-    // Mobile Finger Touch Support
-    canvas.addEventListener('touchstart', startDraw, { passive: false });
-    canvas.addEventListener('touchmove', draw, { passive: false });
-    canvas.addEventListener('touchend', stopDraw);
-
-    const hint = document.createElement('div'); 
-    hint.innerText = "Responsive Canvas (Red Marker) - Swipe to draw"; 
-    hint.style.fontSize = "0.8rem"; hint.style.color = "#8b949e"; hint.style.marginTop = "5px";
+    const hint = document.createElement('div'); hint.innerText = "Select a color. Swipe to draw. (White acts as an eraser)"; hint.style.fontSize = "0.8rem"; hint.style.color = "#8b949e"; hint.style.marginTop = "5px";
     
+    wrapper.appendChild(toolbar);
     wrapper.appendChild(canvas); 
     wrapper.appendChild(hint); 
     return wrapper;
@@ -238,7 +246,7 @@ class SimpleDrawTool {
 
 // --- 3. EDITOR INITIALIZATION ---
 const editor = new EditorJS({
-  holder: 'editor-container', placeholder: 'Start typing your epic tech article here...',
+  holder: 'editor-container', placeholder: '',
   tools: {
     header: { class: Header, inlineToolbar: ['link', 'bold', 'italic', 'underline', 'Marker'] },
     list: { class: EditorjsList, inlineToolbar: true }, code: { class: CodeTool }, table: { class: Table, inlineToolbar: true }, Marker: { class: Marker }, underline: { class: Underline },

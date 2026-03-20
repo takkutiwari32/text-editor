@@ -161,22 +161,24 @@ body {
 .typo-color::-webkit-color-swatch { border: none; border-radius: 3px; }
 
 /* =========================================
-   9. DYNAMIC LINE SPACING ENGINE 
-   ========================================= */
+ 9. DYNAMIC LINE SPACING ENGINE 
+========================================= */
 :root {
-  --editor-line-height: 1.5;
+ --editor-line-height: 1.5;
 }
 
-#editor-container .ce-block__content,
-#editor-container .cdx-block {
-  line-height: var(--editor-line-height) !important;
+/* The Sledgehammer: Force line-height on absolutely everything inside the editor */
+#editor-container, 
+#editor-container * {
+ line-height: var(--editor-line-height) !important;
 }
 
+/* Crush the massive default EditorJS block margins */
 .ce-block {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding-top: calc((var(--editor-line-height) - 1) * 10px) !important;
-  padding-bottom: calc((var(--editor-line-height) - 1) * 10px) !important;
+ margin-top: 0 !important;
+ margin-bottom: 0 !important;
+ padding-top: calc((var(--editor-line-height) - 1) * 10px) !important;
+ padding-bottom: calc((var(--editor-line-height) - 1) * 10px) !important;
 }
 
 /* =========================================

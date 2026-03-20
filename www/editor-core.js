@@ -33,7 +33,12 @@ const ipcRenderer = {
       
       // Ensure the file ends with .json
       const fileName = customName.endsWith('.json') ? customName : customName + '.json';
-      const fileContent = JSON.stringify(payload.content, null, 2);
+      // Combine both the Title and the Editor Canvas into one JSON package
+      const fullPackage = {
+        articleTitle: payload.title,
+        editorData: payload.content
+      };
+      const fileContent = JSON.stringify(fullPackage, null, 2);
 
       try {
         if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
@@ -311,24 +316,29 @@ if (lineHeightSlider && lineHeightDisplay) {
   // --- 10. THE OS INTENT INTERCEPTOR (FILE READER) ---
 async function loadFileFromOS(contentUrl) {
   try {
-    // 1. Ask the native Android Filesystem to read the raw content URI
     const result = await window.Capacitor.Plugins.Filesystem.readFile({
       path: contentUrl,
       encoding: 'utf8'
     });
     
-    // 2. Safety check: Android sometimes forces base64 encoding. Decode if necessary.
     let fileText = result.data;
     if (!fileText.trim().startsWith('{')) {
       fileText = atob(fileText);
     }
     
-    // 3. Parse the raw JSON back into EditorJS blocks
     const parsedData = JSON.parse(fileText);
     
-    // 4. Inject the physical data into the visual canvas
     editor.isReady.then(() => {
-      editor.render(parsedData);
+      // Check if this is our new "Full Package" format with the title
+      if (parsedData.articleTitle && parsedData.editorData) {
+        document.getElementById('article-title').innerText = parsedData.articleTitle;
+        editor.render(parsedData.editorData);
+      } 
+      // Fallback for your older files that only have the raw canvas data
+      else {
+        document.getElementById('article-title').innerText = "Restored Article";
+        editor.render(parsedData);
+      }
     });
   } catch (error) {
     alert('System Error unpacking file: ' + error.message);

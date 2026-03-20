@@ -307,3 +307,54 @@ body.is-sliding .right-sidebar > .active-slider-row {
     border-radius: 8px;
     transition: opacity 0.2s ease-in-out;
 }
+/* =========================================
+   11. CUSTOM MOBILE SPREADSHEET TOOL
+========================================= */
+.custom-table-wrapper {
+    width: 100%;
+    margin: 15px 0;
+}
+.custom-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: #ffffff; /* Or keep dark if you prefer */
+}
+.custom-table {
+    border-collapse: collapse;
+    width: max-content;
+    min-width: 100%;
+}
+.custom-table td {
+    min-width: 120px;
+    max-width: 250px;
+    padding: 15px;
+    border: 1px solid #e1e4e8;
+    color: #111;
+    cursor: pointer;
+    font-size: 1rem;
+    word-break: break-word;
+    transition: background 0.2s;
+}
+/* Highlight the cell when tapped to mimic the video */
+.custom-table td:active {
+    background: #f0f4f8;
+}
+/* The Add Row/Col Controls */
+.custom-table-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+.custom-table-btn {
+    flex: 1;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.custom-table-btn:hover { background: var(--bg-color); color: var(--text-main); }

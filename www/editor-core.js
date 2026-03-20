@@ -244,12 +244,113 @@ class SimpleDrawTool {
   save(blockContent) { const canvas = blockContent.querySelector('canvas'); return { image: canvas.toDataURL('image/png') }; }
 }
 
+// --- 2.5 CUSTOM MOBILE TABLE ENGINE ---
+class MobileTableTool {
+  static get toolbox() { return { title: 'Table', icon: '⊞' }; }
+  
+  constructor({ data }) {
+    // If no data exists, start with a blank 2x2 grid
+    this.data = data && data.content ? data : { content: [['', ''], ['', '']] };
+    this.wrapper = undefined;
+  }
+
+  render() {
+    this.wrapper = document.createElement('div');
+    this.wrapper.className = 'custom-table-wrapper';
+    this.drawGrid();
+    return this.wrapper;
+  }
+
+  drawGrid() {
+    this.wrapper.innerHTML = ''; // Clear old grid
+
+    const scrollContainer = document.createElement('div');
+    scrollContainer.className = 'custom-table-scroll';
+    
+    const table = document.createElement('table');
+    table.className = 'custom-table';
+
+    // Build the rows and columns based on our data array
+    this.data.content.forEach((row, rowIndex) => {
+      const tr = document.createElement('tr');
+      row.forEach((cellText, colIndex) => {
+        const td = document.createElement('td');
+        // Show placeholder if empty
+        td.innerHTML = cellText ? cellText : '<span style="color:#bbb; font-style:italic;">Empty</span>';
+        
+        // THE MAGIC: When clicked, open the Modal instead of typing inline!
+        td.onclick = () => this.openEditor(rowIndex, colIndex);
+        tr.appendChild(td);
+      });
+      table.appendChild(tr);
+    });
+
+    scrollContainer.appendChild(table);
+    this.wrapper.appendChild(scrollContainer);
+
+    // Build the Add Row / Add Column buttons
+    const controls = document.createElement('div');
+    controls.className = 'custom-table-controls';
+
+    const addColBtn = document.createElement('button');
+    addColBtn.className = 'custom-table-btn';
+    addColBtn.innerText = '+ Column';
+    addColBtn.onclick = () => {
+      this.data.content.forEach(row => row.push('')); // Add blank cell to every row
+      this.drawGrid();
+    };
+
+    const addRowBtn = document.createElement('button');
+    addRowBtn.className = 'custom-table-btn';
+    addRowBtn.innerText = '+ Row';
+    addRowBtn.onclick = () => {
+      const newRow = new Array(this.data.content[0].length).fill(''); // Create empty row matching width
+      this.data.content.push(newRow);
+      this.drawGrid();
+    };
+
+    controls.appendChild(addRowBtn);
+    controls.appendChild(addColBtn);
+    this.wrapper.appendChild(controls);
+  }
+
+  openEditor(r, c) {
+    const modal = document.getElementById('cell-edit-modal');
+    const input = document.getElementById('cell-edit-input');
+    const saveBtn = document.getElementById('cell-save-btn');
+    const cancelBtn = document.getElementById('cell-cancel-btn');
+    const title = document.getElementById('cell-edit-title');
+
+    title.innerText = `Edit Row ${r + 1}, Column ${c + 1}`;
+    input.value = this.data.content[r][c] || ''; // Load current text
+    modal.style.display = 'flex';
+    input.focus();
+
+    // Clean up old listeners so we don't save to the wrong cell!
+    saveBtn.onclick = null; 
+    cancelBtn.onclick = null;
+
+    cancelBtn.onclick = () => { modal.style.display = 'none'; };
+    saveBtn.onclick = () => {
+      this.data.content[r][c] = input.value.trim(); // Save to data array
+      modal.style.display = 'none';
+      this.drawGrid(); // Redraw the table with new data
+    };
+  }
+
+  // Tells EditorJS how to package the data for saving/PDFs
+  save(blockContent) {
+    return { content: this.data.content };
+  }
+}
+
 // --- 3. EDITOR INITIALIZATION ---
 const editor = new EditorJS({
   holder: 'editor-container', placeholder: '',
   tools: {
     header: { class: Header, inlineToolbar: ['link', 'bold', 'italic', 'underline', 'Marker'] },
-    list: { class: EditorjsList, inlineToolbar: true }, code: { class: CodeTool }, table: { class: Table, inlineToolbar: true }, Marker: { class: Marker }, underline: { class: Underline },
+    // RIGHT HERE: Notice how we swapped out the default Table class for MobileTableTool!
+    list: { class: EditorjsList, inlineToolbar: true }, code: { class: CodeTool }, table: MobileTableTool, Marker: { class: Marker }, underline: { class: Underline },
     image: { class: ImageTool, config: { uploader: { uploadByFile(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve({ success: 1, file: { url: reader.result } }); reader.onerror = error => reject(error); }); } } } },
     audio: SimpleAudioTool, draw: SimpleDrawTool    
   },
@@ -272,21 +373,16 @@ document.getElementById('tool-audio').addEventListener('click', () => { editor.b
 document.getElementById('tool-draw').addEventListener('click', () => { editor.blocks.insert('draw'); });
 
 // --- 5. PUBLISH LOGIC (SAVE & SAVE AS) ---
-// --- 5. PUBLISH LOGIC (SAVE & SAVE AS) ---
-
-// NEW HELPER: Reads the first block of the canvas to suggest a file name
 const getDocumentTitle = (outputData) => {
   if (outputData.blocks && outputData.blocks.length > 0 && outputData.blocks[0].data && outputData.blocks[0].data.text) {
     const tmp = document.createElement('div');
     tmp.innerHTML = outputData.blocks[0].data.text;
     const text = tmp.textContent || tmp.innerText || '';
-    // Grabs the first 30 characters of the first line
     return text.substring(0, 30).trim() || "Untitled_Document";
   }
   return "Untitled_Document";
 };
 
-// Standard Save
 document.getElementById('publish-btn').addEventListener('click', () => {
   editor.save().then((outputData) => { 
     const title = getDocumentTitle(outputData);
@@ -294,7 +390,6 @@ document.getElementById('publish-btn').addEventListener('click', () => {
   });
 });
 
-// Save As
 document.getElementById('save-as-btn').addEventListener('click', () => {
   editor.save().then((outputData) => { 
     const title = getDocumentTitle(outputData);
@@ -441,24 +536,9 @@ async function loadFileFromOS(contentUrl) {
     try {
       parsedData = JSON.parse(fileText);
     } catch (e) {
-      // ATTEMPT 2: Treat it as a raw .txt file!
-      
-      // Replace standard text line-breaks (\n) with HTML line-breaks (<br>)
-      // so EditorJS keeps the entire document inside one giant paragraph block.
       const singleBlockText = fileText.replace(/\n/g, '<br>');
-      
-      const textBlocks = [
-        { 
-          type: "paragraph", 
-          data: { text: singleBlockText } 
-        }
-      ];
-      
-      parsedData = {
-        articleTitle: "Imported Text Document",
-        editorData: { blocks: textBlocks },
-        fileName: null
-      };
+      const textBlocks = [{ type: "paragraph", data: { text: singleBlockText } }];
+      parsedData = { articleTitle: "Imported Text Document", editorData: { blocks: textBlocks }, fileName: null };
     }
     
     editor.isReady.then(() => {
@@ -466,192 +546,97 @@ async function loadFileFromOS(contentUrl) {
         editor.render(parsedData.editorData);
         window.currentOpenFile = parsedData.fileName || null;
       } else {
-        // Legacy .json fallback (Removed the crashing title lookup)
         editor.render(parsedData);
         window.currentOpenFile = null; 
       }
     });
-  } catch (error) {
-    alert('System Error unpacking file: ' + error.message);
-  }
+  } catch (error) { alert('System Error unpacking file: ' + error.message); }
 }
 
-// Listen for "Cold Boot"
 if (window.Capacitor && window.Capacitor.Plugins.App) {
-  window.Capacitor.Plugins.App.getLaunchUrl().then(ret => {
-    if (ret && ret.url) loadFileFromOS(ret.url);
-  });
-
-  // Listen for "Warm Boot"
-  window.Capacitor.Plugins.App.addListener('appUrlOpen', event => {
-    if (event && event.url) loadFileFromOS(event.url);
-  });
+  window.Capacitor.Plugins.App.getLaunchUrl().then(ret => { if (ret && ret.url) loadFileFromOS(ret.url); });
+  window.Capacitor.Plugins.App.addListener('appUrlOpen', event => { if (event && event.url) loadFileFromOS(event.url); });
 }
 
 // --- 11. NATIVE VECTOR PDF EXPORT ENGINE ---
 document.getElementById('export-pdf-btn').addEventListener('click', async () => {
   const exportBtn = document.getElementById('export-pdf-btn');
   const originalText = exportBtn.innerText;
-  exportBtn.innerText = "Compiling...";
-  exportBtn.disabled = true;
+  exportBtn.innerText = "Compiling..."; exportBtn.disabled = true;
 
   try {
-    // 1. Grab data FIRST so we can figure out the title
     const outputData = await editor.save();
-    
-    // Use our new smart extractor
     const titleText = getDocumentTitle(outputData);
     const suggestedName = titleText.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     
     let customName = prompt("Name your Native PDF file:", suggestedName);
-    if (!customName) {
-      exportBtn.innerText = originalText;
-      exportBtn.disabled = false;
-      return; 
-    }
+    if (!customName) { exportBtn.innerText = originalText; exportBtn.disabled = false; return; }
     
     const fileName = customName.endsWith('.pdf') ? customName : customName + '.pdf';
-
-    // 2. Define the exact typography and styling for the native PDF
     const docDefinition = {
-      content: [
-        { text: titleText, style: 'mainTitle' } 
-      ],
+      content: [{ text: titleText, style: 'mainTitle' }],
       styles: {
         mainTitle: { fontSize: 26, bold: true, margin: [0, 0, 0, 20], color: '#111111' },
         paragraph: { fontSize: 12, margin: [0, 0, 0, 15], lineHeight: 1.5 },
-        h1: { fontSize: 20, bold: true, margin: [0, 15, 0, 10] },
-        h2: { fontSize: 18, bold: true, margin: [0, 15, 0, 10] },
-        h3: { fontSize: 16, bold: true, margin: [0, 15, 0, 10] },
+        h1: { fontSize: 20, bold: true, margin: [0, 15, 0, 10] }, h2: { fontSize: 18, bold: true, margin: [0, 15, 0, 10] }, h3: { fontSize: 16, bold: true, margin: [0, 15, 0, 10] },
         code: { font: 'Courier', fontSize: 10, background: '#f4f4f4', margin: [0, 5, 0, 15] },
         list: { margin: [0, 0, 0, 15] }
       }
     };
 
-    const cleanText = (html) => {
-      const tmp = document.createElement('div');
-      tmp.innerHTML = html;
-      return tmp.textContent || tmp.innerText || '';
-    };
+    const cleanText = (html) => { const tmp = document.createElement('div'); tmp.innerHTML = html; return tmp.textContent || tmp.innerText || ''; };
 
-    // 3. The Smart Compiler Loop
     outputData.blocks.forEach(block => {
       try {
         switch (block.type) {
-          case 'paragraph':
-            if (block.data.text) docDefinition.content.push({ text: cleanText(block.data.text), style: 'paragraph' });
-            break;
-            
-          case 'header':
-            if (block.data.text) docDefinition.content.push({ text: cleanText(block.data.text), style: 'h' + block.data.level });
-            break;
-            
+          case 'paragraph': if (block.data.text) docDefinition.content.push({ text: cleanText(block.data.text), style: 'paragraph' }); break;
+          case 'header': if (block.data.text) docDefinition.content.push({ text: cleanText(block.data.text), style: 'h' + block.data.level }); break;
           case 'list':
             if (block.data.items && block.data.items.length > 0) {
-              const items = block.data.items.map(i => {
-                const itemText = typeof i === 'object' ? (i.content || '') : i;
-                return cleanText(itemText) || ' ';
-              }); 
-              if (block.data.style === 'ordered') docDefinition.content.push({ ol: items, style: 'list' });
-              else docDefinition.content.push({ ul: items, style: 'list' });
+              const items = block.data.items.map(i => { const itemText = typeof i === 'object' ? (i.content || '') : i; return cleanText(itemText) || ' '; }); 
+              if (block.data.style === 'ordered') docDefinition.content.push({ ol: items, style: 'list' }); else docDefinition.content.push({ ul: items, style: 'list' });
             }
             break;
-            
-          case 'code':
-            if (block.data.code) docDefinition.content.push({ text: cleanText(block.data.code), style: 'code' });
-            break;
-            
-          case 'draw':
-            if (block.data.image) {
-              docDefinition.content.push({ image: block.data.image, fit: [350, 300], margin: [0, 10, 0, 15] });
-            }
-            break;
-            
+          case 'code': if (block.data.code) docDefinition.content.push({ text: cleanText(block.data.code), style: 'code' }); break;
+          case 'draw': if (block.data.image) docDefinition.content.push({ image: block.data.image, fit: [350, 300], margin: [0, 10, 0, 15] }); break;
           case 'image':
             const imgUrl = block.data.file ? block.data.file.url : block.data.url;
-            if (imgUrl && imgUrl.startsWith('data:image')) {
-                docDefinition.content.push({ image: imgUrl, fit: [450, 400], margin: [0, 10, 0, 15] });
-            } else {
-                docDefinition.content.push({ text: `[ Image linked from OS ]`, color: '#888888', italics: true, margin: [0, 5, 0, 15] });
-            }
+            if (imgUrl && imgUrl.startsWith('data:image')) docDefinition.content.push({ image: imgUrl, fit: [450, 400], margin: [0, 10, 0, 15] });
+            else docDefinition.content.push({ text: `[ Image linked from OS ]`, color: '#888888', italics: true, margin: [0, 5, 0, 15] });
             break;
-            
           case 'table':
             if (block.data.content && block.data.content.length > 0) {
               const tableBody = block.data.content.map(row => row.map(cell => cleanText(cell) || ' '));
               docDefinition.content.push({ table: { body: tableBody }, margin: [0, 10, 0, 15] });
             }
             break;
-            
           default:
-            docDefinition.content.push({ 
-              text: `[ ${block.type} attachment saved in CMS ]`, 
-              color: '#888888', 
-              italics: true, 
-              margin: [0, 5, 0, 15] 
-            });
+            docDefinition.content.push({ text: `[ ${block.type} attachment saved in CMS ]`, color: '#888888', italics: true, margin: [0, 5, 0, 15] });
         }
-      } catch (err) {
-        console.log("Safely skipped a broken block", err);
-      }
+      } catch (err) { console.log("Safely skipped a broken block", err); }
     });
 
-    // 4. Generate the actual PDF file as a Base64 string
     const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-    
     pdfDocGenerator.getBase64(async (base64Data) => {
       try {
         if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
-          await window.Capacitor.Plugins.Filesystem.writeFile({
-            path: fileName,
-            data: base64Data,
-            directory: 'DOCUMENTS'
-          });
-          
+          await window.Capacitor.Plugins.Filesystem.writeFile({ path: fileName, data: base64Data, directory: 'DOCUMENTS' });
           alert('Success! Native PDF compiled and saved to Documents:\n' + fileName);
-        } else {
-          pdfDocGenerator.download(fileName);
-        }
-      } catch (err) {
-        alert('Android OS Write Error: ' + err.message);
-      }
-      
-      exportBtn.innerText = originalText;
-      exportBtn.disabled = false;
+        } else { pdfDocGenerator.download(fileName); }
+      } catch (err) { alert('Android OS Write Error: ' + err.message); }
+      exportBtn.innerText = originalText; exportBtn.disabled = false;
     });
-    
-  } catch (error) {
-    alert("System Error compiling PDF: " + error.message);
-    exportBtn.innerText = originalText;
-    exportBtn.disabled = false;
-  }
+  } catch (error) { alert("System Error compiling PDF: " + error.message); exportBtn.innerText = originalText; exportBtn.disabled = false; }
 });
+
 // --- 12. GHOST UX: PRECISION SLIDER ISOLATION ---
 window.addEventListener('load', () => {
   const allSliders = document.querySelectorAll('input[type="range"]');
-  
   allSliders.forEach(slider => {
-    // Find the specific container holding this exact slider
     const parentRow = slider.closest('.typo-row');
-    
-    // When touched: Trigger isolation mode
-    const startSlide = () => {
-      document.body.classList.add('is-sliding');
-      if (parentRow) parentRow.classList.add('active-slider-row');
-    };
-    
-    // When released: Restore the full menu
-    const stopSlide = () => {
-      document.body.classList.remove('is-sliding');
-      if (parentRow) parentRow.classList.remove('active-slider-row');
-    };
-
-    // Wire up the touch and mouse sensors
-    slider.addEventListener('touchstart', startSlide, {passive: true});
-    slider.addEventListener('mousedown', startSlide);
-    
-    slider.addEventListener('touchend', stopSlide);
-    slider.addEventListener('mouseup', stopSlide);
-    slider.addEventListener('touchcancel', stopSlide);
+    const startSlide = () => { document.body.classList.add('is-sliding'); if (parentRow) parentRow.classList.add('active-slider-row'); };
+    const stopSlide = () => { document.body.classList.remove('is-sliding'); if (parentRow) parentRow.classList.remove('active-slider-row'); };
+    slider.addEventListener('touchstart', startSlide, {passive: true}); slider.addEventListener('mousedown', startSlide);
+    slider.addEventListener('touchend', stopSlide); slider.addEventListener('mouseup', stopSlide); slider.addEventListener('touchcancel', stopSlide);
   });
 });

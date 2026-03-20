@@ -586,30 +586,65 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
 
     const cleanText = (html) => { const tmp = document.createElement('div'); tmp.innerHTML = html; return tmp.textContent || tmp.innerText || ''; };
 
+  // 3. The Smart Compiler Loop (Upgraded for Full-Width Scaling)
     outputData.blocks.forEach(block => {
       try {
         switch (block.type) {
-          case 'paragraph': if (block.data.text) docDefinition.content.push({ text: cleanText(block.data.text), style: 'paragraph' }); break;
-          case 'header': if (block.data.text) docDefinition.content.push({ text: cleanText(block.data.text), style: 'h' + block.data.level }); break;
+          case 'paragraph': 
+            if (block.data.text) docDefinition.content.push({ text: cleanText(block.data.text), style: 'paragraph' }); 
+            break;
+            
+          case 'header': 
+            if (block.data.text) docDefinition.content.push({ text: cleanText(block.data.text), style: 'h' + block.data.level }); 
+            break;
+            
           case 'list':
             if (block.data.items && block.data.items.length > 0) {
               const items = block.data.items.map(i => { const itemText = typeof i === 'object' ? (i.content || '') : i; return cleanText(itemText) || ' '; }); 
-              if (block.data.style === 'ordered') docDefinition.content.push({ ol: items, style: 'list' }); else docDefinition.content.push({ ul: items, style: 'list' });
+              if (block.data.style === 'ordered') docDefinition.content.push({ ol: items, style: 'list' }); 
+              else docDefinition.content.push({ ul: items, style: 'list' });
             }
             break;
-          case 'code': if (block.data.code) docDefinition.content.push({ text: cleanText(block.data.code), style: 'code' }); break;
-          case 'draw': if (block.data.image) docDefinition.content.push({ image: block.data.image, fit: [350, 300], margin: [0, 10, 0, 15] }); break;
+            
+          case 'code': 
+            if (block.data.code) docDefinition.content.push({ text: cleanText(block.data.code), style: 'code' }); 
+            break;
+            
+          case 'draw': 
+            if (block.data.image) {
+              // Force drawing to fill the A4 page width (515 points)
+              docDefinition.content.push({ image: block.data.image, width: 515, margin: [0, 10, 0, 15] }); 
+            }
+            break;
+            
           case 'image':
             const imgUrl = block.data.file ? block.data.file.url : block.data.url;
-            if (imgUrl && imgUrl.startsWith('data:image')) docDefinition.content.push({ image: imgUrl, fit: [450, 400], margin: [0, 10, 0, 15] });
-            else docDefinition.content.push({ text: `[ Image linked from OS ]`, color: '#888888', italics: true, margin: [0, 5, 0, 15] });
+            if (imgUrl && imgUrl.startsWith('data:image')) {
+              // Force images to fill the A4 page width (515 points)
+              docDefinition.content.push({ image: imgUrl, width: 515, margin: [0, 10, 0, 15] });
+            } else {
+              docDefinition.content.push({ text: `[ Image linked from OS ]`, color: '#888888', italics: true, margin: [0, 5, 0, 15] });
+            }
             break;
+            
           case 'table':
             if (block.data.content && block.data.content.length > 0) {
               const tableBody = block.data.content.map(row => row.map(cell => cleanText(cell) || ' '));
-              docDefinition.content.push({ table: { body: tableBody }, margin: [0, 10, 0, 15] });
+              
+              // THE MAGIC: Create an array of '*' equal to the number of columns to force them to stretch 100%
+              const colWidths = Array(tableBody[0].length).fill('*');
+              
+              docDefinition.content.push({ 
+                table: { 
+                  widths: colWidths, 
+                  body: tableBody 
+                }, 
+                layout: 'lightHorizontalLines', // Gives the PDF table a much cleaner, premium look
+                margin: [0, 10, 0, 15] 
+              });
             }
             break;
+            
           default:
             docDefinition.content.push({ text: `[ ${block.type} attachment saved in CMS ]`, color: '#888888', italics: true, margin: [0, 5, 0, 15] });
         }

@@ -22,25 +22,33 @@ const ipcRenderer = {
   send: (channel, payload) => {
     if (channel === 'save-article') {
       
-      const safeTitle = payload.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      const fileName = safeTitle + '.json';
+      // Generate a suggested default name from the title
+      const suggestedName = payload.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      
+      // 1. Intercept and ask the user for a custom name
+      let customName = prompt("Name your save file (it will be saved to your Documents folder):", suggestedName);
+      
+      // If the user clicks "Cancel" on the prompt, abort the save entirely
+      if (customName === null) return; 
+      
+      // Ensure the file ends with .json
+      const fileName = customName.endsWith('.json') ? customName : customName + '.json';
       const fileContent = JSON.stringify(payload.content, null, 2);
 
       try {
-        // 1. Check if we are running inside the Android Native Container
         if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
           window.Capacitor.Plugins.Filesystem.writeFile({
             path: fileName,
             data: fileContent,
-            directory: 'DOCUMENTS', // Saves directly to Android/Documents
+            directory: 'DOCUMENTS', 
             encoding: 'utf8'
           }).then(() => {
-            alert('Hardware Sync Complete!\nArticle saved to your phone\'s Documents folder as:\n' + fileName);
+            alert('Hardware Sync Complete!\nSaved as: ' + fileName + '\nLocation: Documents Folder');
           }).catch((err) => {
             alert('Android OS Write Error: ' + err.message);
           });
         } else {
-          // 2. Fallback if you are testing in a standard desktop browser
+          // Desktop Fallback
           const a = document.createElement('a');
           a.href = "data:text/json;charset=utf-8," + encodeURIComponent(fileContent);
           a.download = fileName;
@@ -347,17 +355,24 @@ if (window.Capacitor && window.Capacitor.Plugins.App) {
 // --- 11. EXPORT TO PDF ENGINE ---
 document.getElementById('export-pdf-btn').addEventListener('click', async () => {
   const titleText = document.getElementById('article-title').innerText.trim() || 'Untitled_Article';
-  const safeTitle = titleText.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  const fileName = safeTitle + '.pdf';
+  const suggestedName = titleText.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  
+  // 1. Intercept and ask the user for a custom name
+  let customName = prompt("Name your PDF file (it will be saved to your Documents folder):", suggestedName);
+  
+  // If the user clicks "Cancel", abort
+  if (customName === null) return; 
+  
+  const fileName = customName.endsWith('.pdf') ? customName : customName + '.pdf';
 
   // Target the entire white canvas (Title + Editor blocks)
   const element = document.querySelector('.document-container');
   
   const opt = {
-    margin:       [15, 15, 15, 15], // Top, Right, Bottom, Left margins in mm
+    margin:       [15, 15, 15, 15], 
     filename:     fileName,
     image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true }, // High-res scaling
+    html2canvas:  { scale: 2, useCORS: true }, 
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
@@ -367,23 +382,18 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
   exportBtn.disabled = true;
 
   try {
-    // 1. Tell html2pdf to generate the file as a raw data string instead of a web download
     const pdfDataUri = await html2pdf().set(opt).from(element).outputPdf('datauristring');
-    
-    // 2. Strip the header to get the pure Base64 binary payload
     const base64Data = pdfDataUri.split(',')[1];
 
-    // 3. Command the Android Hardware to write the PDF
     if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
       await window.Capacitor.Plugins.Filesystem.writeFile({
         path: fileName,
         data: base64Data,
         directory: 'DOCUMENTS' 
-        // Note: No 'encoding' parameter here tells Capacitor this is binary data, not text
       });
-      alert('Success! PDF Exported to your Android Documents folder.');
+      alert('Success! PDF saved as ' + fileName + ' in your Android Documents folder.');
     } else {
-      // Fallback for Desktop testing
+      // Desktop Fallback
       html2pdf().set(opt).from(element).save();
     }
   } catch (error) {

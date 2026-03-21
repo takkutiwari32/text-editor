@@ -150,7 +150,6 @@ class SimpleAudioTool {
   save(blockContent) { const audio = blockContent.querySelector('audio'); return { url: audio ? audio.src : '' }; }
 }
 
-// --- 2. CUSTOM DRAWING ENGINE ---
 // --- 2. CUSTOM DRAWING ENGINE (FULL-SCREEN MODAL VERSION) ---
 class SimpleDrawTool {
   static get toolbox() { return { title: 'Draw', icon: '🖍️' }; }
@@ -165,39 +164,46 @@ class SimpleDrawTool {
   render() {
     this.wrapper = document.createElement('div');
     this.wrapper.style.width = '100%';
-    this.wrapper.style.padding = '20px';
     this.wrapper.style.textAlign = 'center';
-    this.wrapper.style.border = '2px dashed #30363d';
-    this.wrapper.style.borderRadius = '8px';
     this.wrapper.style.cursor = 'pointer';
-    this.wrapper.style.background = '#161b22';
 
-    // Image preview if they already drew something
+    // The Image (Hidden until you draw something)
     this.imagePreview = document.createElement('img');
-    this.imagePreview.style.maxWidth = '100%';
-    this.imagePreview.style.maxHeight = '300px';
+    this.imagePreview.style.width = '100%'; 
+    this.imagePreview.style.height = 'auto'; 
     this.imagePreview.style.display = this.data.image ? 'block' : 'none';
-    this.imagePreview.style.margin = '0 auto';
     this.imagePreview.style.borderRadius = '4px';
+
+    // The Placeholder (Visible ONLY when there is no drawing)
+    this.placeholder = document.createElement('div');
+    this.placeholder.innerHTML = '🖍️ Tap to Draw';
+    this.placeholder.style.padding = '40px';
+    this.placeholder.style.background = '#161b22';
+    this.placeholder.style.border = '2px dashed #30363d';
+    this.placeholder.style.borderRadius = '8px';
+    this.placeholder.style.color = '#58a6ff';
+    this.placeholder.style.fontWeight = 'bold';
+    this.placeholder.style.display = this.data.image ? 'none' : 'block';
+
     if (this.data.image) this.imagePreview.src = this.data.image;
 
-    const hint = document.createElement('div');
-    hint.className = 'draw-hint';
-    hint.innerText = this.data.image ? "Tap to edit drawing 🖍️" : "Tap to open Drawing Canvas 🖍️";
-    hint.style.color = '#58a6ff';
-    hint.style.fontWeight = 'bold';
-    hint.style.marginTop = this.data.image ? '15px' : '0';
-
     this.wrapper.appendChild(this.imagePreview);
-    this.wrapper.appendChild(hint);
+    this.wrapper.appendChild(this.placeholder);
 
     // Open full screen on tap
     this.wrapper.addEventListener('click', () => { this.openFullScreenEditor(); });
 
+    // UX UPGRADE: Automatically open the modal if it's a brand new, empty block!
+    if (!this.data.image) {
+      setTimeout(() => { this.openFullScreenEditor(); }, 50);
+    }
+
     return this.wrapper;
   }
 
+
   // 2. The Full-Screen Logic
+  // FIX 2 & 3: Handles high-DPI scaling (graininess), eraser icon, and larger color grid.
   openFullScreenEditor() {
     const modal = document.getElementById('draw-modal');
     const container = document.getElementById('draw-canvas-container');
@@ -206,18 +212,30 @@ class SimpleDrawTool {
     const saveBtn = document.getElementById('draw-save-btn');
     const toolbar = document.getElementById('draw-bottom-toolbar');
 
-    // Show modal first so container has actual dimensions
-    modal.style.display = 'flex';
+    // --- HIGH-DPI CANVAS SCALING (FIX FOR GRAININESS) ---
+    // Physical pixels vs CSS pixels on mobile screens
+    const ratio = window.devicePixelRatio || 1;
 
     // Clone canvas to wipe old event listeners, preventing memory leaks and double-drawing
     const canvas = oldCanvas.cloneNode(true);
     oldCanvas.parentNode.replaceChild(canvas, oldCanvas);
 
-    // Match physical pixels to screen size
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
+    // Show modal first so container has actual dimensions
+    modal.style.display = 'flex';
+
+    // 1. Set the physical pixels resolution of the canvas itself
+    canvas.width = container.clientWidth * ratio;
+    canvas.height = container.clientHeight * ratio;
+
+    // 2. Scale the CSS size of the canvas element back to match the container
+    canvas.style.width = container.clientWidth + 'px';
+    canvas.style.height = container.clientHeight + 'px';
 
     const ctx = canvas.getContext('2d');
+    
+    // 3. Scale all drawing context operations by the ratio
+    ctx.scale(ratio, ratio);
+    
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
@@ -228,49 +246,91 @@ class SimpleDrawTool {
     // Load existing drawing if we have one
     if (this.data.image) {
       const img = new Image();
-      img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      img.onload = () => ctx.drawImage(img, 0, 0, container.clientWidth, container.clientHeight);
       img.src = this.data.image;
     }
 
-    // Build Bottom Toolbar Colors (Black, Red, Blue, Green, Yellow, Eraser)
+    // Define Pen and Eraser settings
+    const PEN_WIDTH = 4;
+    const ERASER_WIDTH = 25;
+
+    // Build Bottom Toolbar Colors (Expanded for FIX 3)
+    // Curated professional palette: Blacks, Reds, Blues, Greens, Yellows, Purples, Greys.
     toolbar.innerHTML = '';
-    const colors = ['#000000', '#d32f2f', '#1976d2', '#388e3c', '#fbc02d', '#ffffff'];
+    const colors = [
+        '#000000', '#24292e', '#4f5660', '#6e7781', '#959da5', // Blacks & Greys
+        '#d32f2f', '#ff5252', '#ff8a80', // Reds
+        '#1976d2', '#2196f3', '#64b5f6', // Blues
+        '#388e3c', '#4caf50', '#81c784', // Greens
+        '#fbc02d', '#fff176', // Yellows
+        '#7b1fa2', '#9c27b0', '#ba68c8' // Purples
+    ];
     let activeBtn = null;
     
     // Default to Black pen
     ctx.strokeStyle = colors[0]; 
-    ctx.lineWidth = 4;
+    ctx.lineWidth = PEN_WIDTH;
 
     colors.forEach((color, index) => {
       const btn = document.createElement('div');
-      btn.style.width = '35px'; btn.style.height = '35px'; 
+      btn.className = 'color-swatch-btn'; // Use class for scaling
+      btn.style.width = '24px'; btn.style.height = '24px'; // Smaller for grid
       btn.style.borderRadius = '50%';
       btn.style.backgroundColor = color; 
       btn.style.cursor = 'pointer';
-      
-      // Give the white eraser a dark border
-      btn.style.border = color === '#ffffff' ? '2px solid #ccc' : '2px solid transparent';
+      btn.style.border = '2px solid transparent';
+      btn.style.transition = 'transform 0.1s ease';
 
-      if (index === 0) { btn.style.boxShadow = '0 0 0 3px #58a6ff'; activeBtn = btn; }
+      if (index === 0) { btn.style.boxShadow = '0 0 0 2px #58a6ff'; btn.style.transform = 'scale(1.1)'; activeBtn = btn; }
 
       btn.onclick = () => {
         ctx.strokeStyle = color;
-        // Make the eraser thicker than the pens
-        ctx.lineWidth = color === '#ffffff' ? 25 : 4; 
+        ctx.lineWidth = PEN_WIDTH; 
         
-        if (activeBtn) activeBtn.style.boxShadow = 'none';
-        btn.style.boxShadow = '0 0 0 3px #58a6ff';
+        if (activeBtn) { activeBtn.style.boxShadow = 'none'; activeBtn.style.transform = 'scale(1)'; }
+        btn.style.boxShadow = '0 0 0 2px #58a6ff';
+        btn.style.transform = 'scale(1.1)';
         activeBtn = btn;
       };
       toolbar.appendChild(btn);
     });
 
-    // Drawing Logic
+    // --- ERASER ICON BUTTON (FIX 2) ---
+    const eraserBtn = document.createElement('div');
+    eraserBtn.className = 'draw-icon-btn';
+    eraserBtn.style.cursor = 'pointer';
+    eraserBtn.style.display = 'flex';
+    eraserBtn.style.justifyContent = 'center';
+    eraserBtn.style.alignItems = 'center';
+    eraserBtn.style.width = '28px'; eraserBtn.style.height = '28px';
+    eraserBtn.style.borderRadius = '6px';
+    eraserBtn.style.border = '2px solid transparent';
+    eraserBtn.title = "Eraser";
+
+    // Defining the actual eraser SVG (A illustrative clean eraser icon)
+    eraserBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b949e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-eraser"><path d="M20 20H7L3 16c-1.5-1.5-1.5-3.5 0-5L13 1 22 10l-10 10V10"></path></svg>`;
+
+    eraserBtn.onclick = () => {
+        // Highlighting logic
+        if (activeBtn) { activeBtn.style.boxShadow = 'none'; activeBtn.style.transform = 'scale(1)'; }
+        eraserBtn.style.boxShadow = '0 0 0 2px #ff7b72'; // Reddish highlight
+        eraserBtn.style.borderColor = '#ff7b72'; // Reddish border highlight
+        activeBtn = eraserBtn; // Track this as the active element
+
+        // Logic logic
+        ctx.strokeStyle = '#ffffff'; // Drawing white acts as an eraser
+        ctx.lineWidth = ERASER_WIDTH; 
+    };
+    toolbar.appendChild(eraserBtn);
+
+
+    // --- PRECISION TOUCH COORDINATES LOGIC ---
     let isDrawing = false;
     const getPos = (e) => {
       const rect = canvas.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      // CRITICAL: Return CSS coordinates, not physical pixels. The scaled context will handle the conversion.
       return { x: clientX - rect.left, y: clientY - rect.top };
     };
 
@@ -278,24 +338,24 @@ class SimpleDrawTool {
     const draw = (e) => { if (!isDrawing) return; e.preventDefault(); const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); };
     const stopDraw = () => { isDrawing = false; ctx.closePath(); };
 
+    // Standard bindings
     canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDraw); canvas.addEventListener('mouseout', stopDraw);
+    
+    // Non-passive binding is required for e.preventDefault() to block document scrolling while drawing
     canvas.addEventListener('touchstart', startDraw, { passive: false }); canvas.addEventListener('touchmove', draw, { passive: false }); canvas.addEventListener('touchend', stopDraw);
 
     // Close logic
     cancelBtn.onclick = () => { modal.style.display = 'none'; };
     
-    // Save logic
+  // Save logic (at the bottom of openFullScreenEditor)
     saveBtn.onclick = () => {
       this.data.image = canvas.toDataURL('image/png');
       this.imagePreview.src = this.data.image;
-      this.imagePreview.style.display = 'block';
       
-      const hintObj = this.wrapper.querySelector('.draw-hint');
-      if(hintObj) {
-          hintObj.innerText = "Tap to edit drawing 🖍️";
-          hintObj.style.marginTop = '15px';
-      }
+      // Hide the placeholder and show the raw image flush to the edges!
+      this.imagePreview.style.display = 'block';
+      this.placeholder.style.display = 'none'; 
       
       // Trigger EditorJS change event
       this.wrapper.dispatchEvent(new Event('input', { bubbles: true }));
@@ -307,6 +367,7 @@ class SimpleDrawTool {
     return { image: this.data.image || '' }; 
   }
 }
+
 
 // --- 2.5 CUSTOM MOBILE TABLE ENGINE ---
 class MobileTableTool {

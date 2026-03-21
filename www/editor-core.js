@@ -151,97 +151,161 @@ class SimpleAudioTool {
 }
 
 // --- 2. CUSTOM DRAWING ENGINE ---
+// --- 2. CUSTOM DRAWING ENGINE (FULL-SCREEN MODAL VERSION) ---
 class SimpleDrawTool {
   static get toolbox() { return { title: 'Draw', icon: '🖍️' }; }
-  constructor({data}) { this.data = data; }
+  
+  constructor({data}) { 
+    this.data = data || {}; 
+    this.wrapper = null;
+    this.imagePreview = null;
+  }
+
+  // 1. Render the placeholder block in the editor
   render() {
-    const wrapper = document.createElement('div');
-    wrapper.style.width = '100%';
-    wrapper.style.overflow = 'hidden'; 
+    this.wrapper = document.createElement('div');
+    this.wrapper.style.width = '100%';
+    this.wrapper.style.padding = '20px';
+    this.wrapper.style.textAlign = 'center';
+    this.wrapper.style.border = '2px dashed #30363d';
+    this.wrapper.style.borderRadius = '8px';
+    this.wrapper.style.cursor = 'pointer';
+    this.wrapper.style.background = '#161b22';
 
-    // --- NEW COLOR GRID UI ---
-    const toolbar = document.createElement('div');
-    toolbar.style.display = 'flex';
-    toolbar.style.gap = '12px';
-    toolbar.style.padding = '10px 0';
-    toolbar.style.alignItems = 'center';
+    // Image preview if they already drew something
+    this.imagePreview = document.createElement('img');
+    this.imagePreview.style.maxWidth = '100%';
+    this.imagePreview.style.maxHeight = '300px';
+    this.imagePreview.style.display = this.data.image ? 'block' : 'none';
+    this.imagePreview.style.margin = '0 auto';
+    this.imagePreview.style.borderRadius = '4px';
+    if (this.data.image) this.imagePreview.src = this.data.image;
 
-    // The Color Palette (Red, Blue, Green, Yellow, Black, White/Eraser)
-    const colors = ['#d32f2f', '#1976d2', '#388e3c', '#fbc02d', '#000000', '#ffffff']; 
-    let activeColorBtn = null;
+    const hint = document.createElement('div');
+    hint.className = 'draw-hint';
+    hint.innerText = this.data.image ? "Tap to edit drawing 🖍️" : "Tap to open Drawing Canvas 🖍️";
+    hint.style.color = '#58a6ff';
+    hint.style.fontWeight = 'bold';
+    hint.style.marginTop = this.data.image ? '15px' : '0';
 
-    const canvas = document.createElement('canvas'); 
-    canvas.width = 800; canvas.height = 400; 
-    canvas.style.width = '100%'; canvas.style.height = 'auto'; 
-    canvas.style.border = '2px dashed #30363d'; 
-    canvas.style.background = '#ffffff'; 
-    canvas.style.cursor = 'crosshair'; 
-    canvas.style.borderRadius = '8px';
-    canvas.style.touchAction = 'none'; 
+    this.wrapper.appendChild(this.imagePreview);
+    this.wrapper.appendChild(hint);
 
-    const ctx = canvas.getContext('2d'); 
-    ctx.lineWidth = 4; ctx.lineCap = 'round'; 
-    ctx.strokeStyle = colors[0]; // Default to Red
+    // Open full screen on tap
+    this.wrapper.addEventListener('click', () => { this.openFullScreenEditor(); });
 
-    // Build the interactive color buttons
+    return this.wrapper;
+  }
+
+  // 2. The Full-Screen Logic
+  openFullScreenEditor() {
+    const modal = document.getElementById('draw-modal');
+    const container = document.getElementById('draw-canvas-container');
+    const oldCanvas = document.getElementById('fullscreen-draw-canvas');
+    const cancelBtn = document.getElementById('draw-cancel-btn');
+    const saveBtn = document.getElementById('draw-save-btn');
+    const toolbar = document.getElementById('draw-bottom-toolbar');
+
+    // Show modal first so container has actual dimensions
+    modal.style.display = 'flex';
+
+    // Clone canvas to wipe old event listeners, preventing memory leaks and double-drawing
+    const canvas = oldCanvas.cloneNode(true);
+    oldCanvas.parentNode.replaceChild(canvas, oldCanvas);
+
+    // Match physical pixels to screen size
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+
+    const ctx = canvas.getContext('2d');
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Paint background white
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Load existing drawing if we have one
+    if (this.data.image) {
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      img.src = this.data.image;
+    }
+
+    // Build Bottom Toolbar Colors (Black, Red, Blue, Green, Yellow, Eraser)
+    toolbar.innerHTML = '';
+    const colors = ['#000000', '#d32f2f', '#1976d2', '#388e3c', '#fbc02d', '#ffffff'];
+    let activeBtn = null;
+    
+    // Default to Black pen
+    ctx.strokeStyle = colors[0]; 
+    ctx.lineWidth = 4;
+
     colors.forEach((color, index) => {
-      const colorBtn = document.createElement('div');
-      colorBtn.style.width = '24px'; colorBtn.style.height = '24px';
-      colorBtn.style.borderRadius = '50%'; 
-      colorBtn.style.backgroundColor = color;
-      colorBtn.style.cursor = 'pointer';
-      colorBtn.style.border = '2px solid transparent';
+      const btn = document.createElement('div');
+      btn.style.width = '35px'; btn.style.height = '35px'; 
+      btn.style.borderRadius = '50%';
+      btn.style.backgroundColor = color; 
+      btn.style.cursor = 'pointer';
       
-      // Give the white "eraser" a grey border so it doesn't vanish on white backgrounds
-      if (color === '#ffffff') colorBtn.style.border = '2px solid #e1e4e8'; 
+      // Give the white eraser a dark border
+      btn.style.border = color === '#ffffff' ? '2px solid #ccc' : '2px solid transparent';
 
-      // Highlight the first color by default
-      if (index === 0) {
-        colorBtn.style.boxShadow = '0 0 0 2px #58a6ff';
-        activeColorBtn = colorBtn;
-      }
+      if (index === 0) { btn.style.boxShadow = '0 0 0 3px #58a6ff'; activeBtn = btn; }
 
-      // Wire up the tap to change ink color
-      colorBtn.addEventListener('click', () => {
+      btn.onclick = () => {
         ctx.strokeStyle = color;
-        if (activeColorBtn) activeColorBtn.style.boxShadow = 'none'; // Remove old glow
-        colorBtn.style.boxShadow = '0 0 0 2px #58a6ff'; // Add new glow
-        activeColorBtn = colorBtn;
-      });
-      toolbar.appendChild(colorBtn);
+        // Make the eraser thicker than the pens
+        ctx.lineWidth = color === '#ffffff' ? 25 : 4; 
+        
+        if (activeBtn) activeBtn.style.boxShadow = 'none';
+        btn.style.boxShadow = '0 0 0 3px #58a6ff';
+        activeBtn = btn;
+      };
+      toolbar.appendChild(btn);
     });
 
-    if (this.data && this.data.image) { 
-      const img = new Image(); img.src = this.data.image; 
-      img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height); 
-    }
-    
+    // Drawing Logic
     let isDrawing = false;
     const getPos = (e) => {
       const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+      return { x: clientX - rect.left, y: clientY - rect.top };
     };
 
     const startDraw = (e) => { isDrawing = true; const pos = getPos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); };
-    const draw = (e) => { if(!isDrawing) return; e.preventDefault(); const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); };
-    const stopDraw = () => { isDrawing = false; };
+    const draw = (e) => { if (!isDrawing) return; e.preventDefault(); const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); };
+    const stopDraw = () => { isDrawing = false; ctx.closePath(); };
 
     canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDraw); canvas.addEventListener('mouseout', stopDraw);
     canvas.addEventListener('touchstart', startDraw, { passive: false }); canvas.addEventListener('touchmove', draw, { passive: false }); canvas.addEventListener('touchend', stopDraw);
 
-    const hint = document.createElement('div'); hint.innerText = "Select a color. Swipe to draw. (White acts as an eraser)"; hint.style.fontSize = "0.8rem"; hint.style.color = "#8b949e"; hint.style.marginTop = "5px";
+    // Close logic
+    cancelBtn.onclick = () => { modal.style.display = 'none'; };
     
-    wrapper.appendChild(toolbar);
-    wrapper.appendChild(canvas); 
-    wrapper.appendChild(hint); 
-    return wrapper;
+    // Save logic
+    saveBtn.onclick = () => {
+      this.data.image = canvas.toDataURL('image/png');
+      this.imagePreview.src = this.data.image;
+      this.imagePreview.style.display = 'block';
+      
+      const hintObj = this.wrapper.querySelector('.draw-hint');
+      if(hintObj) {
+          hintObj.innerText = "Tap to edit drawing 🖍️";
+          hintObj.style.marginTop = '15px';
+      }
+      
+      // Trigger EditorJS change event
+      this.wrapper.dispatchEvent(new Event('input', { bubbles: true }));
+      modal.style.display = 'none';
+    };
   }
-  save(blockContent) { const canvas = blockContent.querySelector('canvas'); return { image: canvas.toDataURL('image/png') }; }
+
+  save(blockContent) { 
+    return { image: this.data.image || '' }; 
+  }
 }
 
 // --- 2.5 CUSTOM MOBILE TABLE ENGINE ---

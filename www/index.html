@@ -311,6 +311,25 @@
         });
     }
   </script>
+<!-- NEW: FULL-SCREEN DRAWING MODAL -->
+  <div id="draw-modal" class="modal-overlay" style="z-index: 10005; flex-direction: column; background: var(--bg-color);">
+    
+    <!-- Top Bar (Similar to Image 1) -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #0d1117; border-bottom: 1px solid #30363d; width: 100%; box-sizing: border-box;">
+      <button id="draw-cancel-btn" style="background: none; border: none; color: var(--text-main); font-size: 1.5rem; cursor: pointer;">←</button>
+      <div style="color: var(--text-main); font-weight: bold;">Canvas</div>
+      <button id="draw-save-btn" style="background: none; border: none; color: #58a6ff; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Done</button>
+    </div>
 
+    <!-- The Blank Canvas Area -->
+    <div id="draw-canvas-container" style="flex: 1; width: 100%; background: #ffffff; position: relative; overflow: hidden;">
+      <canvas id="fullscreen-draw-canvas" style="position: absolute; top: 0; left: 0; touch-action: none;"></canvas>
+    </div>
+
+    <!-- Bottom Toolbar (Pens & Eraser) -->
+    <div id="draw-bottom-toolbar" style="display: flex; justify-content: center; gap: 20px; padding: 20px; background: #0d1117; border-top: 1px solid #30363d; width: 100%; box-sizing: border-box;">
+      <!-- Colors injected by JS -->
+    </div>
+  </div>
 </body>
 </html>

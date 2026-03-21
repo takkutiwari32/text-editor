@@ -897,7 +897,7 @@ async function launchPdfAnnotator(base64Data, filePath) {
   }
 }
 
-// GUI Zoom Buttons
+// 1. The Helper Function to Apply Zoom Math
 async function applyPdfZoom(newZoom) {
     activePdf.zoomLevel = Math.max(1.0, Math.min(newZoom, 5.0));
     const spinnerOverlay = document.getElementById('pdf-loading-spinner');
@@ -917,9 +917,6 @@ async function applyPdfZoom(newZoom) {
         spinnerOverlay.style.backgroundColor = 'rgba(16, 20, 26, 0.85)';
     }
 }
-
-document.getElementById('pdf-zoom-in-btn').addEventListener('click', () => applyPdfZoom(activePdf.zoomLevel + 0.5));
-document.getElementById('pdf-zoom-out-btn').addEventListener('click', () => applyPdfZoom(activePdf.zoomLevel - 0.5));
 
 
 async function renderPdfPage(num) {
@@ -991,6 +988,10 @@ async function renderPdfPage(num) {
           viewport: cssViewport,
           textDivs: []
       }).promise;
+      
+      // THE FIX: Provide an explicit space character to bridge the selection
+      const spans = textLayerDiv.querySelectorAll('span');
+      spans.forEach(span => { span.innerHTML += ' '; });
   } catch (e) {
       console.warn("Failed to extract PDF text layer: ", e);
   }
@@ -1016,10 +1017,7 @@ async function renderPdfPage(num) {
   
   // Snap the wrapper and bounds to match the new crisp image perfectly
   const wrapper = document.getElementById('pdf-transform-wrapper');
-  const bounds = document.getElementById('pdf-scroll-bounds');
   wrapper.style.transform = `scale(1)`;
-  bounds.style.width = cssViewport.width + 'px';
-  bounds.style.height = cssViewport.height + 'px';
 }
 
 function saveCurrentPageAnnotation() {

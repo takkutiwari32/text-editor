@@ -3,8 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>Tech Blog Pro CMS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <!-- The Viewport tag that we will manipulate via Javascript to allow zooming -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" id="viewport-meta" />
+  
   <link rel="stylesheet" href="style.css">
+  <!-- NEW: Mozilla's official CSS to format the invisible Text Layer for highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
+  
   <style>
     :root { --editor-width: 80%; }
     .ce-block__content, .ce-toolbar__content { max-width: var(--editor-width) !important; transition: max-width 0.1s ease-out; }
@@ -272,9 +277,9 @@
 
   <!-- PDF ANNOTATOR MODAL -->
   <div id="pdf-modal" class="modal-overlay" style="z-index: 10010; flex-direction: column; background: var(--bg-color);">
-    <!-- Top Bar with Pagination -->
+    <!-- Top Bar with Pagination (Arrow Removed) -->
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #0d1117; border-bottom: 1px solid #30363d; width: 100%; box-sizing: border-box;">
-      <button id="pdf-cancel-btn" style="background: none; border: none; color: var(--text-main); font-size: 1.5rem; cursor: pointer;">←</button>
+      <button id="pdf-cancel-btn" style="background: none; border: none; color: var(--text-muted); font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;">Close</button>
       <div style="display: flex; align-items: center; gap: 15px;">
         <button id="pdf-prev-btn" class="icon-btn">◀</button>
         <div style="color: var(--text-main); font-weight: bold; font-size: 0.9rem;">
@@ -288,7 +293,7 @@
     <!-- The Double Canvas Area (Scrolling Container) -->
     <div id="pdf-canvas-container" style="flex: 1; width: 100%; background: #050505; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 20px; box-sizing: border-box; position: relative;">
       
-      <!-- FIX: Modern Loading Spinner -->
+      <!-- Modern Loading Spinner -->
       <div id="pdf-loading-spinner" class="modern-spinner-overlay" style="display: none;">
         <div class="modern-spinner"></div>
         <div id="pdf-spinner-text" class="modern-spinner-text">Reading File...</div>
@@ -297,6 +302,10 @@
       <div style="position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
         <!-- Base Layer: The PDF Page -->
         <canvas id="pdf-base-canvas" style="display: block;"></canvas>
+        
+        <!-- NEW: The Invisible Text Layer for Highlighting & Copying -->
+        <div id="pdf-text-layer" class="textLayer" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; line-height: 1.0;"></div>
+        
         <!-- Glass Layer: The Drawing Canvas -->
         <canvas id="pdf-glass-canvas" style="position: absolute; top: 0; left: 0; touch-action: none; cursor: crosshair;"></canvas>
       </div>

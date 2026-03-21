@@ -329,13 +329,21 @@ class SimpleDrawTool {
     };
 
     const startDraw = (e) => { 
+        if (e.touches && e.touches.length > 1) { isDrawing = false; return; }
         isDrawing = true; 
         const pos = getPos(e); 
         ctx.beginPath(); 
         ctx.moveTo(pos.x, pos.y); 
         if(optionsDrawer.style.display === 'flex') optionsDrawer.style.display = 'none';
     };
-    const draw = (e) => { if (!isDrawing) return; e.preventDefault(); const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); };
+    const draw = (e) => { 
+        if (!isDrawing) return; 
+        if (e.touches && e.touches.length > 1) { isDrawing = false; ctx.closePath(); return; }
+        e.preventDefault(); 
+        const pos = getPos(e); 
+        ctx.lineTo(pos.x, pos.y); 
+        ctx.stroke(); 
+    };
     const stopDraw = () => { isDrawing = false; ctx.closePath(); };
 
     canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mousemove', draw);
@@ -604,7 +612,6 @@ if (lineHeightSlider && lineHeightDisplay) { lineHeightSlider.addEventListener('
 // --- 10. THE OS INTENT INTERCEPTOR (FILE READER) ---
 async function loadFileFromOS(contentUrl) {
   try {
-    // 1. If it's a PDF, intercept it immediately!
     if (contentUrl.toLowerCase().endsWith('.pdf')) {
       const modal = document.getElementById('pdf-modal');
       const spinnerOverlay = document.getElementById('pdf-loading-spinner');
@@ -612,7 +619,9 @@ async function loadFileFromOS(contentUrl) {
       
       modal.style.display = 'flex';
       
-      // FIX: Added safety checks to prevent crashes if the HTML hasn't updated properly
+      // UNLOCK PINCH TO ZOOM GLOBALLY
+      document.getElementById('viewport-meta').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
+      
       if (spinnerOverlay) {
           spinnerOverlay.style.display = 'flex';
           if (spinnerText) spinnerText.innerText = "Loading massive file...";
@@ -631,7 +640,6 @@ async function loadFileFromOS(contentUrl) {
       return; 
     }
 
-    // 2. Standard Pro CMS file (.json or .txt)
     const result = await window.Capacitor.Plugins.Filesystem.readFile({
       path: contentUrl,
       encoding: 'utf8'
@@ -847,7 +855,7 @@ document.addEventListener('keydown', (e) => {
 let activePdf = { 
   base64Data: null, originalPath: null, doc: null, 
   pageNum: 1, totalPages: 0, annotations: {},
-  renderTask: null // Tracks active rendering to prevent crashes
+  renderTask: null 
 };
 
 async function launchPdfAnnotator(base64Data, filePath) {
@@ -889,7 +897,6 @@ async function launchPdfAnnotator(base64Data, filePath) {
 }
 
 async function renderPdfPage(num) {
-  // If a page is already rendering, cancel it so it doesn't crash the canvas!
   if (activePdf.renderTask) {
       await activePdf.renderTask.cancel();
       activePdf.renderTask = null;
@@ -902,9 +909,10 @@ async function renderPdfPage(num) {
   const unscaledViewport = page.getViewport({ scale: 1.0 });
   const cssWidth = container.clientWidth - 40; 
   const baseScale = cssWidth / unscaledViewport.width;
+  
+  // 1. The High-Res Viewport for the Base Canvas
   const viewport = page.getViewport({ scale: baseScale * 2 }); 
   
-  // Clone the canvas to guarantee a 100% fresh DOM element without locked states
   const oldBaseCanvas = document.getElementById('pdf-base-canvas');
   const baseCanvas = oldBaseCanvas.cloneNode(true);
   oldBaseCanvas.parentNode.replaceChild(baseCanvas, oldBaseCanvas);
@@ -924,7 +932,6 @@ async function renderPdfPage(num) {
 
   const renderContext = { canvasContext: baseCtx, viewport: viewport };
   
-  // Save the render task so we can monitor/cancel it
   activePdf.renderTask = page.render(renderContext);
   
   try {
@@ -936,6 +943,29 @@ async function renderPdfPage(num) {
   
   activePdf.renderTask = null;
 
+  // 2. THE NEW TEXT LAYER (Allows Copy/Pasting)
+  const textLayerDiv = document.getElementById('pdf-text-layer');
+  textLayerDiv.innerHTML = '';
+  textLayerDiv.style.width = cssWidth + 'px';
+  textLayerDiv.style.height = cssHeight + 'px';
+  
+  // We must use a 1x viewport so the text sizes align perfectly with the CSS box
+  const textViewport = page.getViewport({ scale: baseScale });
+  textLayerDiv.style.setProperty('--scale-factor', textViewport.scale);
+
+  try {
+      const textContent = await page.getTextContent();
+      await pdfjsLib.renderTextLayer({
+          textContentSource: textContent,
+          container: textLayerDiv,
+          viewport: textViewport,
+          textDivs: []
+      }).promise;
+  } catch (e) {
+      console.warn("Failed to extract PDF text layer: ", e);
+  }
+
+  // 3. The Glass Drawing Canvas
   const glassCanvas = document.getElementById('pdf-glass-canvas');
   glassCanvas.width = baseCanvas.width;
   glassCanvas.height = baseCanvas.height;
@@ -976,6 +1006,9 @@ document.getElementById('pdf-next-btn').addEventListener('click', () => {
 
 document.getElementById('pdf-cancel-btn').addEventListener('click', () => {
   document.getElementById('pdf-modal').style.display = 'none';
+  // RE-LOCK ZOOM WHEN CLOSING MODAL
+  document.getElementById('viewport-meta').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+  
   const spinner = document.getElementById('pdf-loading-spinner');
   if (spinner) spinner.style.display = 'none';
   activePdf = { base64Data: null, originalPath: null, doc: null, pageNum: 1, totalPages: 0, annotations: {} };
@@ -1014,12 +1047,14 @@ document.getElementById('pdf-save-btn').addEventListener('click', async () => {
         });
         alert("Success! Annotations baked into PDF.");
         document.getElementById('pdf-modal').style.display = 'none';
+        document.getElementById('viewport-meta').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
     } else {
         const a = document.createElement('a');
         a.href = "data:application/pdf;base64," + bakedPdfBase64;
         a.download = "Annotated_Document.pdf";
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         document.getElementById('pdf-modal').style.display = 'none';
+        document.getElementById('viewport-meta').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
     }
   } catch (error) { alert("Error baking PDF: " + error.message); } 
   finally { saveBtn.innerText = "Save PDF"; }
@@ -1032,8 +1067,11 @@ function setupPdfDrawingTools() {
   const toolbarContainer = document.getElementById('pdf-toolbar-container');
   toolbarContainer.innerHTML = `
     <div style="display: flex; justify-content: center; gap: 15px; padding: 15px; background: #0d1117; border-top: 1px solid #30363d;">
+        <!-- NEW: The Navigation/Pan Mode Button -->
+        <div class="pdf-color-btn" data-color="pan" style="width:30px;height:30px;border-radius:50%;background:#161b22;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow: 0 0 0 3px #ffffff;" title="Pan & Zoom">✋</div>
+        
         <div class="pdf-color-btn" data-color="#d32f2f" style="width:30px;height:30px;border-radius:50%;background:#d32f2f;cursor:pointer;"></div>
-        <div class="pdf-color-btn" data-color="#1976d2" style="width:30px;height:30px;border-radius:50%;background:#1976d2;cursor:pointer;box-shadow: 0 0 0 3px #ffffff;"></div>
+        <div class="pdf-color-btn" data-color="#1976d2" style="width:30px;height:30px;border-radius:50%;background:#1976d2;cursor:pointer;"></div>
         <div class="pdf-color-btn" data-color="#388e3c" style="width:30px;height:30px;border-radius:50%;background:#388e3c;cursor:pointer;"></div>
         <div class="pdf-color-btn" data-color="#fbc02d" style="width:30px;height:30px;border-radius:50%;background:#fbc02d;cursor:pointer;"></div>
         <div class="pdf-color-btn" data-color="#000000" style="width:30px;height:30px;border-radius:50%;background:#000000;cursor:pointer;"></div>
@@ -1041,15 +1079,26 @@ function setupPdfDrawingTools() {
     </div>
   `;
 
-  let currentColor = '#1976d2'; 
+  let currentColor = 'pan'; // DEFAULT TO PAN MODE
   let currentWidth = 4 * 2; 
+  
+  // Instantly disable the drawing layer so pinch-to-zoom works on boot
+  glassCanvas.style.pointerEvents = 'none';
   
   document.querySelectorAll('.pdf-color-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
           document.querySelectorAll('.pdf-color-btn').forEach(b => b.style.boxShadow = 'none');
           btn.style.boxShadow = '0 0 0 3px #ffffff';
           currentColor = btn.getAttribute('data-color');
-          currentWidth = (currentColor === '#ffffff') ? 25 * 2 : 4 * 2; 
+          
+          if (currentColor === 'pan') {
+              // Deactivate drawing layer so you can pinch/zoom the document underneath
+              glassCanvas.style.pointerEvents = 'none';
+          } else {
+              // Activate drawing layer to catch your pen strokes
+              glassCanvas.style.pointerEvents = 'auto';
+              currentWidth = (currentColor === '#ffffff') ? 25 * 2 : 4 * 2; 
+          }
       });
   });
 
@@ -1070,6 +1119,7 @@ function setupPdfDrawingTools() {
   };
 
   const startDraw = (e) => { 
+    if (e.touches && e.touches.length > 1) { isDrawing = false; return; }
     isDrawing = true; 
     const pos = getPos(e); 
     ctx.strokeStyle = currentColor;
@@ -1077,7 +1127,16 @@ function setupPdfDrawingTools() {
     ctx.beginPath(); 
     ctx.moveTo(pos.x, pos.y); 
   };
-  const draw = (e) => { if (!isDrawing) return; e.preventDefault(); const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); };
+  
+  const draw = (e) => { 
+    if (!isDrawing) return; 
+    if (e.touches && e.touches.length > 1) { isDrawing = false; ctx.closePath(); return; }
+    e.preventDefault(); 
+    const pos = getPos(e); 
+    ctx.lineTo(pos.x, pos.y); 
+    ctx.stroke(); 
+  };
+  
   const stopDraw = () => { isDrawing = false; ctx.closePath(); };
 
   glassCanvas.addEventListener('mousedown', startDraw); glassCanvas.addEventListener('mousemove', draw);

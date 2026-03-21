@@ -848,18 +848,43 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && document.body.classList.contains('zen-mode')) { document.body.classList.remove('zen-mode'); }
 });
 
-// --- 14. PDF ANNOTATOR ENGINE (OFF-SCREEN BUFFERING + ASYNC TEXT) ---
+// --- 14. PDF ANNOTATOR ENGINE (OFF-SCREEN BUFFERING + ASYNC TEXT + PINCH ZOOM) ---
 let activePdf = { 
   base64Data: null, originalPath: null, doc: null, 
   pageNum: 1, totalPages: 0, annotations: {},
-  renderTask: null
+  renderTask: null,
+  zoomLevel: 1.0 // Initialize our zoom multiplier
 };
-let currentRenderPage = 0; // Tracks the actual page being requested to prevent rapid-click queuing
+let currentRenderPage = 0; 
+
+// A Helper function to trigger the re-render when a pinch is complete
+async function applyPdfZoom(newZoom) {
+    activePdf.zoomLevel = Math.max(1.0, Math.min(newZoom, 5.0));
+    const spinnerOverlay = document.getElementById('pdf-loading-spinner');
+    const spinnerText = document.getElementById('pdf-spinner-text');
+
+    if (spinnerOverlay) {
+        spinnerOverlay.style.display = 'flex';
+        spinnerOverlay.style.backgroundColor = 'rgba(16, 20, 26, 0.4)';
+        if (spinnerText) spinnerText.innerText = "Enhancing Text...";
+    }
+    
+    await new Promise(r => setTimeout(r, 10)); // Yield to paint spinner
+    
+    // Re-render the current page at the new crisp zoom level
+    await renderPdfPage(activePdf.pageNum);
+
+    if (spinnerOverlay) {
+        spinnerOverlay.style.display = 'none';
+        spinnerOverlay.style.backgroundColor = 'rgba(16, 20, 26, 0.85)';
+    }
+}
 
 async function launchPdfAnnotator(base64Data, filePath) {
   activePdf.base64Data = base64Data;
   activePdf.originalPath = filePath;
   activePdf.pageNum = 1;
+  activePdf.zoomLevel = 1.0;
   currentRenderPage = 1;
   activePdf.annotations = {};
   if (activePdf.renderTask) activePdf.renderTask = null;
@@ -898,8 +923,10 @@ async function launchPdfAnnotator(base64Data, filePath) {
 async function renderPdfPage(num) {
   currentRenderPage = num;
   const pageNumSpan = document.getElementById('pdf-page-num');
-  pageNumSpan.innerText = num;
-  pageNumSpan.style.opacity = '0.5'; // Dim while loading
+  if(pageNumSpan) {
+      pageNumSpan.innerText = num;
+      pageNumSpan.style.opacity = '0.5'; // Dim while loading
+  }
 
   if (activePdf.renderTask) {
       await activePdf.renderTask.cancel();
@@ -907,19 +934,21 @@ async function renderPdfPage(num) {
   }
 
   const page = await activePdf.doc.getPage(num);
-  if (currentRenderPage !== num) return; // User tapped 'Next' again, abort this render
+  if (currentRenderPage !== num) return; 
 
   const container = document.getElementById('pdf-canvas-container');
   const unscaledViewport = page.getViewport({ scale: 1.0 });
   const cssWidth = container.clientWidth - 40; 
   const baseFitScale = cssWidth / unscaledViewport.width;
   
+  // APPLY ZOOM LEVEL FOR CRISPNESS
+  const finalScale = baseFitScale * (activePdf.zoomLevel || 1.0);
   const ratio = window.devicePixelRatio || 2; 
-  const viewport = page.getViewport({ scale: baseFitScale * ratio }); 
-  const cssViewport = page.getViewport({ scale: baseFitScale }); 
   
-  // THE FIX: Off-Screen Buffer Canvas
-  // We draw to a hidden canvas first, so the screen doesn't go blank while processing
+  const viewport = page.getViewport({ scale: finalScale * ratio }); 
+  const cssViewport = page.getViewport({ scale: finalScale }); 
+  
+  // Off-Screen Buffer Canvas
   const offScreenCanvas = document.createElement('canvas');
   const baseCtx = offScreenCanvas.getContext('2d');
   
@@ -940,9 +969,9 @@ async function renderPdfPage(num) {
   }
   
   activePdf.renderTask = null;
-  if (currentRenderPage !== num) return; // User tapped 'Next' right as it finished painting
+  if (currentRenderPage !== num) return;
 
-  // --- INSTANT VISUAL SNAP ---
+  // INSTANT VISUAL SNAP
   const oldBaseCanvas = document.getElementById('pdf-base-canvas');
   offScreenCanvas.id = 'pdf-base-canvas';
   offScreenCanvas.style.display = 'block';
@@ -952,7 +981,9 @@ async function renderPdfPage(num) {
   oldBaseCanvas.parentNode.replaceChild(offScreenCanvas, oldBaseCanvas);
   
   const wrapper = document.getElementById('pdf-transform-wrapper');
-  wrapper.style.transform = `scale(1)`;
+  if(wrapper) {
+      wrapper.style.transform = `scale(1)`;
+  }
 
   const glassCanvas = document.getElementById('pdf-glass-canvas');
   glassCanvas.width = offScreenCanvas.width;
@@ -966,35 +997,36 @@ async function renderPdfPage(num) {
   glassCtx.lineCap = 'round';
   glassCtx.lineJoin = 'round';
 
-  if (activePdf.annotations[num]) {
+  if (activePdf.annotations && activePdf.annotations[num]) {
     const img = new Image();
     img.onload = () => glassCtx.drawImage(img, 0, 0, glassCanvas.width, glassCanvas.height);
     img.src = activePdf.annotations[num];
   }
 
-  pageNumSpan.style.opacity = '1'; // Visuals are done, illuminate the page number
+  if(pageNumSpan) pageNumSpan.style.opacity = '1';
 
-  // --- ASYNC TEXT LAYER INJECTION ---
-  // The user can now view the page and draw, while the text layer builds silently in the background
+  // ASYNC TEXT LAYER INJECTION
   const textLayerDiv = document.getElementById('pdf-text-layer');
-  textLayerDiv.innerHTML = '';
-  textLayerDiv.style.width = cssViewport.width + 'px';
-  textLayerDiv.style.height = cssViewport.height + 'px';
-  textLayerDiv.style.setProperty('--scale-factor', cssViewport.scale);
+  if(textLayerDiv) {
+      textLayerDiv.innerHTML = '';
+      textLayerDiv.style.width = cssViewport.width + 'px';
+      textLayerDiv.style.height = cssViewport.height + 'px';
+      textLayerDiv.style.setProperty('--scale-factor', cssViewport.scale);
 
-  page.getTextContent().then(textContent => {
-      if (currentRenderPage !== num) return; // Abort if they already moved on
-      pdfjsLib.renderTextLayer({
-          textContentSource: textContent,
-          container: textLayerDiv,
-          viewport: cssViewport,
-          textDivs: []
-      }).promise.then(() => {
-          if (currentRenderPage !== num) return;
-          const spans = textLayerDiv.querySelectorAll('span');
-          spans.forEach(span => { span.innerHTML += ' '; });
-      });
-  }).catch(e => console.warn("Text extraction aborted", e));
+      page.getTextContent().then(textContent => {
+          if (currentRenderPage !== num) return; 
+          pdfjsLib.renderTextLayer({
+              textContentSource: textContent,
+              container: textLayerDiv,
+              viewport: cssViewport,
+              textDivs: []
+          }).promise.then(() => {
+              if (currentRenderPage !== num) return;
+              const spans = textLayerDiv.querySelectorAll('span');
+              spans.forEach(span => { span.innerHTML += ' '; });
+          });
+      }).catch(e => console.warn("Text extraction aborted", e));
+  }
 }
 
 function saveCurrentPageAnnotation() {
@@ -1016,7 +1048,6 @@ document.getElementById('pdf-next-btn').addEventListener('click', () => {
   renderPdfPage(activePdf.pageNum);
 });
 
-// THE FIX: Clickable Jump-to-Page Engine
 document.getElementById('pdf-page-num').addEventListener('click', () => {
     const jump = prompt(`Jump to page (1 - ${activePdf.totalPages}):`, activePdf.pageNum);
     if (jump) {
@@ -1118,6 +1149,50 @@ function setupPdfDrawingTools() {
       });
   });
 
+  // --- THE PINCH-STRETCH-SNAP ZOOM LOGIC ---
+  let pinchStartDistance = 0;
+  let isPinching = false;
+  let currentScale = 1;
+  let animationFrameId = null;
+
+  const container = document.getElementById('pdf-canvas-container');
+  const wrapper = document.getElementById('pdf-transform-wrapper');
+
+  container.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2 && currentColor === 'pan') {
+          isPinching = true;
+          pinchStartDistance = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+          );
+      }
+  }, { passive: false });
+
+  container.addEventListener('touchmove', (e) => {
+      if (isPinching && e.touches.length === 2 && currentColor === 'pan') {
+          e.preventDefault(); 
+          const dist = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+          );
+          currentScale = dist / pinchStartDistance;
+          
+          if (animationFrameId) cancelAnimationFrame(animationFrameId);
+          animationFrameId = requestAnimationFrame(() => {
+              if (wrapper) wrapper.style.transform = `scale(${currentScale})`;
+          });
+      }
+  }, { passive: false });
+
+  container.addEventListener('touchend', (e) => {
+      if (isPinching && e.touches.length < 2) {
+          isPinching = false;
+          applyPdfZoom(activePdf.zoomLevel * currentScale);
+      }
+  });
+
+
+  // --- DRAWING LOGIC ---
   let isDrawing = false;
   
   const getPos = (e) => {
@@ -1140,7 +1215,7 @@ function setupPdfDrawingTools() {
     const pos = getPos(e); 
     ctx.strokeStyle = currentColor;
     // Adapt pen thickness dynamically to zoom
-    ctx.lineWidth = currentWidth * (window.devicePixelRatio || 2);
+    ctx.lineWidth = currentWidth * (activePdf.zoomLevel || 1.0) * (window.devicePixelRatio || 2);
     ctx.beginPath(); 
     ctx.moveTo(pos.x, pos.y); 
   };

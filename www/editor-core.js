@@ -1047,3 +1047,20 @@ window.addEventListener('load', () => {
     slider.addEventListener('touchend', stopSlide); slider.addEventListener('mouseup', stopSlide); slider.addEventListener('touchcancel', stopSlide);
   });
 });
+// --- 13. ZEN FOCUS MODE ENGINE ---
+const zenBtn = document.getElementById('zen-mode-btn');
+const exitZenBtn = document.getElementById('exit-zen-btn');
+
+if (zenBtn && exitZenBtn) {
+  zenBtn.addEventListener('click', () => {
+    document.body.classList.add('zen-mode');
+    
+    // Close the mobile dropdown menu if it was open when triggering Zen Mode
+    const mobileDropdown = document.querySelector('.mobile-top-dropdown');
+    if (mobileDropdown) mobileDropdown.classList.remove('open');
+  });
+
+  exitZenBtn.addEventListener('click', () => {
+    document.body.classList.remove('zen-mode');
+  });
+}

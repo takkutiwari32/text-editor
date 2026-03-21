@@ -37,6 +37,7 @@
     <div class="center-controls">
       <button class="icon-btn" id="undo-btn" title="Undo">↺</button>
       <button class="icon-btn" id="redo-btn" title="Redo">↻</button>
+      <button class="icon-btn" id="zen-mode-btn" title="Zen Focus Mode">HIDE</button>
       <span class="save-status">Draft status: Unsaved</span>
     </div> <div class="action-section">
       <div class="action-section">
@@ -240,9 +241,11 @@
       <div style="display: flex; justify-content: flex-end; gap: 10px;">
         <button id="cell-cancel-btn" class="btn-secondary">Cancel</button>
         <button id="cell-save-btn" class="btn-primary">Save Data</button>
+        
       </div>
     </div>
   </div>
+  <button id="exit-zen-btn" class="exit-zen-btn">Exit Zen ⤫</button>
 
   <script>if (typeof module === 'object') { window.module = module; module = undefined; }</script>
   

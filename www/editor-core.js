@@ -619,9 +619,6 @@ async function loadFileFromOS(contentUrl) {
       
       modal.style.display = 'flex';
       
-      // UNLOCK PINCH TO ZOOM GLOBALLY
-      document.getElementById('viewport-meta').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
-      
       if (spinnerOverlay) {
           spinnerOverlay.style.display = 'flex';
           if (spinnerText) spinnerText.innerText = "Loading massive file...";
@@ -851,12 +848,16 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && document.body.classList.contains('zen-mode')) { document.body.classList.remove('zen-mode'); }
 });
 
-// --- 14. PDF ANNOTATOR ENGINE (GOODNOTES STYLE) ---
+// --- 14. PDF ANNOTATOR ENGINE (CUSTOM PINCH TO ZOOM) ---
 let activePdf = { 
   base64Data: null, originalPath: null, doc: null, 
   pageNum: 1, totalPages: 0, annotations: {},
   renderTask: null,
-  hdMultiplier: 4 // THE FIX: Renders the PDF at 400% resolution in background memory
+  hdMultiplier: 4,
+  zoomLevel: 1.0,
+  baseCssWidth: 0,
+  baseCssHeight: 0,
+  unscaledWidth: 0
 };
 
 async function launchPdfAnnotator(base64Data, filePath) {
@@ -897,6 +898,34 @@ async function launchPdfAnnotator(base64Data, filePath) {
   }
 }
 
+// 1. The Helper Function to Apply Zoom Math
+function applyPdfZoom(newZoom) {
+    activePdf.zoomLevel = Math.max(1.0, Math.min(newZoom, 4.0));
+    
+    const wrapper = document.getElementById('pdf-transform-wrapper');
+    const bounds = document.getElementById('pdf-scroll-bounds');
+    const container = document.getElementById('pdf-canvas-container');
+    
+    wrapper.style.transform = `scale(${activePdf.zoomLevel})`;
+    
+    if (activePdf.zoomLevel > 1.0) {
+        bounds.style.width = (activePdf.baseCssWidth * activePdf.zoomLevel) + 'px';
+        bounds.style.height = (activePdf.baseCssHeight * activePdf.zoomLevel) + 'px';
+        bounds.style.display = 'block'; 
+        container.style.justifyContent = 'flex-start';
+    } else {
+        bounds.style.width = activePdf.baseCssWidth + 'px';
+        bounds.style.height = activePdf.baseCssHeight + 'px';
+        bounds.style.display = 'flex'; 
+        container.style.justifyContent = 'center';
+    }
+}
+
+// GUI Zoom Buttons
+document.getElementById('pdf-zoom-in-btn').addEventListener('click', () => applyPdfZoom(activePdf.zoomLevel + 0.5));
+document.getElementById('pdf-zoom-out-btn').addEventListener('click', () => applyPdfZoom(activePdf.zoomLevel - 0.5));
+
+
 async function renderPdfPage(num) {
   if (activePdf.renderTask) {
       await activePdf.renderTask.cancel();
@@ -911,7 +940,12 @@ async function renderPdfPage(num) {
   const cssWidth = container.clientWidth - 40; 
   const baseScale = cssWidth / unscaledViewport.width;
   
-  // 1. Force the massive 4X high-res viewport for crystal clear zooming
+  // Save measurements for the zoom engine
+  activePdf.unscaledWidth = unscaledViewport.width;
+  activePdf.baseCssWidth = cssWidth;
+  activePdf.baseCssHeight = cssWidth * (unscaledViewport.height / unscaledViewport.width);
+  activePdf.zoomLevel = 1.0;
+  
   const viewport = page.getViewport({ scale: baseScale * activePdf.hdMultiplier }); 
   
   const oldBaseCanvas = document.getElementById('pdf-base-canvas');
@@ -927,10 +961,8 @@ async function renderPdfPage(num) {
   baseCtx.fillStyle = '#ffffff';
   baseCtx.fillRect(0, 0, baseCanvas.width, baseCanvas.height);
   
-  // Use CSS to physically shrink the massive canvas to fit the phone screen perfectly
-  const cssHeight = cssWidth * (viewport.height / viewport.width);
-  baseCanvas.style.width = cssWidth + 'px';
-  baseCanvas.style.height = cssHeight + 'px';
+  baseCanvas.style.width = activePdf.baseCssWidth + 'px';
+  baseCanvas.style.height = activePdf.baseCssHeight + 'px';
 
   const renderContext = { canvasContext: baseCtx, viewport: viewport };
   activePdf.renderTask = page.render(renderContext);
@@ -944,11 +976,10 @@ async function renderPdfPage(num) {
   
   activePdf.renderTask = null;
 
-  // 2. Map the Text Layer to the CSS display size so highlights align perfectly
   const textLayerDiv = document.getElementById('pdf-text-layer');
   textLayerDiv.innerHTML = '';
-  textLayerDiv.style.width = cssWidth + 'px';
-  textLayerDiv.style.height = cssHeight + 'px';
+  textLayerDiv.style.width = activePdf.baseCssWidth + 'px';
+  textLayerDiv.style.height = activePdf.baseCssHeight + 'px';
   
   const textViewport = page.getViewport({ scale: baseScale });
   textLayerDiv.style.setProperty('--scale-factor', textViewport.scale);
@@ -961,16 +992,20 @@ async function renderPdfPage(num) {
           viewport: textViewport,
           textDivs: []
       }).promise;
+      
+      // THE FIX: Provide an explicit space character to bridge the selection
+      const spans = textLayerDiv.querySelectorAll('span');
+      spans.forEach(span => { span.innerHTML += ' '; });
+      
   } catch (e) {
       console.warn("Failed to extract PDF text layer: ", e);
   }
 
-  // 3. Match the Glass Drawing Canvas to the 4X High-Res Base
   const glassCanvas = document.getElementById('pdf-glass-canvas');
   glassCanvas.width = baseCanvas.width;
   glassCanvas.height = baseCanvas.height;
-  glassCanvas.style.width = cssWidth + 'px';
-  glassCanvas.style.height = cssHeight + 'px';
+  glassCanvas.style.width = activePdf.baseCssWidth + 'px';
+  glassCanvas.style.height = activePdf.baseCssHeight + 'px';
   
   const glassCtx = glassCanvas.getContext('2d');
   glassCtx.setTransform(1, 0, 0, 1, 0, 0);
@@ -983,6 +1018,8 @@ async function renderPdfPage(num) {
     img.onload = () => glassCtx.drawImage(img, 0, 0, glassCanvas.width, glassCanvas.height);
     img.src = activePdf.annotations[num];
   }
+  
+  applyPdfZoom(1.0); // Reset zoom physics for the new page
 }
 
 function saveCurrentPageAnnotation() {
@@ -1006,8 +1043,6 @@ document.getElementById('pdf-next-btn').addEventListener('click', () => {
 
 document.getElementById('pdf-cancel-btn').addEventListener('click', () => {
   document.getElementById('pdf-modal').style.display = 'none';
-  document.getElementById('viewport-meta').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-  
   const spinner = document.getElementById('pdf-loading-spinner');
   if (spinner) spinner.style.display = 'none';
   activePdf = { base64Data: null, originalPath: null, doc: null, pageNum: 1, totalPages: 0, annotations: {} };
@@ -1046,14 +1081,12 @@ document.getElementById('pdf-save-btn').addEventListener('click', async () => {
         });
         alert("Success! Annotations baked into PDF.");
         document.getElementById('pdf-modal').style.display = 'none';
-        document.getElementById('viewport-meta').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
     } else {
         const a = document.createElement('a');
         a.href = "data:application/pdf;base64," + bakedPdfBase64;
         a.download = "Annotated_Document.pdf";
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         document.getElementById('pdf-modal').style.display = 'none';
-        document.getElementById('viewport-meta').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
     }
   } catch (error) { alert("Error baking PDF: " + error.message); } 
   finally { saveBtn.innerText = "Save PDF"; }
@@ -1096,6 +1129,35 @@ function setupPdfDrawingTools() {
       });
   });
 
+  // 2. CUSTOM JAVASCRIPT PINCH-TO-ZOOM ENGINE
+  const container = document.getElementById('pdf-canvas-container');
+  let initialDistance = 0;
+  let initialZoom = 1;
+
+  container.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2 && currentColor === 'pan') {
+          initialDistance = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+          );
+          initialZoom = activePdf.zoomLevel;
+      }
+  }, { passive: false });
+
+  container.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2 && currentColor === 'pan') {
+          e.preventDefault(); // Stop Android Native Zoom completely
+          const currentDistance = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+          );
+          const scale = currentDistance / initialDistance;
+          applyPdfZoom(initialZoom * scale);
+      }
+  }, { passive: false });
+
+
+  // DRAWING LOGIC (Maps to the dynamically scaled viewport!)
   let isDrawing = false;
   
   const getPos = (e) => {

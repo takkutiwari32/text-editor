@@ -3,11 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>Tech Blog Pro CMS</title>
-  <!-- The Viewport tag that we will manipulate via Javascript to allow zooming -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" id="viewport-meta" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" id="viewport-meta" />
   
   <link rel="stylesheet" href="style.css">
-  <!-- NEW: Mozilla's official CSS to format the invisible Text Layer for highlighting -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
   
   <style>
@@ -30,6 +28,31 @@
     .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
     input:checked + .slider { background-color: #58a6ff; }
     input:checked + .slider:before { transform: translateX(20px); }
+
+    /* =======================================================
+       THE FIX: ZOOM ROUTING & TEXT SELECTION OVERRIDES
+       ======================================================= */
+    
+    /* Prevent native zooming while writing articles, but allow scrolling */
+    .editor-canvas { touch-action: pan-y !important; }
+    
+    /* The Android DOM Gap Bridger */
+    .textLayer { z-index: 5 !important; }
+    .textLayer span {
+        color: transparent !important;
+        user-select: text !important;
+        -webkit-user-select: text !important;
+        pointer-events: auto !important;
+        
+        /* This physically stretches the invisible word boxes by 20px so they overlap. 
+           Android's text selector will no longer drop the selection between words! */
+        padding-right: 20px !important;
+        margin-right: -20px !important;
+        padding-bottom: 5px !important;
+        margin-bottom: -5px !important;
+    }
+    /* Inject an invisible space character just in case */
+    .textLayer span::after { content: " " !important; }
   </style>
 </head>
 <body>
@@ -245,71 +268,69 @@
   <!-- FULL-SCREEN DRAWING MODAL (PRO UI) -->
   <div id="draw-modal" class="modal-overlay" style="z-index: 10005; flex-direction: column; background: var(--bg-color);">
     
-    <!-- Top Bar (Header) -->
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #0d1117; border-bottom: 1px solid #30363d; width: 100%; box-sizing: border-box;">
       <button id="draw-cancel-btn" style="background: none; border: none; color: var(--text-main); font-size: 1.5rem; cursor: pointer;">←</button>
       <div style="color: var(--text-main); font-weight: bold;">Canvas</div>
       <button id="draw-save-btn" style="background: none; border: none; color: #58a6ff; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Done</button>
     </div>
 
-    <!-- The Blank Canvas Area -->
     <div id="draw-canvas-container" style="flex: 1; width: 100%; background: #ffffff; position: relative; overflow: hidden;">
       <canvas id="fullscreen-draw-canvas" style="position: absolute; top: 0; left: 0; touch-action: none;"></canvas>
     </div>
 
-    <!-- The Tool Panel Container -->
     <div style="width: 100%; background: #0d1117; border-top: 1px solid #30363d; display: flex; flex-direction: column;">
-      
-      <!-- Tier 1: The Main Tools (Pen, Highlighter, Eraser) -->
-      <div id="draw-primary-tools" style="display: flex; justify-content: space-around; padding: 15px 10px; border-bottom: 1px solid #161b22;">
-        <!-- Injected by JS -->
-      </div>
-
-      <!-- Tier 2: The Options Drawer (Colors & Widths - Hidden by default) -->
+      <div id="draw-primary-tools" style="display: flex; justify-content: space-around; padding: 15px 10px; border-bottom: 1px solid #161b22;"></div>
       <div id="draw-options-drawer" style="display: none; flex-direction: column; padding: 15px 20px; gap: 15px;">
-        <!-- Color Palette -->
         <div id="draw-color-palette" style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 5px;"></div>
-        <!-- Stroke Width Slider -->
         <div id="draw-width-selector" style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #161b22;"></div>
       </div>
     </div>
   </div>
 
- <!-- PDF ANNOTATOR MODAL -->
+  <!-- PDF ANNOTATOR MODAL -->
   <div id="pdf-modal" class="modal-overlay" style="z-index: 10010; flex-direction: column; background: var(--bg-color);">
-    <!-- Top Bar with Pagination (Arrow Removed) -->
+    
+    <!-- Top Bar with Zoom Controls -->
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #0d1117; border-bottom: 1px solid #30363d; width: 100%; box-sizing: border-box;">
       <button id="pdf-cancel-btn" style="background: none; border: none; color: var(--text-muted); font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;">Close</button>
-      <div style="display: flex; align-items: center; gap: 15px;">
+      
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <!-- NEW ZOOM BUTTONS -->
+        <button id="pdf-zoom-out-btn" class="icon-btn" style="font-size: 0.8rem;">➖</button>
+        <button id="pdf-zoom-in-btn" class="icon-btn" style="font-size: 0.8rem;">➕</button>
+        
+        <div style="width: 1px; height: 20px; background: #30363d; margin: 0 5px;"></div>
+        
         <button id="pdf-prev-btn" class="icon-btn">◀</button>
-        <div style="color: var(--text-main); font-weight: bold; font-size: 0.9rem;">
-          Page <span id="pdf-page-num">1</span> of <span id="pdf-page-count">?</span>
+        <div style="color: var(--text-main); font-weight: bold; font-size: 0.85rem; padding: 0 5px;">
+          <span id="pdf-page-num">1</span> / <span id="pdf-page-count">?</span>
         </div>
         <button id="pdf-next-btn" class="icon-btn">▶</button>
       </div>
-      <button id="pdf-save-btn" style="background: none; border: none; color: #58a6ff; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Save PDF</button>
+
+      <button id="pdf-save-btn" style="background: none; border: none; color: #58a6ff; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Save</button>
     </div>
 
-    <!-- THE FIX: Added GPU Acceleration and Momentum Scrolling to the Container -->
+    <!-- The Double Canvas Area -->
     <div id="pdf-canvas-container" style="flex: 1; width: 100%; background: #050505; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 20px; box-sizing: border-box; position: relative; -webkit-overflow-scrolling: touch;">
       
-      <!-- Modern Loading Spinner -->
       <div id="pdf-loading-spinner" class="modern-spinner-overlay" style="display: none;">
         <div class="modern-spinner"></div>
         <div id="pdf-spinner-text" class="modern-spinner-text">Reading File...</div>
       </div>
 
-      <!-- THE FIX: Hardware Accelerated Wrapper -->
-      <div style="position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.8); transform: translateZ(0); will-change: transform;">
-        <!-- Base Layer: The PDF Page -->
-        <canvas id="pdf-base-canvas" style="display: block;"></canvas>
-        
-        <!-- The Invisible Text Layer for Highlighting & Copying -->
-        <div id="pdf-text-layer" class="textLayer" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; line-height: 1.0;"></div>
-        
-        <!-- Glass Layer: The Drawing Canvas -->
-        <canvas id="pdf-glass-canvas" style="position: absolute; top: 0; left: 0; touch-action: none; cursor: crosshair;"></canvas>
+      <!-- THE FIX: Scroll Bounds Wrapper -> Adapts to the scaled transform to allow native scrolling -->
+      <div id="pdf-scroll-bounds" style="transform-origin: top left; display: flex; justify-content: center;">
+          <!-- Hardware Accelerated Zoom Wrapper -->
+          <div id="pdf-transform-wrapper" style="position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.8); transform-origin: top left; transform: scale(1); will-change: transform;">
+            <canvas id="pdf-base-canvas" style="display: block;"></canvas>
+            
+            <div id="pdf-text-layer" class="textLayer" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; line-height: 1.0;"></div>
+            
+            <canvas id="pdf-glass-canvas" style="position: absolute; top: 0; left: 0; touch-action: none; cursor: crosshair;"></canvas>
+          </div>
       </div>
+
     </div>
 
     <!-- Toolbar -->

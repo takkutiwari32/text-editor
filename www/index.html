@@ -279,17 +279,15 @@
     </div>
   </div>
 
-  <!-- PDF ANNOTATOR MODAL -->
   <div id="pdf-modal" class="modal-overlay" style="z-index: 10010; flex-direction: column; background: var(--bg-color);">
     
-    <!-- THE FIX: Clean Top Bar with Zoom Buttons Removed -->
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #0d1117; border-bottom: 1px solid #30363d; width: 100%; box-sizing: border-box;">
       <button id="pdf-cancel-btn" style="background: none; border: none; color: var(--text-muted); font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;">Close</button>
       
       <div style="display: flex; align-items: center; gap: 15px;">
         <button id="pdf-prev-btn" class="icon-btn">◀</button>
         <div style="color: var(--text-main); font-weight: bold; font-size: 0.85rem; padding: 0 5px;">
-          Page <span id="pdf-page-num">1</span> of <span id="pdf-page-count">?</span>
+          Page <span id="pdf-page-num" style="cursor: pointer; color: #58a6ff; text-decoration: underline;" title="Tap to jump to page">1</span> of <span id="pdf-page-count">?</span>
         </div>
         <button id="pdf-next-btn" class="icon-btn">▶</button>
       </div>
@@ -297,7 +295,6 @@
       <button id="pdf-save-btn" style="background: none; border: none; color: #58a6ff; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Save</button>
     </div>
 
-    <!-- THE FIX: text-align: center container prevents the left clipping bug when the canvas gets large -->
     <div id="pdf-canvas-container" style="flex: 1; width: 100%; background: #050505; overflow: auto; text-align: center; padding: 20px; box-sizing: border-box; position: relative; -webkit-overflow-scrolling: touch;">
       
       <div id="pdf-loading-spinner" class="modern-spinner-overlay" style="display: none;">
@@ -305,7 +302,6 @@
         <div id="pdf-spinner-text" class="modern-spinner-text">Reading File...</div>
       </div>
 
-      <!-- THE FIX: display: inline-block + margin: 0 auto dynamically handles zoom widths without trapping the left boundary -->
       <div id="pdf-transform-wrapper" style="position: relative; display: inline-block; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.8); transform-origin: top left; transform: scale(1); will-change: transform; margin: 0 auto;">
         <canvas id="pdf-base-canvas" style="display: block;"></canvas>
         <div id="pdf-text-layer" class="textLayer" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; line-height: 1.0;"></div>
@@ -314,7 +310,6 @@
 
     </div>
 
-    <!-- Toolbar -->
     <div id="pdf-toolbar-container" style="width: 100%;"></div>
   </div>
 
@@ -335,7 +330,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
   
-  <!-- PDF ANNOTATION ENGINES -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>

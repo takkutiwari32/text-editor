@@ -848,22 +848,20 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && document.body.classList.contains('zen-mode')) { document.body.classList.remove('zen-mode'); }
 });
 
-// --- 14. PDF ANNOTATOR ENGINE (THE PINCH-STRETCH-SNAP ARCHITECTURE) ---
+// --- 14. PDF ANNOTATOR ENGINE (OFF-SCREEN BUFFERING + ASYNC TEXT) ---
 let activePdf = { 
   base64Data: null, originalPath: null, doc: null, 
   pageNum: 1, totalPages: 0, annotations: {},
-  renderTask: null,
-  zoomLevel: 1.0,
-  baseCssWidth: 0,
-  baseCssHeight: 0
+  renderTask: null
 };
+let currentRenderPage = 0; // Tracks the actual page being requested to prevent rapid-click queuing
 
 async function launchPdfAnnotator(base64Data, filePath) {
   activePdf.base64Data = base64Data;
   activePdf.originalPath = filePath;
   activePdf.pageNum = 1;
+  currentRenderPage = 1;
   activePdf.annotations = {};
-  activePdf.zoomLevel = 1.0;
   if (activePdf.renderTask) activePdf.renderTask = null;
 
   const modal = document.getElementById('pdf-modal');
@@ -897,69 +895,39 @@ async function launchPdfAnnotator(base64Data, filePath) {
   }
 }
 
-// 1. The Helper Function to Apply Zoom Math
-async function applyPdfZoom(newZoom) {
-    activePdf.zoomLevel = Math.max(1.0, Math.min(newZoom, 5.0));
-    const spinnerOverlay = document.getElementById('pdf-loading-spinner');
-    const spinnerText = document.getElementById('pdf-spinner-text');
-
-    if (spinnerOverlay) {
-        spinnerOverlay.style.display = 'flex';
-        spinnerOverlay.style.backgroundColor = 'rgba(16, 20, 26, 0.4)';
-        if (spinnerText) spinnerText.innerText = "Enhancing Text...";
-    }
-    
-    await new Promise(r => setTimeout(r, 10)); // Yield to paint spinner
-    await renderPdfPage(activePdf.pageNum);
-
-    if (spinnerOverlay) {
-        spinnerOverlay.style.display = 'none';
-        spinnerOverlay.style.backgroundColor = 'rgba(16, 20, 26, 0.85)';
-    }
-}
-
-
 async function renderPdfPage(num) {
+  currentRenderPage = num;
+  const pageNumSpan = document.getElementById('pdf-page-num');
+  pageNumSpan.innerText = num;
+  pageNumSpan.style.opacity = '0.5'; // Dim while loading
+
   if (activePdf.renderTask) {
       await activePdf.renderTask.cancel();
       activePdf.renderTask = null;
   }
 
-  document.getElementById('pdf-page-num').innerText = num;
   const page = await activePdf.doc.getPage(num);
-  
+  if (currentRenderPage !== num) return; // User tapped 'Next' again, abort this render
+
   const container = document.getElementById('pdf-canvas-container');
   const unscaledViewport = page.getViewport({ scale: 1.0 });
   const cssWidth = container.clientWidth - 40; 
   const baseFitScale = cssWidth / unscaledViewport.width;
   
-  // Save measurements for the zooming constraints
-  activePdf.baseCssWidth = cssWidth;
-  activePdf.baseCssHeight = cssWidth * (unscaledViewport.height / unscaledViewport.width);
-  
-  const finalScale = baseFitScale * activePdf.zoomLevel;
   const ratio = window.devicePixelRatio || 2; 
-
-  // Physical pixels for crispness
-  const viewport = page.getViewport({ scale: finalScale * ratio }); 
-  // CSS pixels for sizing
-  const cssViewport = page.getViewport({ scale: finalScale }); 
+  const viewport = page.getViewport({ scale: baseFitScale * ratio }); 
+  const cssViewport = page.getViewport({ scale: baseFitScale }); 
   
-  const oldBaseCanvas = document.getElementById('pdf-base-canvas');
-  const baseCanvas = oldBaseCanvas.cloneNode(true);
-  oldBaseCanvas.parentNode.replaceChild(baseCanvas, oldBaseCanvas);
+  // THE FIX: Off-Screen Buffer Canvas
+  // We draw to a hidden canvas first, so the screen doesn't go blank while processing
+  const offScreenCanvas = document.createElement('canvas');
+  const baseCtx = offScreenCanvas.getContext('2d');
   
-  const baseCtx = baseCanvas.getContext('2d');
-  
-  baseCanvas.width = viewport.width;
-  baseCanvas.height = viewport.height;
-
+  offScreenCanvas.width = viewport.width;
+  offScreenCanvas.height = viewport.height;
   baseCtx.fillStyle = '#ffffff';
-  baseCtx.fillRect(0, 0, baseCanvas.width, baseCanvas.height);
+  baseCtx.fillRect(0, 0, offScreenCanvas.width, offScreenCanvas.height);
   
-  baseCanvas.style.width = cssViewport.width + 'px';
-  baseCanvas.style.height = cssViewport.height + 'px';
-
   const renderContext = { canvasContext: baseCtx, viewport: viewport };
   activePdf.renderTask = page.render(renderContext);
   
@@ -968,38 +936,27 @@ async function renderPdfPage(num) {
   } catch (err) {
       if (err.name === 'RenderingCancelledException') return; 
       console.error(err);
+      return;
   }
   
   activePdf.renderTask = null;
+  if (currentRenderPage !== num) return; // User tapped 'Next' right as it finished painting
 
-  // The invisible Text Layer mapping
-  const textLayerDiv = document.getElementById('pdf-text-layer');
-  textLayerDiv.innerHTML = '';
-  textLayerDiv.style.width = cssViewport.width + 'px';
-  textLayerDiv.style.height = cssViewport.height + 'px';
+  // --- INSTANT VISUAL SNAP ---
+  const oldBaseCanvas = document.getElementById('pdf-base-canvas');
+  offScreenCanvas.id = 'pdf-base-canvas';
+  offScreenCanvas.style.display = 'block';
+  offScreenCanvas.style.width = cssViewport.width + 'px';
+  offScreenCanvas.style.height = cssViewport.height + 'px';
   
-  textLayerDiv.style.setProperty('--scale-factor', cssViewport.scale);
+  oldBaseCanvas.parentNode.replaceChild(offScreenCanvas, oldBaseCanvas);
+  
+  const wrapper = document.getElementById('pdf-transform-wrapper');
+  wrapper.style.transform = `scale(1)`;
 
-  try {
-      const textContent = await page.getTextContent();
-      await pdfjsLib.renderTextLayer({
-          textContentSource: textContent,
-          container: textLayerDiv,
-          viewport: cssViewport,
-          textDivs: []
-      }).promise;
-      
-      // THE FIX: Provide an explicit space character to bridge the selection
-      const spans = textLayerDiv.querySelectorAll('span');
-      spans.forEach(span => { span.innerHTML += ' '; });
-  } catch (e) {
-      console.warn("Failed to extract PDF text layer: ", e);
-  }
-
-  // Resize the drawing canvas
   const glassCanvas = document.getElementById('pdf-glass-canvas');
-  glassCanvas.width = baseCanvas.width;
-  glassCanvas.height = baseCanvas.height;
+  glassCanvas.width = offScreenCanvas.width;
+  glassCanvas.height = offScreenCanvas.height;
   glassCanvas.style.width = cssViewport.width + 'px';
   glassCanvas.style.height = cssViewport.height + 'px';
   
@@ -1014,10 +971,30 @@ async function renderPdfPage(num) {
     img.onload = () => glassCtx.drawImage(img, 0, 0, glassCanvas.width, glassCanvas.height);
     img.src = activePdf.annotations[num];
   }
-  
-  // Snap the wrapper and bounds to match the new crisp image perfectly
-  const wrapper = document.getElementById('pdf-transform-wrapper');
-  wrapper.style.transform = `scale(1)`;
+
+  pageNumSpan.style.opacity = '1'; // Visuals are done, illuminate the page number
+
+  // --- ASYNC TEXT LAYER INJECTION ---
+  // The user can now view the page and draw, while the text layer builds silently in the background
+  const textLayerDiv = document.getElementById('pdf-text-layer');
+  textLayerDiv.innerHTML = '';
+  textLayerDiv.style.width = cssViewport.width + 'px';
+  textLayerDiv.style.height = cssViewport.height + 'px';
+  textLayerDiv.style.setProperty('--scale-factor', cssViewport.scale);
+
+  page.getTextContent().then(textContent => {
+      if (currentRenderPage !== num) return; // Abort if they already moved on
+      pdfjsLib.renderTextLayer({
+          textContentSource: textContent,
+          container: textLayerDiv,
+          viewport: cssViewport,
+          textDivs: []
+      }).promise.then(() => {
+          if (currentRenderPage !== num) return;
+          const spans = textLayerDiv.querySelectorAll('span');
+          spans.forEach(span => { span.innerHTML += ' '; });
+      });
+  }).catch(e => console.warn("Text extraction aborted", e));
 }
 
 function saveCurrentPageAnnotation() {
@@ -1039,8 +1016,22 @@ document.getElementById('pdf-next-btn').addEventListener('click', () => {
   renderPdfPage(activePdf.pageNum);
 });
 
+// THE FIX: Clickable Jump-to-Page Engine
+document.getElementById('pdf-page-num').addEventListener('click', () => {
+    const jump = prompt(`Jump to page (1 - ${activePdf.totalPages}):`, activePdf.pageNum);
+    if (jump) {
+        const jumpNum = parseInt(jump, 10);
+        if (jumpNum >= 1 && jumpNum <= activePdf.totalPages) {
+            saveCurrentPageAnnotation();
+            activePdf.pageNum = jumpNum;
+            renderPdfPage(activePdf.pageNum);
+        }
+    }
+});
+
 document.getElementById('pdf-cancel-btn').addEventListener('click', () => {
   document.getElementById('pdf-modal').style.display = 'none';
+  
   const spinner = document.getElementById('pdf-loading-spinner');
   if (spinner) spinner.style.display = 'none';
   activePdf = { base64Data: null, originalPath: null, doc: null, pageNum: 1, totalPages: 0, annotations: {} };
@@ -1093,8 +1084,6 @@ document.getElementById('pdf-save-btn').addEventListener('click', async () => {
 function setupPdfDrawingTools() {
   const glassCanvas = document.getElementById('pdf-glass-canvas');
   const ctx = glassCanvas.getContext('2d');
-  const container = document.getElementById('pdf-canvas-container');
-  const wrapper = document.getElementById('pdf-transform-wrapper');
   
   const toolbarContainer = document.getElementById('pdf-toolbar-container');
   toolbarContainer.innerHTML = `
@@ -1129,49 +1118,6 @@ function setupPdfDrawingTools() {
       });
   });
 
-  // --- THE PINCH-STRETCH-SNAP ZOOM LOGIC ---
-  let pinchStartDistance = 0;
-  let isPinching = false;
-  let currentScale = 1;
-  let animationFrameId = null;
-
-  container.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 2 && currentColor === 'pan') {
-          isPinching = true;
-          pinchStartDistance = Math.hypot(
-              e.touches[0].clientX - e.touches[1].clientX,
-              e.touches[0].clientY - e.touches[1].clientY
-          );
-      }
-  }, { passive: false });
-
-  container.addEventListener('touchmove', (e) => {
-      if (isPinching && e.touches.length === 2 && currentColor === 'pan') {
-          e.preventDefault(); 
-          const dist = Math.hypot(
-              e.touches[0].clientX - e.touches[1].clientX,
-              e.touches[0].clientY - e.touches[1].clientY
-          );
-          currentScale = dist / pinchStartDistance;
-          
-          // RequestAnimationFrame kills the lag on mobile
-          if (animationFrameId) cancelAnimationFrame(animationFrameId);
-          animationFrameId = requestAnimationFrame(() => {
-              wrapper.style.transform = `scale(${currentScale})`;
-          });
-      }
-  }, { passive: false });
-
-  container.addEventListener('touchend', (e) => {
-      if (isPinching && e.touches.length < 2) {
-          isPinching = false;
-          // Apply the final snap
-          applyPdfZoom(activePdf.zoomLevel * currentScale);
-      }
-  });
-
-
-  // --- DRAWING LOGIC ---
   let isDrawing = false;
   
   const getPos = (e) => {
@@ -1193,7 +1139,7 @@ function setupPdfDrawingTools() {
     isDrawing = true; 
     const pos = getPos(e); 
     ctx.strokeStyle = currentColor;
-    // Map width dynamically based on zoom scale so pen thickness looks consistent
+    // Adapt pen thickness dynamically to zoom
     ctx.lineWidth = currentWidth * (window.devicePixelRatio || 2);
     ctx.beginPath(); 
     ctx.moveTo(pos.x, pos.y); 

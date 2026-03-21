@@ -319,10 +319,10 @@
         <div id="pdf-spinner-text" class="modern-spinner-text">Reading File...</div>
       </div>
 
-      <!-- THE FIX: Scroll Bounds Wrapper -> Adapts to the scaled transform to allow native scrolling -->
-      <div id="pdf-scroll-bounds" style="transform-origin: top left; display: flex; justify-content: center;">
+     <!-- Scroll Bounds Wrapper -> Adapts to the scaled transform to allow native scrolling -->
+      <div id="pdf-scroll-bounds" style="display: flex; justify-content: center; min-width: 100%; min-height: 100%;">
           <!-- Hardware Accelerated Zoom Wrapper -->
-          <div id="pdf-transform-wrapper" style="position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.8); transform-origin: top left; transform: scale(1); will-change: transform;">
+          <div id="pdf-transform-wrapper" style="position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.8); will-change: transform;">
             <canvas id="pdf-base-canvas" style="display: block;"></canvas>
             
             <div id="pdf-text-layer" class="textLayer" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; line-height: 1.0;"></div>

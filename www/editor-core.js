@@ -855,7 +855,8 @@ document.addEventListener('keydown', (e) => {
 let activePdf = { 
   base64Data: null, originalPath: null, doc: null, 
   pageNum: 1, totalPages: 0, annotations: {},
-  renderTask: null 
+  renderTask: null,
+  hdMultiplier: 4 // THE FIX: Renders the PDF at 400% resolution in background memory
 };
 
 async function launchPdfAnnotator(base64Data, filePath) {
@@ -910,8 +911,8 @@ async function renderPdfPage(num) {
   const cssWidth = container.clientWidth - 40; 
   const baseScale = cssWidth / unscaledViewport.width;
   
-  // 1. The High-Res Viewport for the Base Canvas
-  const viewport = page.getViewport({ scale: baseScale * 2 }); 
+  // 1. Force the massive 4X high-res viewport for crystal clear zooming
+  const viewport = page.getViewport({ scale: baseScale * activePdf.hdMultiplier }); 
   
   const oldBaseCanvas = document.getElementById('pdf-base-canvas');
   const baseCanvas = oldBaseCanvas.cloneNode(true);
@@ -926,12 +927,12 @@ async function renderPdfPage(num) {
   baseCtx.fillStyle = '#ffffff';
   baseCtx.fillRect(0, 0, baseCanvas.width, baseCanvas.height);
   
+  // Use CSS to physically shrink the massive canvas to fit the phone screen perfectly
   const cssHeight = cssWidth * (viewport.height / viewport.width);
   baseCanvas.style.width = cssWidth + 'px';
   baseCanvas.style.height = cssHeight + 'px';
 
   const renderContext = { canvasContext: baseCtx, viewport: viewport };
-  
   activePdf.renderTask = page.render(renderContext);
   
   try {
@@ -943,13 +944,12 @@ async function renderPdfPage(num) {
   
   activePdf.renderTask = null;
 
-  // 2. THE NEW TEXT LAYER (Allows Copy/Pasting)
+  // 2. Map the Text Layer to the CSS display size so highlights align perfectly
   const textLayerDiv = document.getElementById('pdf-text-layer');
   textLayerDiv.innerHTML = '';
   textLayerDiv.style.width = cssWidth + 'px';
   textLayerDiv.style.height = cssHeight + 'px';
   
-  // We must use a 1x viewport so the text sizes align perfectly with the CSS box
   const textViewport = page.getViewport({ scale: baseScale });
   textLayerDiv.style.setProperty('--scale-factor', textViewport.scale);
 
@@ -965,7 +965,7 @@ async function renderPdfPage(num) {
       console.warn("Failed to extract PDF text layer: ", e);
   }
 
-  // 3. The Glass Drawing Canvas
+  // 3. Match the Glass Drawing Canvas to the 4X High-Res Base
   const glassCanvas = document.getElementById('pdf-glass-canvas');
   glassCanvas.width = baseCanvas.width;
   glassCanvas.height = baseCanvas.height;
@@ -1006,7 +1006,6 @@ document.getElementById('pdf-next-btn').addEventListener('click', () => {
 
 document.getElementById('pdf-cancel-btn').addEventListener('click', () => {
   document.getElementById('pdf-modal').style.display = 'none';
-  // RE-LOCK ZOOM WHEN CLOSING MODAL
   document.getElementById('viewport-meta').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
   
   const spinner = document.getElementById('pdf-loading-spinner');
@@ -1067,9 +1066,7 @@ function setupPdfDrawingTools() {
   const toolbarContainer = document.getElementById('pdf-toolbar-container');
   toolbarContainer.innerHTML = `
     <div style="display: flex; justify-content: center; gap: 15px; padding: 15px; background: #0d1117; border-top: 1px solid #30363d;">
-        <!-- NEW: The Navigation/Pan Mode Button -->
         <div class="pdf-color-btn" data-color="pan" style="width:30px;height:30px;border-radius:50%;background:#161b22;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow: 0 0 0 3px #ffffff;" title="Pan & Zoom">✋</div>
-        
         <div class="pdf-color-btn" data-color="#d32f2f" style="width:30px;height:30px;border-radius:50%;background:#d32f2f;cursor:pointer;"></div>
         <div class="pdf-color-btn" data-color="#1976d2" style="width:30px;height:30px;border-radius:50%;background:#1976d2;cursor:pointer;"></div>
         <div class="pdf-color-btn" data-color="#388e3c" style="width:30px;height:30px;border-radius:50%;background:#388e3c;cursor:pointer;"></div>
@@ -1079,10 +1076,9 @@ function setupPdfDrawingTools() {
     </div>
   `;
 
-  let currentColor = 'pan'; // DEFAULT TO PAN MODE
-  let currentWidth = 4 * 2; 
+  let currentColor = 'pan'; 
+  let currentWidth = 4 * activePdf.hdMultiplier; 
   
-  // Instantly disable the drawing layer so pinch-to-zoom works on boot
   glassCanvas.style.pointerEvents = 'none';
   
   document.querySelectorAll('.pdf-color-btn').forEach(btn => {
@@ -1092,12 +1088,10 @@ function setupPdfDrawingTools() {
           currentColor = btn.getAttribute('data-color');
           
           if (currentColor === 'pan') {
-              // Deactivate drawing layer so you can pinch/zoom the document underneath
               glassCanvas.style.pointerEvents = 'none';
           } else {
-              // Activate drawing layer to catch your pen strokes
               glassCanvas.style.pointerEvents = 'auto';
-              currentWidth = (currentColor === '#ffffff') ? 25 * 2 : 4 * 2; 
+              currentWidth = (currentColor === '#ffffff') ? 25 * activePdf.hdMultiplier : 4 * activePdf.hdMultiplier; 
           }
       });
   });

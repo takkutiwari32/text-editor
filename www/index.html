@@ -275,7 +275,7 @@
     </div>
   </div>
 
-  <!-- PDF ANNOTATOR MODAL -->
+ <!-- PDF ANNOTATOR MODAL -->
   <div id="pdf-modal" class="modal-overlay" style="z-index: 10010; flex-direction: column; background: var(--bg-color);">
     <!-- Top Bar with Pagination (Arrow Removed) -->
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #0d1117; border-bottom: 1px solid #30363d; width: 100%; box-sizing: border-box;">
@@ -290,8 +290,8 @@
       <button id="pdf-save-btn" style="background: none; border: none; color: #58a6ff; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Save PDF</button>
     </div>
 
-    <!-- The Double Canvas Area (Scrolling Container) -->
-    <div id="pdf-canvas-container" style="flex: 1; width: 100%; background: #050505; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 20px; box-sizing: border-box; position: relative;">
+    <!-- THE FIX: Added GPU Acceleration and Momentum Scrolling to the Container -->
+    <div id="pdf-canvas-container" style="flex: 1; width: 100%; background: #050505; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 20px; box-sizing: border-box; position: relative; -webkit-overflow-scrolling: touch;">
       
       <!-- Modern Loading Spinner -->
       <div id="pdf-loading-spinner" class="modern-spinner-overlay" style="display: none;">
@@ -299,11 +299,12 @@
         <div id="pdf-spinner-text" class="modern-spinner-text">Reading File...</div>
       </div>
 
-      <div style="position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+      <!-- THE FIX: Hardware Accelerated Wrapper -->
+      <div style="position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.8); transform: translateZ(0); will-change: transform;">
         <!-- Base Layer: The PDF Page -->
         <canvas id="pdf-base-canvas" style="display: block;"></canvas>
         
-        <!-- NEW: The Invisible Text Layer for Highlighting & Copying -->
+        <!-- The Invisible Text Layer for Highlighting & Copying -->
         <div id="pdf-text-layer" class="textLayer" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; line-height: 1.0;"></div>
         
         <!-- Glass Layer: The Drawing Canvas -->

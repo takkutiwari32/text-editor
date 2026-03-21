@@ -1,433 +1,281 @@
-/* 1. Core Variables & Theme (Premium Dark Mode) */
+/* =========================================
+   1. CORE VARIABLES & PREMIUM THEME
+========================================= */
 :root {
-  --bg-color: #0d1117;        /* Deep GitHub Dark background */
-  --surface-color: #161b22;   /* Slightly lighter surface for sidebars/canvas */
-  --border-color: #30363d;    /* Subtle dark borders */
-  --text-main: #c9d1d9;       /* Crisp off-white text */
-  --text-muted: #8b949e;      /* Dimmer text for secondary labels */
-  --primary-accent: #f85149;  /* Vibrant red accent for dark mode */
-  --hover-accent: #da3633;
-  --sidebar-width: 260px;
-  --topbar-height: 60px;
+  --bg-color: #050505;        /* Ultra-deep OLED black */
+  --surface-color: #10141a;   /* Sleek, cool-toned surface */
+  --surface-glass: rgba(16, 20, 26, 0.75); 
+  --border-color: rgba(255, 255, 255, 0.08); /* Soft, barely-there borders */
+  --text-main: #e2e8f0;       /* Softened white to reduce eye strain */
+  --text-muted: #8b949e;
+  --primary-accent: #58a6ff;  /* Crisp modern blue */
+  --primary-glow: rgba(88, 166, 255, 0.3);
+  --danger-accent: #f85149;   /* Coral red for destructive actions/alerts */
+  --sidebar-width: 280px;
+  --topbar-height: 65px;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 
-/* We lock the body so only the center canvas scrolls */
 body { 
-  font-family: 'Segoe UI', system-ui, sans-serif; 
   background-color: var(--bg-color); 
   color: var(--text-main); 
   overflow: hidden; 
+  -webkit-font-smoothing: antialiased;
 }
 
-/* 2. Top Navigation Bar */
+/* Custom Sleek Scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* =========================================
+   2. FROSTED TOP NAVIGATION BAR
+========================================= */
 .top-bar {
   position: fixed; top: 0; left: 0; width: 100%; height: var(--topbar-height);
-  background: var(--surface-color); border-bottom: 1px solid var(--border-color);
+  background: var(--surface-glass); 
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-color);
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 20px; z-index: 100; box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  padding: 0 24px; z-index: 100;
 }
-.logo-text { font-weight: 800; font-size: 1.2rem; color: var(--primary-accent); letter-spacing: 0.5px; }
-.center-controls { display: flex; align-items: center; gap: 15px; }
+
+.logo-text { 
+  font-weight: 900; font-size: 1.3rem; 
+  background: linear-gradient(135deg, #fff, #8b949e);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+  letter-spacing: 1px; 
+}
+
+.center-controls { display: flex; align-items: center; gap: 12px; }
+
+/* Modern Icon Buttons */
 .icon-btn { 
-  background: none; border: 1px solid var(--border-color); border-radius: 6px; 
-  font-size: 1.1rem; cursor: pointer; padding: 4px 10px; color: var(--text-muted); transition: 0.2s; 
+  background: transparent; border: 1px solid transparent; border-radius: 8px; 
+  font-size: 1.2rem; cursor: pointer; padding: 8px 12px; color: var(--text-muted); 
+  transition: all 0.2s ease; 
 }
-.icon-btn:hover { background: var(--bg-color); color: var(--text-main); }
-.save-status { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
-.action-section { display: flex; gap: 10px; }
+.icon-btn:hover { 
+  background: rgba(255,255,255,0.05); color: var(--text-main); 
+  transform: translateY(-1px);
+}
+
+.save-status { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-left: 10px; padding: 4px 10px; background: rgba(255,255,255,0.03); border-radius: 20px;}
+.action-section { display: flex; gap: 12px; }
+
+/* Premium Action Buttons */
 .btn-secondary { 
-  background: var(--surface-color); border: 1px solid var(--border-color); padding: 8px 16px; 
-  border-radius: 6px; cursor: pointer; font-weight: 600; color: var(--text-main); transition: 0.2s; 
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 8px 18px; 
+  border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--text-main); 
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); 
 }
-.btn-secondary:hover { background: var(--bg-color); }
+.btn-secondary:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
 .btn-primary { 
-  background: var(--primary-accent); border: none; padding: 8px 16px; 
-  border-radius: 6px; cursor: pointer; font-weight: 600; color: white; transition: 0.2s; 
+  background: linear-gradient(135deg, var(--primary-accent), #3182ce); border: none; padding: 8px 20px; 
+  border-radius: 8px; cursor: pointer; font-weight: 600; color: white; 
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); 
+  box-shadow: 0 4px 15px var(--primary-glow);
 }
-.btn-primary:hover { background: var(--hover-accent); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--primary-glow); filter: brightness(1.1); }
 
-/* 3. The 3-Pane App Layout */
-.app-body {
-  display: flex; margin-top: var(--topbar-height); height: calc(100vh - var(--topbar-height));
-}
+/* =========================================
+   3. LAYOUT & SIDEBARS
+========================================= */
+.app-body { display: flex; margin-top: var(--topbar-height); height: calc(100vh - var(--topbar-height)); }
 
-/* 4. The Sidebars */
 .left-sidebar, .right-sidebar {
-  width: var(--sidebar-width); background: var(--surface-color);
-  border-right: 1px solid var(--border-color); padding: 20px;
-  overflow-y: auto; display: flex; flex-direction: column; gap: 20px;
+  width: var(--sidebar-width); background: var(--bg-color);
+  border-right: 1px solid var(--border-color); padding: 24px;
+  overflow-y: auto; display: flex; flex-direction: column; gap: 24px;
 }
 .right-sidebar { border-right: none; border-left: 1px solid var(--border-color); }
-.sidebar-title { font-size: 0.85rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; }
+.sidebar-title { font-size: 0.75rem; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 1px; }
 
-/* 5. Left Sidebar: Wix-Style Tool Grid */
-.tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* Tool Grid Cards (Soft Glow Hover) */
+.tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .tool-card {
-  background: var(--surface-color); border: 1px solid var(--border-color);
-  border-radius: 8px; padding: 15px 10px; display: flex; flex-direction: column;
-  align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s ease;
+  background: linear-gradient(145deg, rgba(255,255,255,0.02), rgba(255,255,255,0)); border: 1px solid var(--border-color);
+  border-radius: 12px; padding: 18px 10px; display: flex; flex-direction: column;
+  align-items: center; gap: 10px; cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .tool-card:hover { 
-  border-color: var(--primary-accent); background: #fffcfc; 
-  transform: translateY(-2px); box-shadow: 0 4px 8px rgba(211,47,47,0.08); 
+  border-color: var(--primary-accent); background: rgba(88, 166, 255, 0.05); 
+  transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 15px var(--primary-glow); 
 }
-.tool-icon { font-size: 1.5rem; font-weight: bold; color: var(--text-main); }
+.tool-icon { font-size: 1.5rem; font-weight: bold; color: var(--text-main); transition: transform 0.3s ease; }
+.tool-card:hover .tool-icon { transform: scale(1.1); }
 .tool-name { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
 
-/* 6. Right Sidebar: Settings & Word Count */
-.settings-group { display: flex; flex-direction: column; gap: 8px; }
-.settings-group label { font-size: 0.8rem; font-weight: 600; color: var(--text-main); }
-.setting-input { 
-  padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; 
-  font-size: 0.85rem; outline: none; transition: 0.2s; 
+/* Inputs & Form Elements */
+.setting-input, .typo-input { 
+  padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); 
+  border-radius: 8px; font-size: 0.85rem; color: var(--text-main); outline: none; transition: all 0.2s; 
 }
-.setting-input:focus { border-color: var(--primary-accent); }
-.stats-box { 
-  background: var(--bg-color); padding: 15px; border-radius: 8px; 
-  display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--border-color); 
-}
-.stat-row { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: flex; justify-content: space-between; }
-.stat-row span { color: var(--text-main); font-weight: 700; }
+.setting-input:focus, .typo-input:focus { border-color: var(--primary-accent); box-shadow: 0 0 0 3px var(--primary-glow); }
 
-/* 7. Center Canvas: The Isolated Writing Area */
+/* Typography Sliders */
+input[type="range"] { -webkit-appearance: none; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: var(--primary-accent); border-radius: 50%; cursor: pointer; transition: transform 0.1s; }
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+/* Switch Toggle */
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s cubic-bezier(0.68, -0.55, 0.265, 1.55); border-radius: 50%; }
+input:checked + .slider { background-color: var(--primary-accent); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* =========================================
+   4. THE CENTER CANVAS
+========================================= */
 .editor-canvas {
-  flex: 1; background: var(--bg-color); 
-  padding: 20px; 
-  overflow-y: auto; display: flex; justify-content: center;
-  align-items: flex-start;
+  flex: 1; background: var(--surface-color); padding: 40px 20px; 
+  overflow-y: auto; display: flex; justify-content: center; align-items: flex-start;
 }
 .document-container {
-  width: 100%; 
-  max-width: 100%; 
-  background: #ffffff;
-  padding: 60px 80px; border-radius: 8px; 
-  box-shadow: 0 8px 30px rgba(0,0,0,0.4); 
-  border: none; 
-  min-height: calc(100vh - 140px);
-  height: max-content;
+  width: 100%; max-width: 100%; background: #ffffff;
+  padding: 80px 100px; border-radius: 12px; 
+  box-shadow: 0 12px 48px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.05); 
+  min-height: calc(100vh - 180px); height: max-content; transition: padding 0.3s ease;
 }
 .document-title {
-  width: 100%; font-size: 3rem; font-weight: 800; border: none; outline: none;
-  margin-bottom: 30px; 
-  color: #111111; 
-  border-bottom: 2px solid #eeeeee; padding-bottom: 15px;
-  background: transparent;
+  width: 100%; font-size: 3.5rem; font-weight: 900; border: none; outline: none;
+  margin-bottom: 40px; color: #000000; border-bottom: 2px solid #eaeaea; padding-bottom: 15px; background: transparent;
+  letter-spacing: -1px;
 }
-.document-title::placeholder { color: #bbbbbb; }
-#editor-container { font-size: 1.15rem; line-height: 1.7; color: #111111; }
-
-.codex-editor { color: #111111 !important; }
-
-.ce-block_content, .ce-toolbar_content {
-  max-width: 100% !important; 
-}
-
-/* 8. Compact Typography Inspector UI */
-.typo-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-.typo-row label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-.typo-input {
-  width: 140px; 
-  padding: 4px 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--bg-color);
-  color: var(--text-main);
-  font-size: 0.75rem;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.typo-input:focus { border-color: var(--primary-accent); }
-.typo-color {
-  width: 32px;
-  height: 24px;
-  padding: 0;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  cursor: pointer;
-  background: transparent;
-}
-.typo-color::-webkit-color-swatch-wrapper { padding: 0; }
-.typo-color::-webkit-color-swatch { border: none; border-radius: 3px; }
 
 /* =========================================
- 9. DYNAMIC LINE SPACING ENGINE 
+   5. MODALS & AI FLYOUT (ANIMATED)
 ========================================= */
-:root {
- --editor-line-height: 1.5;
+@keyframes modalPop {
+  0% { opacity: 0; transform: scale(0.95) translateY(20px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* The Sledgehammer: Force line-height on absolutely everything inside the editor */
-#editor-container, 
-#editor-container * {
- line-height: var(--editor-line-height) !important;
+.modal-overlay { 
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  z-index: 10000; justify-content: center; align-items: center; 
+}
+.modal-box { 
+  background: rgba(16, 20, 26, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  padding: 30px; border-radius: 16px; border: 1px solid var(--border-color); 
+  width: 450px; max-width: 90%; color: var(--text-main); 
+  box-shadow: 0 24px 60px rgba(0,0,0,0.8); animation: modalPop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
 }
 
-/* Crush the massive default EditorJS block margins */
-.ce-block {
- margin-top: 0 !important;
- margin-bottom: 0 !important;
- padding-top: calc((var(--editor-line-height) - 1) * 10px) !important;
- padding-bottom: calc((var(--editor-line-height) - 1) * 10px) !important;
+/* Force override the inline styles of your drawing/pdf modals so they look premium */
+#draw-modal, #pdf-modal { background: rgba(5, 5, 5, 0.9) !important; backdrop-filter: blur(10px) !important; }
+#draw-modal > div:first-child, #pdf-modal > div:first-child, #pdf-toolbar-container > div, #draw-options-drawer, #draw-primary-tools {
+    background: rgba(16, 20, 26, 0.8) !important; backdrop-filter: blur(20px) !important;
+    border-color: rgba(255,255,255,0.05) !important;
 }
+
+/* AI Flyout */
+.ai-flyout { 
+  position: fixed; bottom: 0; left: 0; width: var(--sidebar-width); 
+  background: rgba(16, 20, 26, 0.85); backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); 
+  padding: 20px; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 9999; border-top-right-radius: 16px; 
+}
+.ai-flyout:hover { width: 30vw; box-shadow: 10px -10px 40px rgba(0,0,0,0.5); background: rgba(16, 20, 26, 0.98); }
+#ai-chat-window { 
+  height: 250px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); 
+  border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px; transition: height 0.4s ease; 
+}
+.ai-flyout:hover #ai-chat-window { height: 450px; }
 
 /* =========================================
-   MOBILE MATRIX OVERRIDE (MAX 768PX)
-   ========================================= */
+   6. MOBILE MATRIX (MAX 768PX)
+========================================= */
 @media screen and (max-width: 768px) {
-    
-    /* 1. Ultra-Minimal Top Bar */
-    .top-bar { 
-        height: 60px !important; 
-        padding: 0 15px !important; 
-        justify-content: space-between !important;
-    }
+    .top-bar { height: 60px !important; padding: 0 15px !important; }
     .save-status { display: none !important; } 
+    .app-body { margin-top: 60px !important; height: calc(100vh - 60px) !important; display: block !important; }
+    .editor-canvas { padding: 0 !important; }
+    .document-container { padding: 30px 20px !important; min-height: calc(100vh - 60px) !important; border-radius: 0 !important; border: none !important; box-shadow: none !important; }
+    .document-title { font-size: 2.2rem !important; margin-bottom: 20px !important; }
 
-    /* 2. Maximize Canvas Space */
-    .app-body { 
-        margin-top: 60px !important; 
-        height: calc(100vh - 60px) !important;
-        overflow-x: hidden !important; 
-        max-width: 100vw !important; 
-        display: block !important;
-    }
-    
-    /* FIX: Removes the dark background border */
-    .editor-canvas {
-        padding: 0 !important; 
-        min-height: 100% !important;
-    }
-    
-    /* FIX: Flushes the document to the edges */
-    .document-container { 
-        padding: 20px 15px !important; 
-        min-height: calc(100vh - 60px) !important; 
-        border-radius: 0 !important; 
-        box-shadow: none !important; 
-    }
-    
-    /* 3. The 3-Dot Dropdown Menu */
+    /* Mobile 3-Dot Dropdown */
     .mobile-top-dropdown {
-        position: fixed; top: 65px; right: 15px; width: 200px;
-        background: var(--surface-color); border: 1px solid var(--border-color);
-        border-radius: 8px; padding: 15px; display: flex; flex-direction: column; gap: 15px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.9); z-index: 10000;
-        transform: translateY(-10px); opacity: 0; pointer-events: none; transition: 0.2s ease;
+        position: fixed; top: 70px; right: 15px; width: 220px;
+        background: rgba(16, 20, 26, 0.95); backdrop-filter: blur(20px); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 15px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.6); z-index: 10000;
+        transform: translateY(-10px) scale(0.95); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        transform-origin: top right;
     }
-    .mobile-top-dropdown.open { transform: translateY(0); opacity: 1; pointer-events: auto; }
-
-    .mobile-top-dropdown .center-controls { justify-content: flex-start !important; }
-    .mobile-top-dropdown .action-section { flex-direction: column !important; gap: 10px !important; width: 100% !important; }
+    .mobile-top-dropdown.open { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
+    .mobile-top-dropdown .action-section { flex-direction: column !important; width: 100% !important; }
     .mobile-top-dropdown .btn-primary, .mobile-top-dropdown .btn-secondary { width: 100% !important; padding: 12px !important; }
 
-    /* 4. Cloak desktop sidebars */
     .left-sidebar, .right-sidebar { display: none !important; }
 
-    /* 5. The FAB Button */
+    /* Mobile Floating Action Button */
     .mobile-fab {
-        position: fixed; bottom: 20px; right: 20px; z-index: 10000;
-        background: var(--primary-accent); color: white; border: none;
-        border-radius: 30px; padding: 15px 25px; font-size: 1.1rem; font-weight: bold;
-        box-shadow: 0 5px 15px rgba(248, 81, 73, 0.4); cursor: pointer; transition: 0.2s;
+        position: fixed; bottom: 24px; right: 24px; z-index: 10000;
+        background: linear-gradient(135deg, var(--primary-accent), #3182ce); color: white; border: none;
+        border-radius: 30px; padding: 16px 24px; font-size: 1.1rem; font-weight: bold;
+        box-shadow: 0 8px 24px var(--primary-glow); cursor: pointer; transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
+    .mobile-fab:active { transform: scale(0.95); }
 
-    /* 6. The Unified Sliding Drawer */
+    /* The Unified Sliding Drawer */
     .mobile-drawer {
-        position: fixed; bottom: 0; left: 0; width: 100%; height: 75vh;
-        background: var(--surface-color); z-index: 9000;
-        border-top: 2px solid var(--primary-accent); border-radius: 20px 20px 0 0;
-        transform: translateY(120%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 80px;
+        position: fixed; bottom: 0; left: 0; width: 100%; height: 80vh;
+        background: rgba(16, 20, 26, 0.98); backdrop-filter: blur(20px); z-index: 9000;
+        border-top: 1px solid var(--border-color); border-radius: 24px 24px 0 0;
+        transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+        display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 100px;
         box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
     }
     .mobile-drawer.open { transform: translateY(0); }
-
-    /* 7. Reformat Sidebars to fit perfectly inside the Drawer */
-    .mobile-drawer .left-sidebar, .mobile-drawer .right-sidebar {
-        width: 100% !important; border: none !important; padding: 20px !important;
-        display: flex !important; height: auto !important; overflow-y: visible !important;
-    }
-
-    /* 8. Force AI Flyout into the Mobile Drawer Flow */
-    .ai-flyout { 
-        position: relative !important; 
-        width: 100% !important; 
-        border: none !important; 
-        padding: 0 0 40px 0 !important; 
-        box-shadow: none !important;
-        display: block !important;
-        margin-top: 20px !important;
-    }
-    .ai-flyout:hover { width: 100% !important; box-shadow: none !important; }
-    
-    #ai-chat-window { height: 250px !important; }
-    .ai-flyout:hover #ai-chat-window { height: 250px !important; }
-
-    /* 9. Scale down massive title font */
-    .document-title { font-size: 28px !important; line-height: 1.3 !important; }
+    .mobile-drawer .left-sidebar, .mobile-drawer .right-sidebar { width: 100% !important; border: none !important; padding: 24px !important; display: flex !important; height: auto !important; }
+    .ai-flyout { position: relative !important; width: 100% !important; border: none !important; box-shadow: none !important; display: block !important; background: transparent !important; }
+    .ai-flyout:hover { width: 100% !important; }
+    #ai-chat-window { height: 300px !important; }
 }
+
 /* =========================================
-   10. GHOST UX: PRECISION SLIDER ISOLATION (FIXED)
+   7. DYNAMIC LINE SPACING & EDITOR RESET
 ========================================= */
-/* 1. Strip the drawer and sidebars of all colors and borders */
-body.is-sliding .mobile-drawer,
-body.is-sliding .left-sidebar,
-body.is-sliding .right-sidebar {
-    background: transparent !important;
-    box-shadow: none !important;
-    border-top-color: transparent !important;
-}
+:root { --editor-line-height: 1.5; }
+#editor-container, #editor-container * { line-height: var(--editor-line-height) !important; }
+.ce-block { margin-top: 0 !important; margin-bottom: 0 !important; padding-top: calc((var(--editor-line-height) - 1) * 10px) !important; padding-bottom: calc((var(--editor-line-height) - 1) * 10px) !important; }
 
-/* 2. Hide only the direct contents, NOT the wrappers */
-body.is-sliding .left-sidebar > *,
-body.is-sliding .right-sidebar > *,
-body.is-sliding .ai-flyout {
-    opacity: 0 !important;
-    pointer-events: none;
-    transition: opacity 0.2s ease-in-out;
-}
-
-/* 3. Force the active slider row to stay visible and give it a slight background so you can read the label */
-body.is-sliding .right-sidebar > .active-slider-row {
-    opacity: 1 !important;
-    pointer-events: auto;
-    background: rgba(22, 27, 34, 0.85) !important; 
-    padding: 10px;
-    border-radius: 8px;
-    transition: opacity 0.2s ease-in-out;
-}
 /* =========================================
-   11. CUSTOM MOBILE SPREADSHEET TOOL
+   8. GHOST UX & TABLE ISOLATION 
 ========================================= */
-.custom-table-wrapper {
-    width: 100%;
-    margin: 15px 0;
-}
-.custom-table-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background: #ffffff; /* Or keep dark if you prefer */
-}
-.custom-table {
-    border-collapse: collapse;
-    width: max-content;
-    min-width: 100%;
-}
-.custom-table td {
-    min-width: 120px;
-    max-width: 250px;
-    padding: 15px;
-    border: 1px solid #e1e4e8;
-    color: #111;
-    cursor: pointer;
-    font-size: 1rem;
-    word-break: break-word;
-    transition: background 0.2s;
-}
-/* Highlight the cell when tapped to mimic the video */
-.custom-table td:active {
-    background: #f0f4f8;
-}
-/* The Add Row/Col Controls */
-.custom-table-controls {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-}
-.custom-table-btn {
-    flex: 1;
-    background: var(--surface-color);
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
-    padding: 10px;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-}
-.custom-table-btn:hover { background: var(--bg-color); color: var(--text-main); }
+body.is-sliding .mobile-drawer, body.is-sliding .left-sidebar, body.is-sliding .right-sidebar { background: transparent !important; box-shadow: none !important; border-top-color: transparent !important; }
+body.is-sliding .left-sidebar > *, body.is-sliding .right-sidebar > *, body.is-sliding .ai-flyout { opacity: 0 !important; pointer-events: none; transition: opacity 0.2s ease; }
+body.is-sliding .right-sidebar > .active-slider-row { opacity: 1 !important; pointer-events: auto; background: rgba(16, 20, 26, 0.9) !important; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); transition: opacity 0.2s ease; }
+
+.custom-table-scroll { overflow-x: auto; border: 1px solid #eaeaea; border-radius: 8px; background: #ffffff; box-shadow: inset 0 0 10px rgba(0,0,0,0.02); }
+.custom-table { border-collapse: collapse; width: max-content; min-width: 100%; }
+.custom-table td { min-width: 120px; max-width: 250px; padding: 16px; border: 1px solid #eaeaea; color: #111; cursor: text; font-size: 1rem; word-break: break-word; transition: background 0.2s; }
+.custom-table td:active, .custom-table td:hover { background: #f8fafc; }
+.custom-table-btn { flex: 1; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: var(--text-muted); padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.custom-table-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-main); }
+
 /* =========================================
-   12. ZEN FOCUS MODE
+   9. ZEN FOCUS MODE
 ========================================= */
+body.zen-mode .top-bar, body.zen-mode .left-sidebar, body.zen-mode .right-sidebar, body.zen-mode .mobile-fab, body.zen-mode .mobile-drawer, body.zen-mode .mobile-top-dropdown { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+body.zen-mode .app-body { margin-top: 0 !important; height: 100vh !important; display: flex !important; justify-content: center !important; }
+body.zen-mode .editor-canvas { background-color: #ffffff !important; padding: 0 !important; }
+body.zen-mode .document-container { box-shadow: none !important; border-radius: 0 !important; border: none !important; max-width: 900px !important; width: 100% !important; margin: 0 auto !important; padding-top: 80px !important; min-height: 100vh !important; }
 
-/* Hide absolutely all UI panels when active */
-body.zen-mode .top-bar,
-body.zen-mode .left-sidebar,
-body.zen-mode .right-sidebar,
-body.zen-mode .mobile-fab,
-body.zen-mode .mobile-drawer,
-body.zen-mode .mobile-top-dropdown {
-    display: none !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
-
-/* Expand the app body to the top of the screen */
-body.zen-mode .app-body {
-    margin-top: 0 !important;
-    height: 100vh !important;
-    display: flex !important;
-    justify-content: center !important;
-}
-
-/* Paint the underlying canvas area white in Zen Mode to hide the dark theme */
-body.zen-mode .editor-canvas {
-    background-color: #ffffff !important;
-    padding: 0 !important; /* Ensures no padding gaps at the edges */
-}
-
-/* Give the document a clean, distraction-free width and force full height */
-body.zen-mode .document-container {
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    max-width: 900px !important;
-    width: 100% !important;
-    margin: 0 auto !important;
-    padding-top: 80px !important; /* Space for the exit button */
-    min-height: 100vh !important; /* Stretches paper to the absolute bottom bezel */
-}
-
-/* The Exit Button - Hidden by default, centered at the top */
 .exit-zen-btn {
-    display: none;
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(22, 27, 34, 0.7);
-    color: #8b949e;
-    border: 1px solid #30363d;
-    border-radius: 30px;
-    padding: 10px 20px;
-    font-size: 0.9rem;
-    font-weight: bold;
-    z-index: 10000;
-    cursor: pointer;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: rgba(16, 20, 26, 0.8); color: var(--text-muted);
+    border: 1px solid var(--border-color); border-radius: 30px; padding: 10px 24px;
+    font-size: 0.9rem; font-weight: bold; z-index: 10000; cursor: pointer;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
-
-.exit-zen-btn:hover {
-    background: rgba(248, 81, 73, 0.9); /* Lights up red on hover */
-    color: #ffffff;
-    border-color: #f85149;
-}
-
-/* Force the exit button to show when Zen mode is active */
-body.zen-mode .exit-zen-btn {
-    display: block !important;
-}
+.exit-zen-btn:hover { background: var(--danger-accent); color: #ffffff; border-color: var(--danger-accent); transform: translateX(-50%) translateY(-2px); box-shadow: 0 10px 30px rgba(248, 81, 73, 0.4); }
+body.zen-mode .exit-zen-btn { display: block !important; }

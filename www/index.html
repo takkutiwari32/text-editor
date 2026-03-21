@@ -39,16 +39,13 @@
       <button class="icon-btn" id="redo-btn" title="Redo">↻</button>
       <button class="icon-btn" id="zen-mode-btn" title="Zen Focus Mode">HIDE</button>
       <span class="save-status">Draft status: Unsaved</span>
-    </div> <div class="action-section">
-      <div class="action-section">
-   <button class="btn-secondary" id="preview-btn">Preview</button>
-   <button class="btn-secondary" id="export-pdf-btn" style="border-color: #58a6ff; color: #58a6ff;">Export To PDF</button>
-   <button class="btn-secondary" id="export-txt-btn">Export To TXT</button>
-   <!-- NEW SAVE AS BUTTON -->
-   <button class="btn-secondary" id="save-as-btn">Save As...</button>
-   <!-- RENAMED TO JUST 'SAVE' FOR CLARITY -->
-   <button class="btn-primary" id="publish-btn">Save</button>
- </div>
+    </div> 
+    <div class="action-section">
+       <button class="btn-secondary" id="preview-btn">Preview</button>
+       <button class="btn-secondary" id="export-pdf-btn" style="border-color: #58a6ff; color: #58a6ff;">Export To PDF</button>
+       <button class="btn-secondary" id="export-txt-btn">Export To TXT</button>
+       <button class="btn-secondary" id="save-as-btn">Save As...</button>
+       <button class="btn-primary" id="publish-btn">Save</button>
     </div>
   </nav>
 
@@ -118,7 +115,6 @@
 
     <main class="editor-canvas">
       <div class="document-container">
-        
         <div id="editor-container"></div>
       </div>
     </main>
@@ -149,9 +145,8 @@
 
       <div class="typo-row">
         <label>Font Style</label>
-    <select id="style-font" class="typo-input" style="cursor: pointer;">
+        <select id="style-font" class="typo-input" style="cursor: pointer;">
           <option value="">Theme Default</option>
-          
           <optgroup label="Modern Sans-Serif (Clean)">
             <option value="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">Native OS Default</option>
             <option value="Helvetica, Arial, sans-serif">Helvetica / Arial</option>
@@ -165,7 +160,6 @@
             <option value="Optima, Segoe, sans-serif">Optima</option>
             <option value="'Avenir Next', Avenir, sans-serif">Avenir</option>
           </optgroup>
-
           <optgroup label="Classic Serif (Editorial)">
             <option value="Georgia, serif">Georgia</option>
             <option value="'Times New Roman', Times, serif">Times New Roman</option>
@@ -177,7 +171,6 @@
             <option value="Didot, serif">Didot</option>
             <option value="'Hoefler Text', 'Baskerville old face', serif">Hoefler Text</option>
           </optgroup>
-
           <optgroup label="Monospace (Code & Tech)">
             <option value="ui-monospace, Menlo, Monaco, 'Cascadia Mono', 'Segoe UI Mono', 'Roboto Mono', monospace">Native OS Mono</option>
             <option value="Consolas, monospace">Consolas</option>
@@ -185,14 +178,12 @@
             <option value="'Lucida Console', Monaco, monospace">Lucida Console</option>
             <option value="'Andale Mono', monospace">Andale Mono</option>
           </optgroup>
-
           <optgroup label="Display & Heavy (Headlines)">
             <option value="Impact, fantasy">Impact</option>
             <option value="'Arial Black', Gadget, sans-serif">Arial Black</option>
             <option value="'Franklin Gothic Medium', 'Arial Narrow', sans-serif">Franklin Gothic</option>
             <option value="Copperplate, 'Copperplate Gothic Light', fantasy">Copperplate</option>
           </optgroup>
-
           <optgroup label="Handwriting & Cursive">
             <option value="'Brush Script MT', cursive">Brush Script</option>
             <option value="'Comic Sans MS', cursive">Comic Sans</option>
@@ -233,7 +224,8 @@
       </div>
     </div>
   </div>
-  <!-- NEW: THE CELL EDITOR MODAL -->
+
+  <!-- THE CELL EDITOR MODAL -->
   <div id="cell-edit-modal" class="modal-overlay">
     <div class="modal-box" style="width: 400px;">
       <h2 id="cell-edit-title" style="font-size: 1.2rem; margin-bottom: 15px; color: #c9d1d9;">Edit Cell</h2>
@@ -241,89 +233,11 @@
       <div style="display: flex; justify-content: flex-end; gap: 10px;">
         <button id="cell-cancel-btn" class="btn-secondary">Cancel</button>
         <button id="cell-save-btn" class="btn-primary">Save Data</button>
-        
       </div>
     </div>
   </div>
-  <button id="exit-zen-btn" class="exit-zen-btn">Exit Zen ⤫</button>
 
-  <script>if (typeof module === 'object') { window.module = module; module = undefined; }</script>
-  
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
-
-  <script>if (window.module) { module = window.module; }</script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
- <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
- <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-  
-  <!-- NEW: PDF ANNOTATION ENGINES -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-
-  <script src="editor-core.js"></script>
-  
-  <script src="editor-core.js"></script>
-  
-  <script>
-    if (window.innerWidth <= 768) {
-        const drawer = document.createElement('div');
-        drawer.className = 'mobile-drawer';
-        
-        drawer.appendChild(document.querySelector('.left-sidebar'));
-        drawer.appendChild(document.querySelector('.right-sidebar'));
-        
-        // Grab the restored AI Flyout and put it in the drawer
-        const aiFlyout = document.querySelector('.ai-flyout');
-        if(aiFlyout) drawer.appendChild(aiFlyout);
-
-        document.querySelector('.app-body').appendChild(drawer);
-        
-        const fab = document.createElement('button');
-        fab.className = 'mobile-fab';
-        fab.innerHTML = '🛠️ Tools';
-        document.body.appendChild(fab);
-
-        fab.addEventListener('click', () => {
-            drawer.classList.toggle('open');
-            fab.innerHTML = drawer.classList.contains('open') ? '❌ Close' : '🛠️ Tools';
-        });
-        
-        // --- TOP BAR KEBAB MENU INJECTION ---
-        const topBar = document.querySelector('.top-bar');
-        
-        // 1. Create the 3-dot button
-        const kebabBtn = document.createElement('button');
-        kebabBtn.innerHTML = '⋮';
-        kebabBtn.style.cssText = 'background: none; border: none; color: var(--text-main); font-size: 28px; font-weight: bold; cursor: pointer; padding: 0 10px; margin-left: auto;';
-        
-        document.querySelector('.logo-section').style.flexGrow = '1';
-        topBar.appendChild(kebabBtn);
-
-        // 2. Create the dropdown container
-        const topDropdown = document.createElement('div');
-        topDropdown.className = 'mobile-top-dropdown';
-        
-        // 3. Safely move the buttons out of the top bar and into the dropdown
-        topDropdown.appendChild(document.querySelector('.center-controls'));
-        topDropdown.appendChild(document.querySelector('.action-section'));
-        document.body.appendChild(topDropdown);
-
-        // 4. Wire the toggle logic
-        kebabBtn.addEventListener('click', () => {
-            topDropdown.classList.toggle('open');
-        });
-    }
-  </script>
-<!-- NEW: FULL-SCREEN DRAWING MODAL (PRO UI) -->
+  <!-- FULL-SCREEN DRAWING MODAL (PRO UI) -->
   <div id="draw-modal" class="modal-overlay" style="z-index: 10005; flex-direction: column; background: var(--bg-color);">
     
     <!-- Top Bar (Header) -->
@@ -348,27 +262,19 @@
 
       <!-- Tier 2: The Options Drawer (Colors & Widths - Hidden by default) -->
       <div id="draw-options-drawer" style="display: none; flex-direction: column; padding: 15px 20px; gap: 15px;">
-        
         <!-- Color Palette -->
-        <div id="draw-color-palette" style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 5px;">
-           <!-- Colors Injected by JS -->
-        </div>
-
+        <div id="draw-color-palette" style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 5px;"></div>
         <!-- Stroke Width Slider -->
-        <div id="draw-width-selector" style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #161b22;">
-            <!-- Width dots injected by JS -->
-        </div>
-
+        <div id="draw-width-selector" style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #161b22;"></div>
       </div>
     </div>
   </div>
-  <!-- NEW: PDF ANNOTATOR MODAL -->
+
+  <!-- PDF ANNOTATOR MODAL -->
   <div id="pdf-modal" class="modal-overlay" style="z-index: 10010; flex-direction: column; background: var(--bg-color);">
-    
     <!-- Top Bar with Pagination -->
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #0d1117; border-bottom: 1px solid #30363d; width: 100%; box-sizing: border-box;">
       <button id="pdf-cancel-btn" style="background: none; border: none; color: var(--text-main); font-size: 1.5rem; cursor: pointer;">←</button>
-      
       <div style="display: flex; align-items: center; gap: 15px;">
         <button id="pdf-prev-btn" class="icon-btn">◀</button>
         <div style="color: var(--text-main); font-weight: bold; font-size: 0.9rem;">
@@ -376,12 +282,17 @@
         </div>
         <button id="pdf-next-btn" class="icon-btn">▶</button>
       </div>
-
       <button id="pdf-save-btn" style="background: none; border: none; color: #58a6ff; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Save PDF</button>
     </div>
 
     <!-- The Double Canvas Area (Scrolling Container) -->
-    <div id="pdf-canvas-container" style="flex: 1; width: 100%; background: #24292e; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 20px; box-sizing: border-box;">
+    <div id="pdf-canvas-container" style="flex: 1; width: 100%; background: #24292e; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 20px; box-sizing: border-box; position: relative;">
+      
+      <!-- NEW: The Loading Spinner -->
+      <div id="pdf-loading-spinner" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #58a6ff; font-size: 1.1rem; font-weight: bold; z-index: 1000; background: #161b22; padding: 15px 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid #30363d;">
+        ⏳ Reading File...
+      </div>
+
       <div style="position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
         <!-- Base Layer: The PDF Page -->
         <canvas id="pdf-base-canvas" style="display: block;"></canvas>
@@ -390,8 +301,76 @@
       </div>
     </div>
 
-    <!-- We will inject a clone of your Pro Drawing Toolbar here via JS -->
+    <!-- Toolbar -->
     <div id="pdf-toolbar-container" style="width: 100%;"></div>
   </div>
+
+  <button id="exit-zen-btn" class="exit-zen-btn">Exit Zen ⤫</button>
+
+  <script>if (typeof module === 'object') { window.module = module; module = undefined; }</script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
+
+  <script>if (window.module) { module = window.module; }</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  
+  <!-- PDF ANNOTATION ENGINES -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+
+  <script src="editor-core.js"></script>
+  
+  <script>
+    if (window.innerWidth <= 768) {
+        const drawer = document.createElement('div');
+        drawer.className = 'mobile-drawer';
+        
+        drawer.appendChild(document.querySelector('.left-sidebar'));
+        drawer.appendChild(document.querySelector('.right-sidebar'));
+        
+        const aiFlyout = document.querySelector('.ai-flyout');
+        if(aiFlyout) drawer.appendChild(aiFlyout);
+
+        document.querySelector('.app-body').appendChild(drawer);
+        
+        const fab = document.createElement('button');
+        fab.className = 'mobile-fab';
+        fab.innerHTML = '🛠️ Tools';
+        document.body.appendChild(fab);
+
+        fab.addEventListener('click', () => {
+            drawer.classList.toggle('open');
+            fab.innerHTML = drawer.classList.contains('open') ? '❌ Close' : '🛠️ Tools';
+        });
+        
+        const topBar = document.querySelector('.top-bar');
+        const kebabBtn = document.createElement('button');
+        kebabBtn.innerHTML = '⋮';
+        kebabBtn.style.cssText = 'background: none; border: none; color: var(--text-main); font-size: 28px; font-weight: bold; cursor: pointer; padding: 0 10px; margin-left: auto;';
+        
+        document.querySelector('.logo-section').style.flexGrow = '1';
+        topBar.appendChild(kebabBtn);
+
+        const topDropdown = document.createElement('div');
+        topDropdown.className = 'mobile-top-dropdown';
+        
+        topDropdown.appendChild(document.querySelector('.center-controls'));
+        topDropdown.appendChild(document.querySelector('.action-section'));
+        document.body.appendChild(topDropdown);
+
+        kebabBtn.addEventListener('click', () => {
+            topDropdown.classList.toggle('open');
+        });
+    }
+  </script>
 </body>
 </html>

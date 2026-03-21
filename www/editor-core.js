@@ -409,6 +409,13 @@ document.addEventListener('selectionchange', () => {
   clearTimeout(selectionTimeout);
   
   selectionTimeout = setTimeout(() => {
+    // --- NEW FIX: Protect the target if interacting with the tool menu ---
+    const activeId = document.activeElement ? document.activeElement.id : '';
+    if (['style-color', 'style-size', 'style-font'].includes(activeId)) {
+      return; // Abort cleanup so the target span survives!
+    }
+    // --------------------------------------------------------------------
+
     const selection = window.getSelection();
     const oldTarget = document.getElementById('pending-style-target');
     

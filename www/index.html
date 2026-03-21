@@ -311,10 +311,10 @@
         });
     }
   </script>
-<!-- NEW: FULL-SCREEN DRAWING MODAL -->
+<!-- NEW: FULL-SCREEN DRAWING MODAL (PRO UI) -->
   <div id="draw-modal" class="modal-overlay" style="z-index: 10005; flex-direction: column; background: var(--bg-color);">
     
-    <!-- Top Bar (Similar to Image 1) -->
+    <!-- Top Bar (Header) -->
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #0d1117; border-bottom: 1px solid #30363d; width: 100%; box-sizing: border-box;">
       <button id="draw-cancel-btn" style="background: none; border: none; color: var(--text-main); font-size: 1.5rem; cursor: pointer;">←</button>
       <div style="color: var(--text-main); font-weight: bold;">Canvas</div>
@@ -326,10 +326,28 @@
       <canvas id="fullscreen-draw-canvas" style="position: absolute; top: 0; left: 0; touch-action: none;"></canvas>
     </div>
 
-    <!-- Bottom Toolbar (Pens & Eraser) -->
-    <div id="draw-bottom-toolbar" style="display: grid; grid-template-columns: repeat(11, 1fr); justify-items: center; align-items: center; gap: 12px; padding: 20px; background: #0d1117; border-top: 1px solid #30363d; width: 100%; box-sizing: border-box;">
+    <!-- The Tool Panel Container -->
+    <div style="width: 100%; background: #0d1117; border-top: 1px solid #30363d; display: flex; flex-direction: column;">
+      
+      <!-- Tier 1: The Main Tools (Pen, Highlighter, Eraser) -->
+      <div id="draw-primary-tools" style="display: flex; justify-content: space-around; padding: 15px 10px; border-bottom: 1px solid #161b22;">
+        <!-- Injected by JS -->
       </div>
-      <!-- Colors injected by JS -->
+
+      <!-- Tier 2: The Options Drawer (Colors & Widths - Hidden by default) -->
+      <div id="draw-options-drawer" style="display: none; flex-direction: column; padding: 15px 20px; gap: 15px;">
+        
+        <!-- Color Palette -->
+        <div id="draw-color-palette" style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 5px;">
+           <!-- Colors Injected by JS -->
+        </div>
+
+        <!-- Stroke Width Slider -->
+        <div id="draw-width-selector" style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #161b22;">
+            <!-- Width dots injected by JS -->
+        </div>
+
+      </div>
     </div>
   </div>
 </body>

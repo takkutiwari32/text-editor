@@ -150,7 +150,7 @@ class SimpleAudioTool {
   save(blockContent) { const audio = blockContent.querySelector('audio'); return { url: audio ? audio.src : '' }; }
 }
 
-// --- 2. CUSTOM DRAWING ENGINE (FULL-SCREEN MODAL VERSION) ---
+// --- 2. CUSTOM DRAWING ENGINE (PRO UI) ---
 class SimpleDrawTool {
   static get toolbox() { return { title: 'Draw', icon: '🖍️' }; }
   
@@ -158,23 +158,24 @@ class SimpleDrawTool {
     this.data = data || {}; 
     this.wrapper = null;
     this.imagePreview = null;
+    this.placeholder = null;
   }
 
-  // 1. Render the placeholder block in the editor
+  // 1. Render the block in the editor
   render() {
     this.wrapper = document.createElement('div');
     this.wrapper.style.width = '100%';
     this.wrapper.style.textAlign = 'center';
     this.wrapper.style.cursor = 'pointer';
 
-    // The Image (Hidden until you draw something)
+    // The Image (Hidden until drawn)
     this.imagePreview = document.createElement('img');
     this.imagePreview.style.width = '100%'; 
     this.imagePreview.style.height = 'auto'; 
     this.imagePreview.style.display = this.data.image ? 'block' : 'none';
     this.imagePreview.style.borderRadius = '4px';
 
-    // The Placeholder (Visible ONLY when there is no drawing)
+    // The Placeholder
     this.placeholder = document.createElement('div');
     this.placeholder.innerHTML = '🖍️ Tap to Draw';
     this.placeholder.style.padding = '40px';
@@ -193,7 +194,7 @@ class SimpleDrawTool {
     // Open full screen on tap
     this.wrapper.addEventListener('click', () => { this.openFullScreenEditor(); });
 
-    // UX UPGRADE: Automatically open the modal if it's a brand new, empty block!
+    // Auto-open if new
     if (!this.data.image) {
       setTimeout(() => { this.openFullScreenEditor(); }, 50);
     }
@@ -201,163 +202,254 @@ class SimpleDrawTool {
     return this.wrapper;
   }
 
-
   // 2. The Full-Screen Logic
-  // FIX 2 & 3: Handles high-DPI scaling (graininess), eraser icon, and larger color grid.
   openFullScreenEditor() {
     const modal = document.getElementById('draw-modal');
     const container = document.getElementById('draw-canvas-container');
     const oldCanvas = document.getElementById('fullscreen-draw-canvas');
     const cancelBtn = document.getElementById('draw-cancel-btn');
     const saveBtn = document.getElementById('draw-save-btn');
-    const toolbar = document.getElementById('draw-bottom-toolbar');
+    
+    // UI Panels
+    const primaryToolsDiv = document.getElementById('draw-primary-tools');
+    const optionsDrawer = document.getElementById('draw-options-drawer');
+    const colorPaletteDiv = document.getElementById('draw-color-palette');
+    const widthSelectorDiv = document.getElementById('draw-width-selector');
 
-    // --- HIGH-DPI CANVAS SCALING (FIX FOR GRAININESS) ---
-    // Physical pixels vs CSS pixels on mobile screens
     const ratio = window.devicePixelRatio || 1;
-
-    // Clone canvas to wipe old event listeners, preventing memory leaks and double-drawing
     const canvas = oldCanvas.cloneNode(true);
     oldCanvas.parentNode.replaceChild(canvas, oldCanvas);
 
-    // Show modal first so container has actual dimensions
     modal.style.display = 'flex';
 
-    // 1. Set the physical pixels resolution of the canvas itself
     canvas.width = container.clientWidth * ratio;
     canvas.height = container.clientHeight * ratio;
-
-    // 2. Scale the CSS size of the canvas element back to match the container
     canvas.style.width = container.clientWidth + 'px';
     canvas.style.height = container.clientHeight + 'px';
 
     const ctx = canvas.getContext('2d');
-    
-    // 3. Scale all drawing context operations by the ratio
     ctx.scale(ratio, ratio);
-    
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // Paint background white
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Load existing drawing if we have one
     if (this.data.image) {
       const img = new Image();
       img.onload = () => ctx.drawImage(img, 0, 0, container.clientWidth, container.clientHeight);
       img.src = this.data.image;
     }
 
-    // Define Pen and Eraser settings
-    const PEN_WIDTH = 4;
-    const ERASER_WIDTH = 25;
+    // --- STATE MANAGEMENT ---
+    let currentTool = 'pen'; // 'pen', 'highlighter', 'eraser'
+    let currentColor = '#000000';
+    let currentWidth = 4;
+    let activeToolBtn = null;
+    let activeColorBtn = null;
+    let activeWidthBtn = null;
 
-    // Build Bottom Toolbar Colors (Expanded for FIX 3)
-    // Curated professional palette: Blacks, Reds, Blues, Greens, Yellows, Purples, Greys.
-    toolbar.innerHTML = '';
-    const colors = [
-        '#000000', '#24292e', '#4f5660', '#6e7781', '#959da5', // Blacks & Greys
-        '#d32f2f', '#ff5252', '#ff8a80', // Reds
-        '#1976d2', '#2196f3', '#64b5f6', // Blues
-        '#388e3c', '#4caf50', '#81c784', // Greens
-        '#fbc02d', '#fff176', // Yellows
-        '#7b1fa2', '#9c27b0', '#ba68c8' // Purples
+    // A helper to parse hex to rgba for the highlighter
+    const hexToRgba = (hex, alpha) => {
+        let r = parseInt(hex.slice(1, 3), 16),
+            g = parseInt(hex.slice(3, 5), 16),
+            b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
+    const updateContext = () => {
+        if (currentTool === 'eraser') {
+            ctx.strokeStyle = '#ffffff';
+            ctx.globalCompositeOperation = "source-over"; // normal drawing over white
+            ctx.lineWidth = currentWidth * 3; // Eraser is naturally thicker
+        } else if (currentTool === 'highlighter') {
+            ctx.strokeStyle = hexToRgba(currentColor, 0.4); // 40% opacity
+            // Multiply blending mode gives that authentic marker feel over other inks
+            ctx.globalCompositeOperation = "multiply"; 
+            ctx.lineWidth = currentWidth * 4; // Highlighters are thick
+        } else {
+            // Standard Pen
+            ctx.strokeStyle = currentColor;
+            ctx.globalCompositeOperation = "source-over";
+            ctx.lineWidth = currentWidth;
+        }
+    };
+
+    // --- BUILD PRIMARY TOOLS ---
+    primaryToolsDiv.innerHTML = '';
+    const tools = [
+        { id: 'pen', icon: 'M12 19l7-7 3 3-7 7-3-3z M18 13l-1.5-1.5 L17 10l1.5 1.5z M2 22h4l11-11-4-4L2 18v4z' },
+        { id: 'highlighter', icon: 'M17.5 2.5h-5l-5 5v5l5 5h5l5-5v-5l-5-5z M12.5 7.5l-5 5 M10 15H2v7h7v-7z' }, // Custom-ish path
+        { id: 'eraser', icon: 'M20 20H7L3 16c-1.5-1.5-1.5-3.5 0-5L13 1 22 10l-10 10V10' }
     ];
-    let activeBtn = null;
-    
-    // Default to Black pen
-    ctx.strokeStyle = colors[0]; 
-    ctx.lineWidth = PEN_WIDTH;
 
-    colors.forEach((color, index) => {
-      const btn = document.createElement('div');
-      btn.className = 'color-swatch-btn'; // Use class for scaling
-      btn.style.width = '24px'; btn.style.height = '24px'; // Smaller for grid
-      btn.style.borderRadius = '50%';
-      btn.style.backgroundColor = color; 
-      btn.style.cursor = 'pointer';
-      btn.style.border = '2px solid transparent';
-      btn.style.transition = 'transform 0.1s ease';
-
-      if (index === 0) { btn.style.boxShadow = '0 0 0 2px #58a6ff'; btn.style.transform = 'scale(1.1)'; activeBtn = btn; }
-
-      btn.onclick = () => {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = PEN_WIDTH; 
+    tools.forEach(t => {
+        const btn = document.createElement('div');
+        btn.style.width = '40px'; btn.style.height = '40px';
+        btn.style.display = 'flex'; btn.style.justifyContent = 'center'; btn.style.alignItems = 'center';
+        btn.style.cursor = 'pointer'; btn.style.borderRadius = '8px';
         
-        if (activeBtn) { activeBtn.style.boxShadow = 'none'; activeBtn.style.transform = 'scale(1)'; }
-        btn.style.boxShadow = '0 0 0 2px #58a6ff';
-        btn.style.transform = 'scale(1.1)';
-        activeBtn = btn;
-      };
-      toolbar.appendChild(btn);
+        // Add a bottom indicator line like the image
+        const indicator = document.createElement('div');
+        indicator.style.position = 'absolute'; indicator.style.bottom = '-10px'; indicator.style.width = '20px';
+        indicator.style.height = '3px'; indicator.style.borderRadius = '2px';
+        indicator.style.background = 'transparent';
+        indicator.style.transition = 'background 0.2s';
+        
+        btn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b949e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:relative;"><path d="${t.icon}"></path></svg>`;
+        btn.style.position = 'relative';
+        btn.appendChild(indicator);
+
+        if (t.id === 'pen') {
+            btn.querySelector('svg').style.stroke = '#58a6ff';
+            indicator.style.background = '#58a6ff';
+            activeToolBtn = btn;
+        }
+
+        btn.onclick = () => {
+            // If tapping the ALREADY active tool, toggle the drawer
+            if (currentTool === t.id) {
+                optionsDrawer.style.display = optionsDrawer.style.display === 'none' ? 'flex' : 'none';
+                return;
+            }
+
+            // Otherwise, switch tools
+            currentTool = t.id;
+            
+            // Reset old active button
+            if (activeToolBtn) {
+                activeToolBtn.querySelector('svg').style.stroke = '#8b949e';
+                activeToolBtn.querySelector('div').style.background = 'transparent';
+            }
+            
+            // Set new active button
+            btn.querySelector('svg').style.stroke = '#58a6ff';
+            indicator.style.background = '#58a6ff';
+            activeToolBtn = btn;
+
+            // Always open drawer when switching to a new tool (except eraser which might not need colors)
+            optionsDrawer.style.display = 'flex';
+            
+            // Hide colors if eraser is selected, show if pen/highlighter
+            colorPaletteDiv.style.display = (currentTool === 'eraser') ? 'none' : 'flex';
+
+            updateContext();
+        };
+        primaryToolsDiv.appendChild(btn);
     });
 
-    // --- ERASER ICON BUTTON (FIX 2) ---
-    const eraserBtn = document.createElement('div');
-    eraserBtn.className = 'draw-icon-btn';
-    eraserBtn.style.cursor = 'pointer';
-    eraserBtn.style.display = 'flex';
-    eraserBtn.style.justifyContent = 'center';
-    eraserBtn.style.alignItems = 'center';
-    eraserBtn.style.width = '28px'; eraserBtn.style.height = '28px';
-    eraserBtn.style.borderRadius = '6px';
-    eraserBtn.style.border = '2px solid transparent';
-    eraserBtn.title = "Eraser";
+    // --- BUILD COLOR PALETTE ---
+    colorPaletteDiv.innerHTML = '';
+    const palette = ['#000000', '#ff5252', '#fbc02d', '#4caf50', '#2196f3', '#9c27b0', '#795548', '#ffffff'];
+    
+    palette.forEach((color, i) => {
+        const cBtn = document.createElement('div');
+        cBtn.style.minWidth = '28px'; cBtn.style.height = '28px';
+        cBtn.style.borderRadius = '50%'; cBtn.style.backgroundColor = color;
+        cBtn.style.cursor = 'pointer'; cBtn.style.border = '2px solid #30363d';
+        
+        if (i === 0) {
+            cBtn.style.borderColor = '#58a6ff';
+            activeColorBtn = cBtn;
+        }
 
-    // Defining the actual eraser SVG (A illustrative clean eraser icon)
-    eraserBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b949e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-eraser"><path d="M20 20H7L3 16c-1.5-1.5-1.5-3.5 0-5L13 1 22 10l-10 10V10"></path></svg>`;
+        cBtn.onclick = () => {
+            currentColor = color;
+            if (activeColorBtn) activeColorBtn.style.borderColor = '#30363d';
+            cBtn.style.borderColor = '#58a6ff';
+            activeColorBtn = cBtn;
+            updateContext();
+        };
+        colorPaletteDiv.appendChild(cBtn);
+    });
 
-    eraserBtn.onclick = () => {
-        // Highlighting logic
-        if (activeBtn) { activeBtn.style.boxShadow = 'none'; activeBtn.style.transform = 'scale(1)'; }
-        eraserBtn.style.boxShadow = '0 0 0 2px #ff7b72'; // Reddish highlight
-        eraserBtn.style.borderColor = '#ff7b72'; // Reddish border highlight
-        activeBtn = eraserBtn; // Track this as the active element
+    // --- BUILD WIDTH SELECTOR ---
+    widthSelectorDiv.innerHTML = '';
+    const widths = [2, 4, 8, 14, 22, 32]; // CSS pixel widths
+    
+    widths.forEach((w) => {
+        const wBtn = document.createElement('div');
+        wBtn.style.width = '30px'; wBtn.style.height = '30px';
+        wBtn.style.display = 'flex'; wBtn.style.justifyContent = 'center'; wBtn.style.alignItems = 'center';
+        wBtn.style.cursor = 'pointer';
+        
+        const dot = document.createElement('div');
+        dot.style.borderRadius = '50%';
+        dot.style.backgroundColor = '#8b949e';
+        // Visual representation of the width (scaled down a bit so the biggest doesn't overflow)
+        const displaySize = Math.max(4, Math.min(24, w)); 
+        dot.style.width = displaySize + 'px';
+        dot.style.height = displaySize + 'px';
+        dot.style.transition = 'all 0.2s';
+        
+        wBtn.appendChild(dot);
 
-        // Logic logic
-        ctx.strokeStyle = '#ffffff'; // Drawing white acts as an eraser
-        ctx.lineWidth = ERASER_WIDTH; 
-    };
-    toolbar.appendChild(eraserBtn);
+        // Default selection (width 4)
+        if (w === 4) {
+            dot.style.backgroundColor = '#ffffff';
+            dot.style.boxShadow = '0 0 0 2px #0d1117, 0 0 0 4px #ffffff';
+            activeWidthBtn = dot;
+        }
+
+        wBtn.onclick = () => {
+            currentWidth = w;
+            if (activeWidthBtn) {
+                activeWidthBtn.style.backgroundColor = '#8b949e';
+                activeWidthBtn.style.boxShadow = 'none';
+            }
+            dot.style.backgroundColor = '#ffffff';
+            dot.style.boxShadow = '0 0 0 2px #0d1117, 0 0 0 4px #ffffff';
+            activeWidthBtn = dot;
+            updateContext();
+        };
+        widthSelectorDiv.appendChild(wBtn);
+    });
+
+    // Ensure initial context is set
+    updateContext();
+    // Start with drawer open
+    optionsDrawer.style.display = 'flex';
 
 
-    // --- PRECISION TOUCH COORDINATES LOGIC ---
+    // --- DRAWING LOGIC ---
     let isDrawing = false;
     const getPos = (e) => {
       const rect = canvas.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      // CRITICAL: Return CSS coordinates, not physical pixels. The scaled context will handle the conversion.
       return { x: clientX - rect.left, y: clientY - rect.top };
     };
 
-    const startDraw = (e) => { isDrawing = true; const pos = getPos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); };
+    const startDraw = (e) => { 
+        isDrawing = true; 
+        const pos = getPos(e); 
+        ctx.beginPath(); 
+        ctx.moveTo(pos.x, pos.y); 
+        
+        // Hide the drawer if it's open while drawing starts to save screen space
+        if(optionsDrawer.style.display === 'flex') {
+            optionsDrawer.style.display = 'none';
+        }
+    };
     const draw = (e) => { if (!isDrawing) return; e.preventDefault(); const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); };
     const stopDraw = () => { isDrawing = false; ctx.closePath(); };
 
-    // Standard bindings
     canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDraw); canvas.addEventListener('mouseout', stopDraw);
-    
-    // Non-passive binding is required for e.preventDefault() to block document scrolling while drawing
     canvas.addEventListener('touchstart', startDraw, { passive: false }); canvas.addEventListener('touchmove', draw, { passive: false }); canvas.addEventListener('touchend', stopDraw);
 
-    // Close logic
+    // --- CLOSE & SAVE LOGIC ---
     cancelBtn.onclick = () => { modal.style.display = 'none'; };
     
-  // Save logic (at the bottom of openFullScreenEditor)
     saveBtn.onclick = () => {
+      // Revert composite operation before saving just in case
+      ctx.globalCompositeOperation = "source-over"; 
       this.data.image = canvas.toDataURL('image/png');
       this.imagePreview.src = this.data.image;
       
-      // Hide the placeholder and show the raw image flush to the edges!
       this.imagePreview.style.display = 'block';
       this.placeholder.style.display = 'none'; 
       
-      // Trigger EditorJS change event
       this.wrapper.dispatchEvent(new Event('input', { bubbles: true }));
       modal.style.display = 'none';
     };

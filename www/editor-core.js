@@ -1077,7 +1077,7 @@ if (zenBtn && exitZenBtn) {
 // --- 14. PDF ANNOTATOR ENGINE (GOODNOTES STYLE) ---
 let activePdf = { 
   base64Data: null, originalPath: null, doc: null, 
-  pageNum: 1, totalPages: 0, annotations: {} // annotations[pageNum] = base64 PNG
+  pageNum: 1, totalPages: 0, annotations: {} 
 };
 
 async function launchPdfAnnotator(base64Data, filePath) {
@@ -1089,14 +1089,18 @@ async function launchPdfAnnotator(base64Data, filePath) {
   const modal = document.getElementById('pdf-modal');
   modal.style.display = 'flex';
   
-  // Convert Base64 to Uint8Array for pdf.js
-  const raw = atob(base64Data);
-  const uint8Array = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) uint8Array[i] = raw.charCodeAt(i);
-
-  // Load the PDF via Mozilla's pdf.js
-  const loadingTask = pdfjsLib.getDocument({data: uint8Array});
   try {
+    const res = await fetch("data:application/pdf;base64," + base64Data);
+    const arrayBuffer = await res.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+
+    // FIX 1: Load cMaps so complex/technical fonts render perfectly instead of scrambling
+    const loadingTask = pdfjsLib.getDocument({
+        data: uint8Array,
+        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+        cMapPacked: true,
+    });
+    
     activePdf.doc = await loadingTask.promise;
     activePdf.totalPages = activePdf.doc.numPages;
     document.getElementById('pdf-page-count').innerText = activePdf.totalPages;
@@ -1113,135 +1117,68 @@ async function renderPdfPage(num) {
   document.getElementById('pdf-page-num').innerText = num;
   const page = await activePdf.doc.getPage(num);
   
-  // Scale the PDF to fit nicely on a mobile screen while keeping it crisp
-  const viewport = page.getViewport({ scale: 1.5 }); 
+  const container = document.getElementById('pdf-canvas-container');
+  
+  // FIX 2: Stop fighting Android's Matrix. 
+  // We ask pdf.js for a standard viewport, figure out the scale to fit your screen, and double it for crisp HD resolution.
+  const unscaledViewport = page.getViewport({ scale: 1.0 });
+  const cssWidth = container.clientWidth - 40; // Account for the 20px padding
+  const baseScale = cssWidth / unscaledViewport.width;
+  
+  // Create a high-res viewport
+  const viewport = page.getViewport({ scale: baseScale * 2 }); 
   
   const baseCanvas = document.getElementById('pdf-base-canvas');
   const baseCtx = baseCanvas.getContext('2d');
   
-  // Size the base canvas
-  baseCanvas.height = viewport.height;
+  // Completely wipe any lingering Android transforms
+  baseCtx.setTransform(1, 0, 0, 1, 0, 0);
+  
+  // Set the canvas memory to the massive, crisp viewport size
   baseCanvas.width = viewport.width;
+  baseCanvas.height = viewport.height;
 
-  // Render PDF page into base canvas
-  const renderContext = { canvasContext: baseCtx, viewport: viewport };
+  // Paint the canvas solid white to kill the dark-mode shadows
+  baseCtx.fillStyle = '#ffffff';
+  baseCtx.fillRect(0, 0, baseCanvas.width, baseCanvas.height);
+  
+  // Use pure CSS to shrink the giant canvas to fit exactly on your screen
+  const cssHeight = cssWidth * (viewport.height / viewport.width);
+  baseCanvas.style.width = cssWidth + 'px';
+  baseCanvas.style.height = cssHeight + 'px';
+
+  const renderContext = { 
+    canvasContext: baseCtx, 
+    viewport: viewport
+  };
+  
   await page.render(renderContext).promise;
 
-  // Now setup the Glass Canvas (Drawing layer) to match perfectly
+  // Sync the Glass Canvas (Drawing layer) to perfectly match the base
   const glassCanvas = document.getElementById('pdf-glass-canvas');
-  glassCanvas.width = viewport.width;
-  glassCanvas.height = viewport.height;
+  glassCanvas.width = baseCanvas.width;
+  glassCanvas.height = baseCanvas.height;
+  glassCanvas.style.width = cssWidth + 'px';
+  glassCanvas.style.height = cssHeight + 'px';
   
   const glassCtx = glassCanvas.getContext('2d');
+  glassCtx.setTransform(1, 0, 0, 1, 0, 0); // Wipe transforms
   glassCtx.clearRect(0, 0, glassCanvas.width, glassCanvas.height);
   glassCtx.lineCap = 'round';
   glassCtx.lineJoin = 'round';
 
-  // If we already drew on this page before flipping away, restore it!
+  // Restore old drawings if you flip back to this page
   if (activePdf.annotations[num]) {
     const img = new Image();
-    img.onload = () => glassCtx.drawImage(img, 0, 0);
+    img.onload = () => glassCtx.drawImage(img, 0, 0, glassCanvas.width, glassCanvas.height);
     img.src = activePdf.annotations[num];
   }
 }
 
-// Save current glass canvas before flipping pages
-function saveCurrentPageAnnotation() {
-  const glassCanvas = document.getElementById('pdf-glass-canvas');
-  // Only save if there's actually something drawn (checking if canvas is not entirely blank is complex, so we just save the transparent png)
-  activePdf.annotations[activePdf.pageNum] = glassCanvas.toDataURL('image/png');
-}
-
-// Pagination Controls
-document.getElementById('pdf-prev-btn').addEventListener('click', () => {
-  if (activePdf.pageNum <= 1) return;
-  saveCurrentPageAnnotation();
-  activePdf.pageNum--;
-  renderPdfPage(activePdf.pageNum);
-});
-
-document.getElementById('pdf-next-btn').addEventListener('click', () => {
-  if (activePdf.pageNum >= activePdf.totalPages) return;
-  saveCurrentPageAnnotation();
-  activePdf.pageNum++;
-  renderPdfPage(activePdf.pageNum);
-});
-
-document.getElementById('pdf-cancel-btn').addEventListener('click', () => {
-  document.getElementById('pdf-modal').style.display = 'none';
-  activePdf = { base64Data: null, originalPath: null, doc: null, pageNum: 1, totalPages: 0, annotations: {} };
-});
-
-// --- BAKING THE PDF (PDF-LIB) ---
-document.getElementById('pdf-save-btn').addEventListener('click', async () => {
-  saveCurrentPageAnnotation(); // Grab the last thing they drew
-  
-  const saveBtn = document.getElementById('pdf-save-btn');
-  saveBtn.innerText = "Baking...";
-  
-  try {
-    // 1. Load the original PDF into pdf-lib
-    const pdfDoc = await PDFLib.PDFDocument.load(activePdf.base64Data);
-    const pages = pdfDoc.getPages();
-
-    // 2. Loop through our annotations and "bake" them onto the pages
-    for (const [pageNumStr, pngBase64] of Object.entries(activePdf.annotations)) {
-      const pageNum = parseInt(pageNumStr) - 1; // pdf-lib is 0-indexed
-      
-      // If the canvas is just a blank transparent image, skip it to save file size
-      if (pngBase64.length < 1000) continue; 
-
-      const pngImage = await pdfDoc.embedPng(pngBase64);
-      const page = pages[pageNum];
-      
-      // Draw the transparent PNG perfectly stretched over the PDF page
-      page.drawImage(pngImage, {
-        x: 0,
-        y: 0,
-        width: page.getWidth(),
-        height: page.getHeight(),
-      });
-    }
-
-    // 3. Save the newly baked PDF
-    const bakedPdfBase64 = await pdfDoc.saveAsBase64();
-    
-    // 4. Overwrite the original file on the OS
-    if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
-        // Extract filename from the original path
-        const fileName = activePdf.originalPath.substring(activePdf.originalPath.lastIndexOf('/') + 1);
-        
-        await window.Capacitor.Plugins.Filesystem.writeFile({
-          path: fileName,
-          data: bakedPdfBase64,
-          directory: 'DOCUMENTS', // Ensure it saves back to the right place
-        });
-        
-        alert("Success! Annotations baked into PDF.");
-        document.getElementById('pdf-modal').style.display = 'none';
-    } else {
-        // Desktop Fallback
-        const a = document.createElement('a');
-        a.href = "data:application/pdf;base64," + bakedPdfBase64;
-        a.download = "Annotated_Document.pdf";
-        document.body.appendChild(a); 
-        a.click(); 
-        document.body.removeChild(a);
-        document.getElementById('pdf-modal').style.display = 'none';
-    }
-  } catch (error) {
-    alert("Error baking PDF: " + error.message);
-  } finally {
-    saveBtn.innerText = "Save PDF";
-  }
-});
-
-// --- PDF DRAWING TOOLS (Simplified Logic for Glass Canvas) ---
 function setupPdfDrawingTools() {
   const glassCanvas = document.getElementById('pdf-glass-canvas');
   const ctx = glassCanvas.getContext('2d');
   
-  // We'll reuse the exact same color palette logic here for the PDF Annotator
   const toolbarContainer = document.getElementById('pdf-toolbar-container');
   toolbarContainer.innerHTML = `
     <div style="display: flex; justify-content: center; gap: 15px; padding: 15px; background: #0d1117; border-top: 1px solid #30363d;">
@@ -1254,26 +1191,29 @@ function setupPdfDrawingTools() {
     </div>
   `;
 
-  let currentColor = '#1976d2'; // Default blue pen
-  let currentWidth = 4;
+  let currentColor = '#1976d2'; 
+  let currentWidth = 4 * 2; // Doubled because our canvas memory is doubled!
   
   document.querySelectorAll('.pdf-color-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
           document.querySelectorAll('.pdf-color-btn').forEach(b => b.style.boxShadow = 'none');
           btn.style.boxShadow = '0 0 0 3px #ffffff';
           currentColor = btn.getAttribute('data-color');
-          currentWidth = (currentColor === '#ffffff') ? 25 : 4; // Eraser is thicker
+          currentWidth = (currentColor === '#ffffff') ? 25 * 2 : 4 * 2; 
       });
   });
 
   let isDrawing = false;
+  
+  // FIX 3: Map your physical screen touches directly to the massive HD canvas memory
   const getPos = (e) => {
     const rect = glassCanvas.getBoundingClientRect();
-    // Calculate the scale factor in case the canvas is scaled down via CSS
     const scaleX = glassCanvas.width / rect.width;
     const scaleY = glassCanvas.height / rect.height;
+    
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
     return { 
         x: (clientX - rect.left) * scaleX, 
         y: (clientY - rect.top) * scaleY 

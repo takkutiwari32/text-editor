@@ -286,14 +286,15 @@
     </div>
 
     <!-- The Double Canvas Area (Scrolling Container) -->
-    <div id="pdf-canvas-container" style="flex: 1; width: 100%; background: #24292e; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 20px; box-sizing: border-box; position: relative;">
+    <div id="pdf-canvas-container" style="flex: 1; width: 100%; background: #050505; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 20px; box-sizing: border-box; position: relative;">
       
-      <!-- NEW: The Loading Spinner -->
-      <div id="pdf-loading-spinner" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #58a6ff; font-size: 1.1rem; font-weight: bold; z-index: 1000; background: #161b22; padding: 15px 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid #30363d;">
-        ⏳ Reading File...
+      <!-- FIX: Modern Loading Spinner -->
+      <div id="pdf-loading-spinner" class="modern-spinner-overlay" style="display: none;">
+        <div class="modern-spinner"></div>
+        <div id="pdf-spinner-text" class="modern-spinner-text">Reading File...</div>
       </div>
 
-      <div style="position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <div style="position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
         <!-- Base Layer: The PDF Page -->
         <canvas id="pdf-base-canvas" style="display: block;"></canvas>
         <!-- Glass Layer: The Drawing Canvas -->

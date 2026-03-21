@@ -144,9 +144,16 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 .document-title {
   width: 100%; font-size: 3.5rem; font-weight: 900; border: none; outline: none;
-  margin-bottom: 40px; color: #000000; border-bottom: 2px solid #eaeaea; padding-bottom: 15px; background: transparent;
+  margin-bottom: 40px; color: #111111 !important; border-bottom: 2px solid #eaeaea; padding-bottom: 15px; background: transparent;
   letter-spacing: -1px;
 }
+.document-title::placeholder { color: #a0aec0 !important; }
+
+/* FIX 1: Force Editor Text to be Dark */
+#editor-container, .ce-block__content, .ce-paragraph, .ce-header, .codex-editor { 
+    color: #111111 !important; 
+}
+.ce-paragraph[data-placeholder]:empty::before { color: #a0aec0 !important; }
 
 /* =========================================
    5. MODALS & AI FLYOUT (ANIMATED)
@@ -279,3 +286,23 @@ body.zen-mode .document-container { box-shadow: none !important; border-radius: 
 }
 .exit-zen-btn:hover { background: var(--danger-accent); color: #ffffff; border-color: var(--danger-accent); transform: translateX(-50%) translateY(-2px); box-shadow: 0 10px 30px rgba(248, 81, 73, 0.4); }
 body.zen-mode .exit-zen-btn { display: block !important; }
+
+/* =========================================
+   10. MODERN LOADING SPINNER
+========================================= */
+.modern-spinner-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(16, 20, 26, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000;
+}
+.modern-spinner {
+    width: 48px; height: 48px; border: 4px solid rgba(88, 166, 255, 0.2);
+    border-top-color: var(--primary-accent); border-radius: 50%;
+    animation: spin 1s linear infinite; margin-bottom: 16px;
+    box-shadow: 0 0 15px var(--primary-glow);
+}
+.modern-spinner-text {
+    color: var(--text-main); font-size: 1.1rem; font-weight: 600; letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }

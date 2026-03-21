@@ -607,23 +607,24 @@ async function loadFileFromOS(contentUrl) {
     // 1. If it's a PDF, intercept it immediately!
     if (contentUrl.toLowerCase().endsWith('.pdf')) {
       const modal = document.getElementById('pdf-modal');
-      const spinner = document.getElementById('pdf-loading-spinner');
+      const spinnerOverlay = document.getElementById('pdf-loading-spinner');
+      const spinnerText = document.getElementById('pdf-spinner-text');
       
-      // Instantly show the PDF UI and the Loading Spinner
       modal.style.display = 'flex';
-      if (spinner) {
-          spinner.style.display = 'block';
-          spinner.innerText = "⏳ Loading massive file into memory...";
+      
+      // FIX: Added safety checks to prevent crashes if the HTML hasn't updated properly
+      if (spinnerOverlay) {
+          spinnerOverlay.style.display = 'flex';
+          if (spinnerText) spinnerText.innerText = "Loading massive file...";
       }
 
-      // CRITICAL: Pause JavaScript for 50 milliseconds to allow DOM paint
       await new Promise(resolve => setTimeout(resolve, 50));
 
       const result = await window.Capacitor.Plugins.Filesystem.readFile({
         path: contentUrl
       });
       
-      if (spinner) spinner.innerText = "🧠 Decoding PDF Matrix...";
+      if (spinnerText) spinnerText.innerText = "Decoding PDF...";
       await new Promise(resolve => setTimeout(resolve, 50));
 
       launchPdfAnnotator(result.data, contentUrl);
@@ -658,7 +659,8 @@ async function loadFileFromOS(contentUrl) {
     });
   } catch (error) { 
       alert('System Error unpacking file: ' + error.message); 
-      document.getElementById('pdf-modal').style.display = 'none';
+      const modal = document.getElementById('pdf-modal');
+      if (modal) modal.style.display = 'none';
   }
 }
 
@@ -844,7 +846,8 @@ document.addEventListener('keydown', (e) => {
 // --- 14. PDF ANNOTATOR ENGINE (GOODNOTES STYLE) ---
 let activePdf = { 
   base64Data: null, originalPath: null, doc: null, 
-  pageNum: 1, totalPages: 0, annotations: {} 
+  pageNum: 1, totalPages: 0, annotations: {},
+  renderTask: null // Tracks active rendering to prevent crashes
 };
 
 async function launchPdfAnnotator(base64Data, filePath) {
@@ -852,9 +855,10 @@ async function launchPdfAnnotator(base64Data, filePath) {
   activePdf.originalPath = filePath;
   activePdf.pageNum = 1;
   activePdf.annotations = {};
+  if (activePdf.renderTask) activePdf.renderTask = null;
 
   const modal = document.getElementById('pdf-modal');
-  const spinner = document.getElementById('pdf-loading-spinner');
+  const spinnerOverlay = document.getElementById('pdf-loading-spinner');
   modal.style.display = 'flex';
   
   try {
@@ -862,7 +866,6 @@ async function launchPdfAnnotator(base64Data, filePath) {
     const arrayBuffer = await res.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
-    // Load cMaps so complex/technical fonts render perfectly instead of scrambling
     const loadingTask = pdfjsLib.getDocument({
         data: uint8Array,
         cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
@@ -876,29 +879,36 @@ async function launchPdfAnnotator(base64Data, filePath) {
     await renderPdfPage(activePdf.pageNum);
     setupPdfDrawingTools();
     
-    if (spinner) spinner.style.display = 'none';
+    if (spinnerOverlay) spinnerOverlay.style.display = 'none';
 
   } catch (err) {
-    if (spinner) spinner.style.display = 'none';
+    if (spinnerOverlay) spinnerOverlay.style.display = 'none';
     alert("Error loading PDF: " + err.message);
     modal.style.display = 'none';
   }
 }
 
 async function renderPdfPage(num) {
+  // If a page is already rendering, cancel it so it doesn't crash the canvas!
+  if (activePdf.renderTask) {
+      await activePdf.renderTask.cancel();
+      activePdf.renderTask = null;
+  }
+
   document.getElementById('pdf-page-num').innerText = num;
   const page = await activePdf.doc.getPage(num);
   
   const container = document.getElementById('pdf-canvas-container');
-  
-  // Stop fighting Android's Matrix. 
-  // Ask pdf.js for standard viewport, scale to fit screen, double it for crisp HD resolution.
   const unscaledViewport = page.getViewport({ scale: 1.0 });
   const cssWidth = container.clientWidth - 40; 
   const baseScale = cssWidth / unscaledViewport.width;
   const viewport = page.getViewport({ scale: baseScale * 2 }); 
   
-  const baseCanvas = document.getElementById('pdf-base-canvas');
+  // Clone the canvas to guarantee a 100% fresh DOM element without locked states
+  const oldBaseCanvas = document.getElementById('pdf-base-canvas');
+  const baseCanvas = oldBaseCanvas.cloneNode(true);
+  oldBaseCanvas.parentNode.replaceChild(baseCanvas, oldBaseCanvas);
+  
   const baseCtx = baseCanvas.getContext('2d');
   
   baseCtx.setTransform(1, 0, 0, 1, 0, 0);
@@ -913,7 +923,18 @@ async function renderPdfPage(num) {
   baseCanvas.style.height = cssHeight + 'px';
 
   const renderContext = { canvasContext: baseCtx, viewport: viewport };
-  await page.render(renderContext).promise;
+  
+  // Save the render task so we can monitor/cancel it
+  activePdf.renderTask = page.render(renderContext);
+  
+  try {
+      await activePdf.renderTask.promise;
+  } catch (err) {
+      if (err.name === 'RenderingCancelledException') return; 
+      console.error(err);
+  }
+  
+  activePdf.renderTask = null;
 
   const glassCanvas = document.getElementById('pdf-glass-canvas');
   glassCanvas.width = baseCanvas.width;
@@ -939,7 +960,6 @@ function saveCurrentPageAnnotation() {
   activePdf.annotations[activePdf.pageNum] = glassCanvas.toDataURL('image/png');
 }
 
-// RESTORED: Pagination Controls
 document.getElementById('pdf-prev-btn').addEventListener('click', () => {
   if (activePdf.pageNum <= 1) return;
   saveCurrentPageAnnotation();
@@ -954,7 +974,6 @@ document.getElementById('pdf-next-btn').addEventListener('click', () => {
   renderPdfPage(activePdf.pageNum);
 });
 
-// RESTORED: Cancel/Close logic
 document.getElementById('pdf-cancel-btn').addEventListener('click', () => {
   document.getElementById('pdf-modal').style.display = 'none';
   const spinner = document.getElementById('pdf-loading-spinner');
@@ -962,7 +981,6 @@ document.getElementById('pdf-cancel-btn').addEventListener('click', () => {
   activePdf = { base64Data: null, originalPath: null, doc: null, pageNum: 1, totalPages: 0, annotations: {} };
 });
 
-// RESTORED: BAKING THE PDF (PDF-LIB)
 document.getElementById('pdf-save-btn').addEventListener('click', async () => {
   saveCurrentPageAnnotation(); 
   const saveBtn = document.getElementById('pdf-save-btn');

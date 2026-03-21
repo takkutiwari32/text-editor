@@ -361,6 +361,7 @@ body.is-sliding .right-sidebar > .active-slider-row {
 /* =========================================
    12. ZEN FOCUS MODE
 ========================================= */
+
 /* Hide absolutely all UI panels when active */
 body.zen-mode .top-bar,
 body.zen-mode .left-sidebar,
@@ -381,7 +382,13 @@ body.zen-mode .app-body {
     justify-content: center !important;
 }
 
-/* Give the document a clean, distraction-free width */
+/* Paint the underlying canvas area white in Zen Mode to hide the dark theme */
+body.zen-mode .editor-canvas {
+    background-color: #ffffff !important;
+    padding: 0 !important; /* Ensures no padding gaps at the edges */
+}
+
+/* Give the document a clean, distraction-free width and force full height */
 body.zen-mode .document-container {
     box-shadow: none !important;
     border-radius: 0 !important;
@@ -389,6 +396,7 @@ body.zen-mode .document-container {
     width: 100% !important;
     margin: 0 auto !important;
     padding-top: 80px !important; /* Space for the exit button */
+    min-height: 100vh !important; /* Stretches paper to the absolute bottom bezel */
 }
 
 /* The Exit Button - Hidden by default, centered at the top */
@@ -419,6 +427,7 @@ body.zen-mode .document-container {
     border-color: #f85149;
 }
 
+/* Force the exit button to show when Zen mode is active */
 body.zen-mode .exit-zen-btn {
-    display: block;
+    display: block !important;
 }

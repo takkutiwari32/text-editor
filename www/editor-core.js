@@ -794,19 +794,29 @@ if (lineHeightSlider && lineHeightDisplay) {
 // --- 10. THE OS INTENT INTERCEPTOR (FILE READER) ---
 async function loadFileFromOS(contentUrl) {
   try {
+    // Check if it's a PDF
+    if (contentUrl.toLowerCase().endsWith('.pdf')) {
+      // Read as base64 (no encoding specified)
+      const result = await window.Capacitor.Plugins.Filesystem.readFile({
+        path: contentUrl
+      });
+      // Send to the new PDF Engine
+      launchPdfAnnotator(result.data, contentUrl);
+      return;
+    }
+
+    // Otherwise, handle it as a standard JSON/TXT Pro CMS file
     const result = await window.Capacitor.Plugins.Filesystem.readFile({
       path: contentUrl,
       encoding: 'utf8'
     });
     
     let fileText = result.data;
-    
     if (!fileText.trim().startsWith('{') && !fileText.includes(' ')) {
       try { fileText = atob(fileText); } catch(e) { }
     }
     
     let parsedData;
-
     try {
       parsedData = JSON.parse(fileText);
     } catch (e) {
@@ -1063,4 +1073,225 @@ if (zenBtn && exitZenBtn) {
   exitZenBtn.addEventListener('click', () => {
     document.body.classList.remove('zen-mode');
   });
+}
+// --- 14. PDF ANNOTATOR ENGINE (GOODNOTES STYLE) ---
+let activePdf = { 
+  base64Data: null, originalPath: null, doc: null, 
+  pageNum: 1, totalPages: 0, annotations: {} // annotations[pageNum] = base64 PNG
+};
+
+async function launchPdfAnnotator(base64Data, filePath) {
+  activePdf.base64Data = base64Data;
+  activePdf.originalPath = filePath;
+  activePdf.pageNum = 1;
+  activePdf.annotations = {};
+
+  const modal = document.getElementById('pdf-modal');
+  modal.style.display = 'flex';
+  
+  // Convert Base64 to Uint8Array for pdf.js
+  const raw = atob(base64Data);
+  const uint8Array = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) uint8Array[i] = raw.charCodeAt(i);
+
+  // Load the PDF via Mozilla's pdf.js
+  const loadingTask = pdfjsLib.getDocument({data: uint8Array});
+  try {
+    activePdf.doc = await loadingTask.promise;
+    activePdf.totalPages = activePdf.doc.numPages;
+    document.getElementById('pdf-page-count').innerText = activePdf.totalPages;
+    
+    renderPdfPage(activePdf.pageNum);
+    setupPdfDrawingTools();
+  } catch (err) {
+    alert("Error loading PDF: " + err.message);
+    modal.style.display = 'none';
+  }
+}
+
+async function renderPdfPage(num) {
+  document.getElementById('pdf-page-num').innerText = num;
+  const page = await activePdf.doc.getPage(num);
+  
+  // Scale the PDF to fit nicely on a mobile screen while keeping it crisp
+  const viewport = page.getViewport({ scale: 1.5 }); 
+  
+  const baseCanvas = document.getElementById('pdf-base-canvas');
+  const baseCtx = baseCanvas.getContext('2d');
+  
+  // Size the base canvas
+  baseCanvas.height = viewport.height;
+  baseCanvas.width = viewport.width;
+
+  // Render PDF page into base canvas
+  const renderContext = { canvasContext: baseCtx, viewport: viewport };
+  await page.render(renderContext).promise;
+
+  // Now setup the Glass Canvas (Drawing layer) to match perfectly
+  const glassCanvas = document.getElementById('pdf-glass-canvas');
+  glassCanvas.width = viewport.width;
+  glassCanvas.height = viewport.height;
+  
+  const glassCtx = glassCanvas.getContext('2d');
+  glassCtx.clearRect(0, 0, glassCanvas.width, glassCanvas.height);
+  glassCtx.lineCap = 'round';
+  glassCtx.lineJoin = 'round';
+
+  // If we already drew on this page before flipping away, restore it!
+  if (activePdf.annotations[num]) {
+    const img = new Image();
+    img.onload = () => glassCtx.drawImage(img, 0, 0);
+    img.src = activePdf.annotations[num];
+  }
+}
+
+// Save current glass canvas before flipping pages
+function saveCurrentPageAnnotation() {
+  const glassCanvas = document.getElementById('pdf-glass-canvas');
+  // Only save if there's actually something drawn (checking if canvas is not entirely blank is complex, so we just save the transparent png)
+  activePdf.annotations[activePdf.pageNum] = glassCanvas.toDataURL('image/png');
+}
+
+// Pagination Controls
+document.getElementById('pdf-prev-btn').addEventListener('click', () => {
+  if (activePdf.pageNum <= 1) return;
+  saveCurrentPageAnnotation();
+  activePdf.pageNum--;
+  renderPdfPage(activePdf.pageNum);
+});
+
+document.getElementById('pdf-next-btn').addEventListener('click', () => {
+  if (activePdf.pageNum >= activePdf.totalPages) return;
+  saveCurrentPageAnnotation();
+  activePdf.pageNum++;
+  renderPdfPage(activePdf.pageNum);
+});
+
+document.getElementById('pdf-cancel-btn').addEventListener('click', () => {
+  document.getElementById('pdf-modal').style.display = 'none';
+  activePdf = { base64Data: null, originalPath: null, doc: null, pageNum: 1, totalPages: 0, annotations: {} };
+});
+
+// --- BAKING THE PDF (PDF-LIB) ---
+document.getElementById('pdf-save-btn').addEventListener('click', async () => {
+  saveCurrentPageAnnotation(); // Grab the last thing they drew
+  
+  const saveBtn = document.getElementById('pdf-save-btn');
+  saveBtn.innerText = "Baking...";
+  
+  try {
+    // 1. Load the original PDF into pdf-lib
+    const pdfDoc = await PDFLib.PDFDocument.load(activePdf.base64Data);
+    const pages = pdfDoc.getPages();
+
+    // 2. Loop through our annotations and "bake" them onto the pages
+    for (const [pageNumStr, pngBase64] of Object.entries(activePdf.annotations)) {
+      const pageNum = parseInt(pageNumStr) - 1; // pdf-lib is 0-indexed
+      
+      // If the canvas is just a blank transparent image, skip it to save file size
+      if (pngBase64.length < 1000) continue; 
+
+      const pngImage = await pdfDoc.embedPng(pngBase64);
+      const page = pages[pageNum];
+      
+      // Draw the transparent PNG perfectly stretched over the PDF page
+      page.drawImage(pngImage, {
+        x: 0,
+        y: 0,
+        width: page.getWidth(),
+        height: page.getHeight(),
+      });
+    }
+
+    // 3. Save the newly baked PDF
+    const bakedPdfBase64 = await pdfDoc.saveAsBase64();
+    
+    // 4. Overwrite the original file on the OS
+    if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
+        // Extract filename from the original path
+        const fileName = activePdf.originalPath.substring(activePdf.originalPath.lastIndexOf('/') + 1);
+        
+        await window.Capacitor.Plugins.Filesystem.writeFile({
+          path: fileName,
+          data: bakedPdfBase64,
+          directory: 'DOCUMENTS', // Ensure it saves back to the right place
+        });
+        
+        alert("Success! Annotations baked into PDF.");
+        document.getElementById('pdf-modal').style.display = 'none';
+    } else {
+        // Desktop Fallback
+        const a = document.createElement('a');
+        a.href = "data:application/pdf;base64," + bakedPdfBase64;
+        a.download = "Annotated_Document.pdf";
+        document.body.appendChild(a); 
+        a.click(); 
+        document.body.removeChild(a);
+        document.getElementById('pdf-modal').style.display = 'none';
+    }
+  } catch (error) {
+    alert("Error baking PDF: " + error.message);
+  } finally {
+    saveBtn.innerText = "Save PDF";
+  }
+});
+
+// --- PDF DRAWING TOOLS (Simplified Logic for Glass Canvas) ---
+function setupPdfDrawingTools() {
+  const glassCanvas = document.getElementById('pdf-glass-canvas');
+  const ctx = glassCanvas.getContext('2d');
+  
+  // We'll reuse the exact same color palette logic here for the PDF Annotator
+  const toolbarContainer = document.getElementById('pdf-toolbar-container');
+  toolbarContainer.innerHTML = `
+    <div style="display: flex; justify-content: center; gap: 15px; padding: 15px; background: #0d1117; border-top: 1px solid #30363d;">
+        <div class="pdf-color-btn" data-color="#d32f2f" style="width:30px;height:30px;border-radius:50%;background:#d32f2f;cursor:pointer;"></div>
+        <div class="pdf-color-btn" data-color="#1976d2" style="width:30px;height:30px;border-radius:50%;background:#1976d2;cursor:pointer;box-shadow: 0 0 0 3px #ffffff;"></div>
+        <div class="pdf-color-btn" data-color="#388e3c" style="width:30px;height:30px;border-radius:50%;background:#388e3c;cursor:pointer;"></div>
+        <div class="pdf-color-btn" data-color="#fbc02d" style="width:30px;height:30px;border-radius:50%;background:#fbc02d;cursor:pointer;"></div>
+        <div class="pdf-color-btn" data-color="#000000" style="width:30px;height:30px;border-radius:50%;background:#000000;cursor:pointer;"></div>
+        <div class="pdf-color-btn" data-color="#ffffff" style="width:30px;height:30px;border-radius:50%;border:2px solid #ccc;background:#ffffff;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Eraser">E</div>
+    </div>
+  `;
+
+  let currentColor = '#1976d2'; // Default blue pen
+  let currentWidth = 4;
+  
+  document.querySelectorAll('.pdf-color-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+          document.querySelectorAll('.pdf-color-btn').forEach(b => b.style.boxShadow = 'none');
+          btn.style.boxShadow = '0 0 0 3px #ffffff';
+          currentColor = btn.getAttribute('data-color');
+          currentWidth = (currentColor === '#ffffff') ? 25 : 4; // Eraser is thicker
+      });
+  });
+
+  let isDrawing = false;
+  const getPos = (e) => {
+    const rect = glassCanvas.getBoundingClientRect();
+    // Calculate the scale factor in case the canvas is scaled down via CSS
+    const scaleX = glassCanvas.width / rect.width;
+    const scaleY = glassCanvas.height / rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { 
+        x: (clientX - rect.left) * scaleX, 
+        y: (clientY - rect.top) * scaleY 
+    };
+  };
+
+  const startDraw = (e) => { 
+    isDrawing = true; 
+    const pos = getPos(e); 
+    ctx.strokeStyle = currentColor;
+    ctx.lineWidth = currentWidth;
+    ctx.beginPath(); 
+    ctx.moveTo(pos.x, pos.y); 
+  };
+  const draw = (e) => { if (!isDrawing) return; e.preventDefault(); const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); };
+  const stopDraw = () => { isDrawing = false; ctx.closePath(); };
+
+  glassCanvas.addEventListener('mousedown', startDraw); glassCanvas.addEventListener('mousemove', draw);
+  glassCanvas.addEventListener('mouseup', stopDraw); glassCanvas.addEventListener('mouseout', stopDraw);
+  glassCanvas.addEventListener('touchstart', startDraw, { passive: false }); glassCanvas.addEventListener('touchmove', draw, { passive: false }); glassCanvas.addEventListener('touchend', stopDraw);
 }

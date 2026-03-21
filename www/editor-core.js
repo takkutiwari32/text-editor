@@ -847,10 +847,11 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
     if (!customName) { exportBtn.innerText = originalText; exportBtn.disabled = false; return; }
     
     const fileName = customName.endsWith('.pdf') ? customName : customName + '.pdf';
+    
+    // FIX 1: Removed the auto-injected title block from the content array
     const docDefinition = {
-      content: [{ text: titleText, style: 'mainTitle' }],
+      content: [], 
       styles: {
-        mainTitle: { fontSize: 26, bold: true, margin: [0, 0, 0, 20], color: '#111111' },
         paragraph: { fontSize: 12, margin: [0, 0, 0, 15], lineHeight: 1.5 },
         h1: { fontSize: 20, bold: true, margin: [0, 15, 0, 10] }, h2: { fontSize: 18, bold: true, margin: [0, 15, 0, 10] }, h3: { fontSize: 16, bold: true, margin: [0, 15, 0, 10] },
         code: { font: 'Courier', fontSize: 10, background: '#f4f4f4', margin: [0, 5, 0, 15] },
@@ -860,7 +861,7 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
 
     const cleanText = (html) => { const tmp = document.createElement('div'); tmp.innerHTML = html; return tmp.textContent || tmp.innerText || ''; };
 
-  // 3. The Smart Compiler Loop (Upgraded for Full-Width Scaling)
+    // 3. The Smart Compiler Loop
     outputData.blocks.forEach(block => {
       try {
         switch (block.type) {
@@ -886,16 +887,16 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
             
           case 'draw': 
             if (block.data.image) {
-              // Force drawing to fill the A4 page width (515 points)
-              docDefinition.content.push({ image: block.data.image, width: 515, margin: [0, 10, 0, 15] }); 
+              // FIX 2: Replaced 'width: 515' with 'fit: [515, 700]' to prevent tall mobile screens from overflowing the A4 page height
+              docDefinition.content.push({ image: block.data.image, fit: [515, 700], alignment: 'center', margin: [0, 10, 0, 15] }); 
             }
             break;
             
           case 'image':
             const imgUrl = block.data.file ? block.data.file.url : block.data.url;
             if (imgUrl && imgUrl.startsWith('data:image')) {
-              // Force images to fill the A4 page width (515 points)
-              docDefinition.content.push({ image: imgUrl, width: 515, margin: [0, 10, 0, 15] });
+              // FIX 2: Applied the same fit constraint to standard images
+              docDefinition.content.push({ image: imgUrl, fit: [515, 700], alignment: 'center', margin: [0, 10, 0, 15] });
             } else {
               docDefinition.content.push({ text: `[ Image linked from OS ]`, color: '#888888', italics: true, margin: [0, 5, 0, 15] });
             }
@@ -904,8 +905,6 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
           case 'table':
             if (block.data.content && block.data.content.length > 0) {
               const tableBody = block.data.content.map(row => row.map(cell => cleanText(cell) || ' '));
-              
-              // THE MAGIC: Create an array of '*' equal to the number of columns to force them to stretch 100%
               const colWidths = Array(tableBody[0].length).fill('*');
               
               docDefinition.content.push({ 
@@ -913,7 +912,7 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
                   widths: colWidths, 
                   body: tableBody 
                 }, 
-                layout: 'lightHorizontalLines', // Gives the PDF table a much cleaner, premium look
+                layout: 'lightHorizontalLines',
                 margin: [0, 10, 0, 15] 
               });
             }

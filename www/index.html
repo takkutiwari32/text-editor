@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <title>Tech Blog Pro CMS</title>
-  <!-- THE FIX: Locked the native viewport. Our custom JS engine handles the PDF zooming now! -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" id="viewport-meta" />
   
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
-  
+
+  <!-- THE FIX: Restored the missing CSS block that controls the Modals, AI Flyout, and PDF Text Selection! -->
   <style>
     :root { --editor-width: 80%; }
     .ce-block__content, .ce-toolbar__content { max-width: var(--editor-width) !important; transition: max-width 0.1s ease-out; }
 
-    /* THE BYOK MODAL CSS */
+    /* MODAL CSS */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; }
     .modal-box { background: #161b22; padding: 25px; border-radius: 8px; border: 1px solid #30363d; width: 450px; max-width: 90%; color: #c9d1d9; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
     .modal-box h2 { margin-top: 0; color: #58a6ff; }
     
-    /* THE AI FLYOUT CSS */
+    /* AI FLYOUT CSS */
     .ai-flyout { position: fixed; bottom: 0; left: 0; width: 260px; background-color: #0d1117; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 15px; transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 9999; box-sizing: border-box; border-top-right-radius: 8px; }
     .ai-flyout:hover { width: 25vw; box-shadow: 10px 0 20px rgba(0,0,0,0.6); }
     #ai-chat-window { height: 250px; overflow-y: auto; background: #161b22; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; margin-bottom: 10px; font-size: 0.85rem; color: var(--text-main); display: flex; flex-direction: column; gap: 8px; transition: height 0.3s ease; }
@@ -30,39 +30,20 @@
     input:checked + .slider { background-color: #58a6ff; }
     input:checked + .slider:before { transform: translateX(20px); }
 
-    /* =======================================================
-       THE FIX: ZOOM ROUTING & TEXT SELECTION OVERRIDES
-       ======================================================= */
-    
+    /* PDF TEXT SELECTION OVERRIDES */
     .editor-canvas { touch-action: pan-y !important; }
-    
     .textLayer { z-index: 5 !important; }
     .textLayer span {
         color: transparent !important;
         user-select: text !important;
         -webkit-user-select: text !important;
         pointer-events: auto !important;
-        
         padding-right: 20px !important;
         margin-right: -20px !important;
         padding-bottom: 5px !important;
         margin-bottom: -5px !important;
     }
     .textLayer span::after { content: " " !important; }
-
-    /* =======================================================
-       THE FIX: GHOST UX BLUR REMOVAL
-       ======================================================= */
-    body.is-sliding .mobile-drawer, 
-    body.is-sliding .left-sidebar, 
-    body.is-sliding .right-sidebar { 
-        background: transparent !important; 
-        box-shadow: none !important; 
-        border-top-color: transparent !important; 
-        /* Physically kill the frosted glass effect so the document is crystal clear */
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-    }
   </style>
 </head>
 <body>
@@ -71,18 +52,22 @@
     <div class="logo-section" style="display: flex; align-items: center;">
       <span class="logo-text">PRO CMS</span>
       <button id="settings-btn" class="icon-btn" style="margin-left: 15px; cursor: pointer; background: none; border: none; font-size: 1.2rem;" title="API Settings">⚙️</button>
+      
+      <div style="display: flex; margin-left: auto; gap: 4px; padding-right: 5px;">
+        <button class="icon-btn" id="undo-btn" title="Undo" style="font-size: 1.3rem; padding: 4px 8px;">↺</button>
+        <button class="icon-btn" id="redo-btn" title="Redo" style="font-size: 1.3rem; padding: 4px 8px;">↻</button>
+      </div>
     </div>
+    
     <div class="center-controls">
-      <button class="icon-btn" id="undo-btn" title="Undo">↺</button>
-      <button class="icon-btn" id="redo-btn" title="Redo">↻</button>
       <button class="icon-btn" id="zen-mode-btn" title="Zen Focus Mode">HIDE</button>
       <span class="save-status">Draft status: Unsaved</span>
     </div> 
+    
     <div class="action-section">
-       <!-- Preview Button Removed -->
-       <button class="btn-secondary" id="export-pdf-btn" style="border-color: rgba(88, 166, 255, 0.4); color: #58a6ff;">Export to PDF</button>
-       <button class="btn-secondary" id="export-txt-btn"> Export to Text</button>
-       <button class="btn-secondary" id="save-as-btn">Save Copy As...</button>
+       <button class="btn-secondary" id="export-pdf-btn" style="border-color: rgba(88, 166, 255, 0.4); color: #58a6ff;">📄 Export to PDF</button>
+       <button class="btn-secondary" id="export-txt-btn">📝 Export to Text</button>
+       <button class="btn-secondary" id="save-as-btn">💾 Save Copy As...</button>
        <button class="btn-primary" id="publish-btn">✓ Save Document</button>
     </div>
   </nav>
@@ -340,6 +325,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/editorjs-undo@latest"></script>
 
   <script>if (window.module) { module = window.module; }</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>

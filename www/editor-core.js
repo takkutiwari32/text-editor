@@ -437,6 +437,9 @@ class MobileTableTool {
   save() { return { content: this.data.content }; }
 }
 
+// THE FIX: Global Undo variable for plugin reference
+let undo;
+
 // --- 3. EDITOR INITIALIZATION ---
 const editor = new EditorJS({
   holder: 'editor-container', placeholder: '',
@@ -446,11 +449,18 @@ const editor = new EditorJS({
     image: { class: ImageTool, config: { uploader: { uploadByFile(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve({ success: 1, file: { url: reader.result } }); reader.onerror = error => reject(error); }); } } } },
     audio: SimpleAudioTool, draw: SimpleDrawTool    
   },
+  // THE FIX: Initialize Undo plugin on ready
+  onReady: () => {
+    undo = new Undo({ editor });
+  },
   onChange: () => {
     editor.save().then((outputData) => {
       let text = ''; outputData.blocks.forEach(block => { if (block.data.text) text += block.data.text.replace(/<[^>]*>?/gm, '') + ' '; });
       const words = text.trim().split(/\s+/).filter(word => word.length > 0).length;
-      document.getElementById('word-count').innerText = words; document.getElementById('read-time').innerText = Math.max(1, Math.ceil(words / 200)) + ' min';
+      const wordCountSpan = document.getElementById('word-count');
+      const readTimeSpan = document.getElementById('read-time');
+      if(wordCountSpan) wordCountSpan.innerText = words; 
+      if(readTimeSpan) readTimeSpan.innerText = Math.max(1, Math.ceil(words / 200)) + ' min';
     });
   }
 });
@@ -463,6 +473,10 @@ document.getElementById('tool-table').addEventListener('click', () => { editor.b
 document.getElementById('tool-list').addEventListener('click', () => { editor.blocks.insert('list'); });
 document.getElementById('tool-audio').addEventListener('click', () => { editor.blocks.insert('audio'); });
 document.getElementById('tool-draw').addEventListener('click', () => { editor.blocks.insert('draw'); });
+
+// THE FIX: Wiring up Functional Undo/Redo listeners in the mobile drawer
+document.getElementById('undo-btn').addEventListener('click', () => { if(undo) undo.undo(); });
+document.getElementById('redo-btn').addEventListener('click', () => { if(undo) undo.redo(); });
 
 // --- 5. PUBLISH LOGIC (SAVE & SAVE AS) ---
 const getDocumentTitle = (outputData) => {
@@ -604,7 +618,7 @@ document.getElementById('editor-container').addEventListener('keyup', (e) => {
 });
 
 const widthSlider = document.getElementById('canvas-width-slider'); const widthDisplay = document.getElementById('width-display');
-widthSlider.addEventListener('input', (e) => { document.documentElement.style.setProperty('--editor-width', e.target.value + '%'); widthDisplay.innerText = e.target.value + '%'; });
+if(widthSlider && widthDisplay) { widthSlider.addEventListener('input', (e) => { document.documentElement.style.setProperty('--editor-width', e.target.value + '%'); widthDisplay.innerText = e.target.value + '%'; }); }
 
 const lineHeightSlider = document.getElementById('line-height-slider'); const lineHeightDisplay = document.getElementById('line-height-display');
 if (lineHeightSlider && lineHeightDisplay) { lineHeightSlider.addEventListener('input', (e) => { document.documentElement.style.setProperty('--editor-line-height', e.target.value); lineHeightDisplay.innerText = e.target.value; }); }
@@ -617,7 +631,7 @@ async function loadFileFromOS(contentUrl) {
       const spinnerOverlay = document.getElementById('pdf-loading-spinner');
       const spinnerText = document.getElementById('pdf-spinner-text');
       
-      modal.style.display = 'flex';
+      if(modal) modal.style.display = 'flex';
       
       if (spinnerOverlay) {
           spinnerOverlay.style.display = 'flex';
@@ -853,11 +867,10 @@ let activePdf = {
   base64Data: null, originalPath: null, doc: null, 
   pageNum: 1, totalPages: 0, annotations: {},
   renderTask: null,
-  zoomLevel: 1.0 // Initialize our zoom multiplier
+  zoomLevel: 1.0 
 };
 let currentRenderPage = 0; 
 
-// A Helper function to trigger the re-render when a pinch is complete
 async function applyPdfZoom(newZoom) {
     activePdf.zoomLevel = Math.max(1.0, Math.min(newZoom, 5.0));
     const spinnerOverlay = document.getElementById('pdf-loading-spinner');
@@ -869,9 +882,8 @@ async function applyPdfZoom(newZoom) {
         if (spinnerText) spinnerText.innerText = "Enhancing Text...";
     }
     
-    await new Promise(r => setTimeout(r, 10)); // Yield to paint spinner
+    await new Promise(r => setTimeout(r, 10)); 
     
-    // Re-render the current page at the new crisp zoom level
     await renderPdfPage(activePdf.pageNum);
 
     if (spinnerOverlay) {
@@ -891,7 +903,7 @@ async function launchPdfAnnotator(base64Data, filePath) {
 
   const modal = document.getElementById('pdf-modal');
   const spinnerOverlay = document.getElementById('pdf-loading-spinner');
-  modal.style.display = 'flex';
+  if(modal) modal.style.display = 'flex';
   
   try {
     const res = await fetch("data:application/pdf;base64," + base64Data);
@@ -906,7 +918,8 @@ async function launchPdfAnnotator(base64Data, filePath) {
     
     activePdf.doc = await loadingTask.promise;
     activePdf.totalPages = activePdf.doc.numPages;
-    document.getElementById('pdf-page-count').innerText = activePdf.totalPages;
+    const pageCountSpan = document.getElementById('pdf-page-count');
+    if(pageCountSpan) pageCountSpan.innerText = activePdf.totalPages;
     
     await renderPdfPage(activePdf.pageNum);
     setupPdfDrawingTools();
@@ -916,7 +929,7 @@ async function launchPdfAnnotator(base64Data, filePath) {
   } catch (err) {
     if (spinnerOverlay) spinnerOverlay.style.display = 'none';
     alert("Error loading PDF: " + err.message);
-    modal.style.display = 'none';
+    if(modal) modal.style.display = 'none';
   }
 }
 
@@ -925,7 +938,7 @@ async function renderPdfPage(num) {
   const pageNumSpan = document.getElementById('pdf-page-num');
   if(pageNumSpan) {
       pageNumSpan.innerText = num;
-      pageNumSpan.style.opacity = '0.5'; // Dim while loading
+      pageNumSpan.style.opacity = '0.5'; 
   }
 
   if (activePdf.renderTask) {
@@ -941,14 +954,12 @@ async function renderPdfPage(num) {
   const cssWidth = container.clientWidth - 40; 
   const baseFitScale = cssWidth / unscaledViewport.width;
   
-  // APPLY ZOOM LEVEL FOR CRISPNESS
   const finalScale = baseFitScale * (activePdf.zoomLevel || 1.0);
   const ratio = window.devicePixelRatio || 2; 
   
   const viewport = page.getViewport({ scale: finalScale * ratio }); 
   const cssViewport = page.getViewport({ scale: finalScale }); 
   
-  // Off-Screen Buffer Canvas
   const offScreenCanvas = document.createElement('canvas');
   const baseCtx = offScreenCanvas.getContext('2d');
   
@@ -971,14 +982,13 @@ async function renderPdfPage(num) {
   activePdf.renderTask = null;
   if (currentRenderPage !== num) return;
 
-  // INSTANT VISUAL SNAP
   const oldBaseCanvas = document.getElementById('pdf-base-canvas');
   offScreenCanvas.id = 'pdf-base-canvas';
   offScreenCanvas.style.display = 'block';
   offScreenCanvas.style.width = cssViewport.width + 'px';
   offScreenCanvas.style.height = cssViewport.height + 'px';
   
-  oldBaseCanvas.parentNode.replaceChild(offScreenCanvas, oldBaseCanvas);
+  if(oldBaseCanvas) oldBaseCanvas.parentNode.replaceChild(offScreenCanvas, oldBaseCanvas);
   
   const wrapper = document.getElementById('pdf-transform-wrapper');
   if(wrapper) {
@@ -986,26 +996,27 @@ async function renderPdfPage(num) {
   }
 
   const glassCanvas = document.getElementById('pdf-glass-canvas');
-  glassCanvas.width = offScreenCanvas.width;
-  glassCanvas.height = offScreenCanvas.height;
-  glassCanvas.style.width = cssViewport.width + 'px';
-  glassCanvas.style.height = cssViewport.height + 'px';
-  
-  const glassCtx = glassCanvas.getContext('2d');
-  glassCtx.setTransform(1, 0, 0, 1, 0, 0);
-  glassCtx.clearRect(0, 0, glassCanvas.width, glassCanvas.height);
-  glassCtx.lineCap = 'round';
-  glassCtx.lineJoin = 'round';
+  if(glassCanvas) {
+      glassCanvas.width = offScreenCanvas.width;
+      glassCanvas.height = offScreenCanvas.height;
+      glassCanvas.style.width = cssViewport.width + 'px';
+      glassCanvas.style.height = cssViewport.height + 'px';
+      
+      const glassCtx = glassCanvas.getContext('2d');
+      glassCtx.setTransform(1, 0, 0, 1, 0, 0);
+      glassCtx.clearRect(0, 0, glassCanvas.width, glassCanvas.height);
+      glassCtx.lineCap = 'round';
+      glassCtx.lineJoin = 'round';
 
-  if (activePdf.annotations && activePdf.annotations[num]) {
-    const img = new Image();
-    img.onload = () => glassCtx.drawImage(img, 0, 0, glassCanvas.width, glassCanvas.height);
-    img.src = activePdf.annotations[num];
+      if (activePdf.annotations && activePdf.annotations[num]) {
+        const img = new Image();
+        img.onload = () => glassCtx.drawImage(img, 0, 0, glassCanvas.width, glassCanvas.height);
+        img.src = activePdf.annotations[num];
+      }
   }
 
   if(pageNumSpan) pageNumSpan.style.opacity = '1';
 
-  // ASYNC TEXT LAYER INJECTION
   const textLayerDiv = document.getElementById('pdf-text-layer');
   if(textLayerDiv) {
       textLayerDiv.innerHTML = '';
@@ -1031,7 +1042,7 @@ async function renderPdfPage(num) {
 
 function saveCurrentPageAnnotation() {
   const glassCanvas = document.getElementById('pdf-glass-canvas');
-  activePdf.annotations[activePdf.pageNum] = glassCanvas.toDataURL('image/png');
+  if(glassCanvas) activePdf.annotations[activePdf.pageNum] = glassCanvas.toDataURL('image/png');
 }
 
 document.getElementById('pdf-prev-btn').addEventListener('click', () => {
@@ -1048,20 +1059,24 @@ document.getElementById('pdf-next-btn').addEventListener('click', () => {
   renderPdfPage(activePdf.pageNum);
 });
 
-document.getElementById('pdf-page-num').addEventListener('click', () => {
-    const jump = prompt(`Jump to page (1 - ${activePdf.totalPages}):`, activePdf.pageNum);
-    if (jump) {
-        const jumpNum = parseInt(jump, 10);
-        if (jumpNum >= 1 && jumpNum <= activePdf.totalPages) {
-            saveCurrentPageAnnotation();
-            activePdf.pageNum = jumpNum;
-            renderPdfPage(activePdf.pageNum);
+const pdfPageNumClickable = document.getElementById('pdf-page-num');
+if(pdfPageNumClickable) {
+    pdfPageNumClickable.addEventListener('click', () => {
+        const jump = prompt(`Jump to page (1 - ${activePdf.totalPages}):`, activePdf.pageNum);
+        if (jump) {
+            const jumpNum = parseInt(jump, 10);
+            if (jumpNum >= 1 && jumpNum <= activePdf.totalPages) {
+                saveCurrentPageAnnotation();
+                activePdf.pageNum = jumpNum;
+                renderPdfPage(activePdf.pageNum);
+            }
         }
-    }
-});
+    });
+}
 
 document.getElementById('pdf-cancel-btn').addEventListener('click', () => {
-  document.getElementById('pdf-modal').style.display = 'none';
+  const pdfModal = document.getElementById('pdf-modal');
+  if(pdfModal) pdfModal.style.display = 'none';
   
   const spinner = document.getElementById('pdf-loading-spinner');
   if (spinner) spinner.style.display = 'none';
@@ -1100,13 +1115,15 @@ document.getElementById('pdf-save-btn').addEventListener('click', async () => {
           path: fileName, data: bakedPdfBase64, directory: 'DOCUMENTS'
         });
         alert("Success! Annotations baked into PDF.");
-        document.getElementById('pdf-modal').style.display = 'none';
+        const pdfModal = document.getElementById('pdf-modal');
+        if(pdfModal) pdfModal.style.display = 'none';
     } else {
         const a = document.createElement('a');
         a.href = "data:application/pdf;base64," + bakedPdfBase64;
         a.download = "Annotated_Document.pdf";
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        document.getElementById('pdf-modal').style.display = 'none';
+        const pdfModal = document.getElementById('pdf-modal');
+        if(pdfModal) pdfModal.style.display = 'none';
     }
   } catch (error) { alert("Error baking PDF: " + error.message); } 
   finally { saveBtn.innerText = "Save PDF"; }
@@ -1114,124 +1131,127 @@ document.getElementById('pdf-save-btn').addEventListener('click', async () => {
 
 function setupPdfDrawingTools() {
   const glassCanvas = document.getElementById('pdf-glass-canvas');
+  if(!glassCanvas) return;
   const ctx = glassCanvas.getContext('2d');
   
   const toolbarContainer = document.getElementById('pdf-toolbar-container');
-  toolbarContainer.innerHTML = `
-    <div style="display: flex; justify-content: center; gap: 15px; padding: 15px; background: #0d1117; border-top: 1px solid #30363d;">
-        <div class="pdf-color-btn" data-color="pan" style="width:30px;height:30px;border-radius:50%;background:#161b22;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow: 0 0 0 3px #ffffff;" title="Pan & Zoom">✋</div>
-        <div class="pdf-color-btn" data-color="#d32f2f" style="width:30px;height:30px;border-radius:50%;background:#d32f2f;cursor:pointer;"></div>
-        <div class="pdf-color-btn" data-color="#1976d2" style="width:30px;height:30px;border-radius:50%;background:#1976d2;cursor:pointer;"></div>
-        <div class="pdf-color-btn" data-color="#388e3c" style="width:30px;height:30px;border-radius:50%;background:#388e3c;cursor:pointer;"></div>
-        <div class="pdf-color-btn" data-color="#fbc02d" style="width:30px;height:30px;border-radius:50%;background:#fbc02d;cursor:pointer;"></div>
-        <div class="pdf-color-btn" data-color="#000000" style="width:30px;height:30px;border-radius:50%;background:#000000;cursor:pointer;"></div>
-        <div class="pdf-color-btn" data-color="#ffffff" style="width:30px;height:30px;border-radius:50%;border:2px solid #ccc;background:#ffffff;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Eraser">E</div>
-    </div>
-  `;
+  if(toolbarContainer) {
+      toolbarContainer.innerHTML = `
+        <div style="display: flex; justify-content: center; gap: 15px; padding: 15px; background: #0d1117; border-top: 1px solid #30363d;">
+            <div class="pdf-color-btn" data-color="pan" style="width:30px;height:30px;border-radius:50%;background:#161b22;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow: 0 0 0 3px #ffffff;" title="Pan & Zoom">✋</div>
+            <div class="pdf-color-btn" data-color="#d32f2f" style="width:30px;height:30px;border-radius:50%;background:#d32f2f;cursor:pointer;"></div>
+            <div class="pdf-color-btn" data-color="#1976d2" style="width:30px;height:30px;border-radius:50%;background:#1976d2;cursor:pointer;"></div>
+            <div class="pdf-color-btn" data-color="#388e3c" style="width:30px;height:30px;border-radius:50%;background:#388e3c;cursor:pointer;"></div>
+            <div class="pdf-color-btn" data-color="#fbc02d" style="width:30px;height:30px;border-radius:50%;background:#fbc02d;cursor:pointer;"></div>
+            <div class="pdf-color-btn" data-color="#000000" style="width:30px;height:30px;border-radius:50%;background:#000000;cursor:pointer;"></div>
+            <div class="pdf-color-btn" data-color="#ffffff" style="width:30px;height:30px;border-radius:50%;border:2px solid #ccc;background:#ffffff;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Eraser">E</div>
+        </div>
+      `;
 
-  let currentColor = 'pan'; 
-  let currentWidth = 4; 
-  
-  glassCanvas.style.pointerEvents = 'none';
-  
-  document.querySelectorAll('.pdf-color-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-          document.querySelectorAll('.pdf-color-btn').forEach(b => b.style.boxShadow = 'none');
-          btn.style.boxShadow = '0 0 0 3px #ffffff';
-          currentColor = btn.getAttribute('data-color');
-          
-          if (currentColor === 'pan') {
-              glassCanvas.style.pointerEvents = 'none';
-          } else {
-              glassCanvas.style.pointerEvents = 'auto';
-              currentWidth = (currentColor === '#ffffff') ? 25 : 4; 
-          }
+      let currentColor = 'pan'; 
+      let currentWidth = 4; 
+      
+      glassCanvas.style.pointerEvents = 'none';
+      
+      document.querySelectorAll('.pdf-color-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+              document.querySelectorAll('.pdf-color-btn').forEach(b => b.style.boxShadow = 'none');
+              btn.style.boxShadow = '0 0 0 3px #ffffff';
+              currentColor = btn.getAttribute('data-color');
+              
+              if (currentColor === 'pan') {
+                  glassCanvas.style.pointerEvents = 'none';
+              } else {
+                  glassCanvas.style.pointerEvents = 'auto';
+                  currentWidth = (currentColor === '#ffffff') ? 25 : 4; 
+              }
+          });
       });
-  });
 
-  // --- THE PINCH-STRETCH-SNAP ZOOM LOGIC ---
-  let pinchStartDistance = 0;
-  let isPinching = false;
-  let currentScale = 1;
-  let animationFrameId = null;
+      // THE PINCH-STRETCH-SNAP ZOOM LOGIC
+      let pinchStartDistance = 0;
+      let isPinching = false;
+      let currentScale = 1;
+      let animationFrameId = null;
 
-  const container = document.getElementById('pdf-canvas-container');
-  const wrapper = document.getElementById('pdf-transform-wrapper');
+      const container = document.getElementById('pdf-canvas-container');
+      const wrapper = document.getElementById('pdf-transform-wrapper');
 
-  container.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 2 && currentColor === 'pan') {
-          isPinching = true;
-          pinchStartDistance = Math.hypot(
-              e.touches[0].clientX - e.touches[1].clientX,
-              e.touches[0].clientY - e.touches[1].clientY
-          );
-      }
-  }, { passive: false });
+      if(container) {
+          container.addEventListener('touchstart', (e) => {
+              if (e.touches.length === 2 && currentColor === 'pan') {
+                  isPinching = true;
+                  pinchStartDistance = Math.hypot(
+                      e.touches[0].clientX - e.touches[1].clientX,
+                      e.touches[0].clientY - e.touches[1].clientY
+                  );
+              }
+          }, { passive: false });
 
-  container.addEventListener('touchmove', (e) => {
-      if (isPinching && e.touches.length === 2 && currentColor === 'pan') {
-          e.preventDefault(); 
-          const dist = Math.hypot(
-              e.touches[0].clientX - e.touches[1].clientX,
-              e.touches[0].clientY - e.touches[1].clientY
-          );
-          currentScale = dist / pinchStartDistance;
-          
-          if (animationFrameId) cancelAnimationFrame(animationFrameId);
-          animationFrameId = requestAnimationFrame(() => {
-              if (wrapper) wrapper.style.transform = `scale(${currentScale})`;
+          container.addEventListener('touchmove', (e) => {
+              if (isPinching && e.touches.length === 2 && currentColor === 'pan') {
+                  e.preventDefault(); 
+                  const dist = Math.hypot(
+                      e.touches[0].clientX - e.touches[1].clientX,
+                      e.touches[0].clientY - e.touches[1].clientY
+                  );
+                  currentScale = dist / pinchStartDistance;
+                  
+                  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                  animationFrameId = requestAnimationFrame(() => {
+                      if (wrapper) wrapper.style.transform = `scale(${currentScale})`;
+                  });
+              }
+          }, { passive: false });
+
+          container.addEventListener('touchend', (e) => {
+              if (isPinching && e.touches.length < 2) {
+                  isPinching = false;
+                  applyPdfZoom(activePdf.zoomLevel * currentScale);
+              }
           });
       }
-  }, { passive: false });
 
-  container.addEventListener('touchend', (e) => {
-      if (isPinching && e.touches.length < 2) {
-          isPinching = false;
-          applyPdfZoom(activePdf.zoomLevel * currentScale);
-      }
-  });
+      // DRAWING LOGIC
+      let isDrawing = false;
+      
+      const getPos = (e) => {
+        const rect = glassCanvas.getBoundingClientRect();
+        const scaleX = glassCanvas.width / rect.width;
+        const scaleY = glassCanvas.height / rect.height;
+        
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        return { 
+            x: (clientX - rect.left) * scaleX, 
+            y: (clientY - rect.top) * scaleY 
+        };
+      };
 
+      const startDraw = (e) => { 
+        if (e.touches && e.touches.length > 1) { isDrawing = false; return; }
+        isDrawing = true; 
+        const pos = getPos(e); 
+        ctx.strokeStyle = currentColor;
+        ctx.lineWidth = currentWidth * (activePdf.zoomLevel || 1.0) * (window.devicePixelRatio || 2);
+        ctx.beginPath(); 
+        ctx.moveTo(pos.x, pos.y); 
+      };
+      
+      const draw = (e) => { 
+        if (!isDrawing) return; 
+        if (e.touches && e.touches.length > 1) { isDrawing = false; ctx.closePath(); return; }
+        e.preventDefault(); 
+        const pos = getPos(e); 
+        ctx.lineTo(pos.x, pos.y); 
+        ctx.stroke(); 
+      };
+      
+      const stopDraw = () => { isDrawing = false; ctx.closePath(); };
 
-  // --- DRAWING LOGIC ---
-  let isDrawing = false;
-  
-  const getPos = (e) => {
-    const rect = glassCanvas.getBoundingClientRect();
-    const scaleX = glassCanvas.width / rect.width;
-    const scaleY = glassCanvas.height / rect.height;
-    
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    
-    return { 
-        x: (clientX - rect.left) * scaleX, 
-        y: (clientY - rect.top) * scaleY 
-    };
-  };
-
-  const startDraw = (e) => { 
-    if (e.touches && e.touches.length > 1) { isDrawing = false; return; }
-    isDrawing = true; 
-    const pos = getPos(e); 
-    ctx.strokeStyle = currentColor;
-    // Adapt pen thickness dynamically to zoom
-    ctx.lineWidth = currentWidth * (activePdf.zoomLevel || 1.0) * (window.devicePixelRatio || 2);
-    ctx.beginPath(); 
-    ctx.moveTo(pos.x, pos.y); 
-  };
-  
-  const draw = (e) => { 
-    if (!isDrawing) return; 
-    if (e.touches && e.touches.length > 1) { isDrawing = false; ctx.closePath(); return; }
-    e.preventDefault(); 
-    const pos = getPos(e); 
-    ctx.lineTo(pos.x, pos.y); 
-    ctx.stroke(); 
-  };
-  
-  const stopDraw = () => { isDrawing = false; ctx.closePath(); };
-
-  glassCanvas.addEventListener('mousedown', startDraw); glassCanvas.addEventListener('mousemove', draw);
-  glassCanvas.addEventListener('mouseup', stopDraw); glassCanvas.addEventListener('mouseout', stopDraw);
-  glassCanvas.addEventListener('touchstart', startDraw, { passive: false }); glassCanvas.addEventListener('touchmove', draw, { passive: false }); glassCanvas.addEventListener('touchend', stopDraw);
+      glassCanvas.addEventListener('mousedown', startDraw); glassCanvas.addEventListener('mousemove', draw);
+      glassCanvas.addEventListener('mouseup', stopDraw); glassCanvas.addEventListener('mouseout', stopDraw);
+      glassCanvas.addEventListener('touchstart', startDraw, { passive: false }); glassCanvas.addEventListener('touchmove', draw, { passive: false }); glassCanvas.addEventListener('touchend', stopDraw);
+  }
 }

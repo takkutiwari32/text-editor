@@ -136,24 +136,51 @@
 
       <div class="typo-row">
         <label>Font Style</label>
-        <select id="style-font" class="typo-input" style="cursor: pointer; font-family: 'Inter', sans-serif;">
-          <option value="">Theme Default (Inter)</option>
-          <optgroup label="Modern Sans-Serif">
-            <option value="'Roboto', sans-serif" style="font-family: 'Roboto', sans-serif;">Roboto</option>
-            <option value="'Open Sans', sans-serif" style="font-family: 'Open Sans', sans-serif;">Open Sans</option>
-            <option value="'Oswald', sans-serif" style="font-family: 'Oswald', sans-serif;">Oswald</option>
+        <!-- THE FIX: The massive 30+ native font list is fully restored here -->
+        <select id="style-font" class="typo-input" style="cursor: pointer;">
+          <option value="">Theme Default</option>
+          <optgroup label="Modern Sans-Serif (Clean)">
+            <option value="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">Native OS Default</option>
+            <option value="Helvetica, Arial, sans-serif">Helvetica / Arial</option>
+            <option value="'Helvetica Neue', Helvetica, Arial, sans-serif">Helvetica Neue</option>
+            <option value="Verdana, Geneva, sans-serif">Verdana</option>
+            <option value="'Trebuchet MS', Helvetica, sans-serif">Trebuchet MS</option>
+            <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+            <option value="'Century Gothic', sans-serif">Century Gothic</option>
+            <option value="'Lucida Sans Unicode', 'Lucida Grande', sans-serif">Lucida Sans</option>
+            <option value="'Gill Sans', 'Gill Sans MT', Calibri, sans-serif">Gill Sans</option>
+            <option value="Optima, Segoe, sans-serif">Optima</option>
+            <option value="'Avenir Next', Avenir, sans-serif">Avenir</option>
           </optgroup>
-          <optgroup label="Classic Serif">
-            <option value="'Merriweather', serif" style="font-family: 'Merriweather', serif;">Merriweather</option>
-            <option value="'Playfair Display', serif" style="font-family: 'Playfair Display', serif;">Playfair Display</option>
-            <option value="'Lora', serif" style="font-family: 'Lora', serif;">Lora</option>
+          <optgroup label="Classic Serif (Editorial)">
+            <option value="Georgia, serif">Georgia</option>
+            <option value="'Times New Roman', Times, serif">Times New Roman</option>
+            <option value="Garamond, serif">Garamond</option>
+            <option value="'Palatino Linotype', 'Book Antiqua', Palatino, serif">Palatino</option>
+            <option value="Baskerville, 'Baskerville Old Face', 'Hoefler Text', serif">Baskerville</option>
+            <option value="'Lucida Bright', Georgia, serif">Lucida Bright</option>
+            <option value="Cambria, Georgia, serif">Cambria</option>
+            <option value="Didot, serif">Didot</option>
+            <option value="'Hoefler Text', 'Baskerville old face', serif">Hoefler Text</option>
           </optgroup>
-          <optgroup label="Monospace (Code)">
-            <option value="'Fira Code', monospace" style="font-family: 'Fira Code', monospace;">Fira Code</option>
+          <optgroup label="Monospace (Code & Tech)">
+            <option value="ui-monospace, Menlo, Monaco, 'Cascadia Mono', 'Segoe UI Mono', 'Roboto Mono', monospace">Native OS Mono</option>
+            <option value="Consolas, monospace">Consolas</option>
+            <option value="'Courier New', Courier, monospace">Courier New</option>
+            <option value="'Lucida Console', Monaco, monospace">Lucida Console</option>
+            <option value="'Andale Mono', monospace">Andale Mono</option>
+          </optgroup>
+          <optgroup label="Display & Heavy (Headlines)">
+            <option value="Impact, fantasy">Impact</option>
+            <option value="'Arial Black', Gadget, sans-serif">Arial Black</option>
+            <option value="'Franklin Gothic Medium', 'Arial Narrow', sans-serif">Franklin Gothic</option>
+            <option value="Copperplate, 'Copperplate Gothic Light', fantasy">Copperplate</option>
           </optgroup>
           <optgroup label="Handwriting & Cursive">
-            <option value="'Caveat', cursive" style="font-family: 'Caveat', cursive;">Caveat</option>
-            <option value="'Pacifico', cursive" style="font-family: 'Pacifico', cursive;">Pacifico</option>
+            <option value="'Brush Script MT', cursive">Brush Script</option>
+            <option value="'Comic Sans MS', cursive">Comic Sans</option>
+            <option value="'Bradley Hand', cursive">Bradley Hand</option>
+            <option value="'Snell Roundhand', cursive">Snell Roundhand</option>
           </optgroup>
         </select>
       </div>
@@ -191,7 +218,7 @@
       </div>
 
       <button id="ai-nexus-fab" class="ai-nexus-fab" title="Activate AI Co-Pilot">
-          <div class="ai-nexus-inner">AI</div>
+          <div class="ai-nexus-inner">✨</div>
       </button>
   </div>
 
@@ -306,7 +333,6 @@
         fab.addEventListener('click', () => {
             drawer.classList.toggle('open');
             fab.innerHTML = drawer.classList.contains('open') ? '❌ Close' : '🛠️ Tools';
-            // Trigger Haptic Feedback
             if(navigator.vibrate) navigator.vibrate(10);
         });
         

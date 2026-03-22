@@ -496,16 +496,12 @@ class MobileTableTool {
 let undo;
 
 // --- THE NEW AUTO-SAVE ENGINE & INIT ---
-let initialData = {};
-try {
-  const savedData = localStorage.getItem('pro_cms_autosave');
-  if (savedData) initialData = JSON.parse(savedData);
-} catch(e) {}
+// THE FIX: Removed the auto-loading payload so the canvas boots clean.
+// The background loop below will continue to silently save the new drafts!
 
 const editor = new EditorJS({
   holder: 'editor-container', 
   placeholder: 'Start writing your document...',
-  data: initialData,
   tools: {
     header: { class: Header, inlineToolbar: ['link', 'bold', 'italic', 'underline', 'Marker'] },
     list: { class: EditorjsList, inlineToolbar: true }, code: { class: CodeTool }, table: MobileTableTool, Marker: { class: Marker }, underline: { class: Underline },

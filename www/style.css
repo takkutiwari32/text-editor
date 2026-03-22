@@ -164,8 +164,13 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
     }
 
     .save-status { display: none !important; } 
-    .app-body { margin-top: 60px !important; height: calc(100vh - 60px) !important; display: block !important; }
-    .editor-canvas { padding: 0 !important; }
+    
+    /* THE FIX 1: Convert block to flex column so the canvas fills exact space */
+    .app-body { margin-top: 60px !important; height: calc(100vh - 60px) !important; display: flex !important; flex-direction: column !important; }
+    
+    /* THE FIX 2: Allow the canvas to handle its own overflowing content perfectly */
+    .editor-canvas { padding: 0 !important; flex: 1 !important; overflow: auto !important; -webkit-overflow-scrolling: touch; width: 100%; }
+    
     .document-container { padding: 30px 20px !important; min-height: calc(100vh - 60px) !important; border-radius: 0 !important; border: none !important; box-shadow: none !important; }
 
     .mobile-top-dropdown {
@@ -227,7 +232,6 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
     }
     .mobile-drawer.open { transform: translateY(0); }
     
-    /* THE FIX: Force overflow visible so the sidebars expand and let the parent drawer handle the scrolling */
     .mobile-drawer .left-sidebar, .mobile-drawer .right-sidebar { 
         width: 100% !important; border: none !important; padding: 24px !important; display: flex !important; height: auto !important; 
         overflow: visible !important; 
@@ -313,7 +317,6 @@ body.is-sliding .right-sidebar > .active-slider-row {
 ========================================= */
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* THE FIX: Lowered Z-Index from 10000 to 8900 so it sits below the 9000-level drawer */
 .ai-nexus-container {
     position: fixed; bottom: 24px; left: 24px; z-index: 8900; 
     display: flex; flex-direction: column; align-items: flex-start; gap: 15px;

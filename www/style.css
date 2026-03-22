@@ -165,13 +165,33 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
     .save-status { display: none !important; } 
     
-    /* THE FIX 1: Convert block to flex column so the canvas fills exact space */
-    .app-body { margin-top: 60px !important; height: calc(100vh - 60px) !important; display: flex !important; flex-direction: column !important; }
+    /* FIX: Flexible Layout restoring normal scroll logic */
+    .app-body { 
+        margin-top: 60px !important; 
+        height: calc(100vh - 60px) !important; 
+        display: flex !important; 
+        flex-direction: column !important; 
+    }
     
-    /* THE FIX 2: Allow the canvas to handle its own overflowing content perfectly */
-    .editor-canvas { padding: 0 !important; flex: 1 !important; overflow: auto !important; -webkit-overflow-scrolling: touch; width: 100%; }
+    /* FIX: Native Momentum Scrolling */
+    .editor-canvas { 
+        padding: 0 !important; 
+        flex: 1 !important; 
+        overflow-y: auto !important; 
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important; 
+        width: 100% !important; 
+        display: block !important;
+    }
     
-    .document-container { padding: 30px 20px !important; min-height: calc(100vh - 60px) !important; border-radius: 0 !important; border: none !important; box-shadow: none !important; }
+    /* FIX: Canvas stretched to 100% to hide black background */
+    .document-container { 
+        padding: 30px 20px 120px 20px !important; /* 120px bottom clearance */
+        min-height: 100% !important; /* Covers the black background entirely */
+        border-radius: 0 !important; 
+        border: none !important; 
+        box-shadow: none !important; 
+    }
 
     .mobile-top-dropdown {
         position: fixed; top: 70px; right: 15px; width: 240px;
@@ -322,6 +342,7 @@ body.is-sliding .right-sidebar > .active-slider-row {
     display: flex; flex-direction: column; align-items: flex-start; gap: 15px;
 }
 
+/* --- THE BUTTON --- */
 .ai-nexus-fab {
     width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer;
     position: relative; display: flex; justify-content: center; align-items: center;
@@ -331,6 +352,7 @@ body.is-sliding .right-sidebar > .active-slider-row {
 }
 .ai-nexus-fab:active { transform: scale(0.92); }
 
+/* FIX: Restored original full colorful gradient to the button */
 .ai-nexus-fab::before {
     content: ''; position: absolute; inset: -3px; border-radius: 50%;
     background: conic-gradient(from 0deg, #ff7eb3, #8b5cf6, #58a6ff, #ff7eb3);
@@ -343,14 +365,39 @@ body.is-sliding .right-sidebar > .active-slider-row {
     font-size: 1.6rem; color: #fff; z-index: 1; transition: background 0.2s;
 }
 
+/* --- THE POPUP MENU (MASKED RECTANGLE) --- */
 .ai-nexus-popup {
-    background: rgba(22, 27, 34, 0.85); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-    border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; padding: 18px;
-    width: 280px; box-shadow: 0 16px 40px rgba(0,0,0,0.8);
+    position: relative; width: 280px; padding: 18px; border-radius: 16px;
+    background: #161b22; 
+    box-shadow: 0 16px 40px rgba(0,0,0,0.9);
     transform: translateY(20px) scale(0.9); opacity: 0; pointer-events: none;
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: bottom left;
+    
+    /* FIX: This stops the corners from bleeding! */
+    overflow: hidden; 
 }
 .ai-nexus-popup.open { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
+
+/* The full color wheel matching the button perfectly */
+.ai-nexus-popup::before {
+    content: ''; position: absolute; 
+    top: -50%; left: -50%; width: 200%; height: 200%; 
+    background: conic-gradient(from 0deg, #ff7eb3, #8b5cf6, #58a6ff, #ff7eb3);
+    animation: spin 3s linear infinite; z-index: 0;
+}
+
+/* The Mask: A solid dark cap that hides everything except a sharp 2px edge */
+.ai-nexus-popup::after {
+    content: ''; position: absolute; 
+    inset: 2px; /* Leaves exactly 2px of the colorful gradient exposed */
+    background: #161b22; border-radius: 14px; 
+    z-index: 1;
+}
+
+/* Pushes all internal buttons and text above the dark cap */
+.ai-nexus-popup > * {
+    position: relative; z-index: 2;
+}
 
 .ai-menu-btn {
     width: 100%; padding: 14px 16px !important; text-align: left;

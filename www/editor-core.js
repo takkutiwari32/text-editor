@@ -85,22 +85,71 @@ document.getElementById('save-api-btn').addEventListener('click', () => {
   alert('Hardware Sync Complete: Pro CMS AI Engine is now online.');
 });
 
-// --- 1. CUSTOM AUDIO ENGINE ---
+// --- 1. CUSTOM AUDIO ENGINE (NATIVE FILE PICKER UPGRADE) ---
 class SimpleAudioTool {
   static get toolbox() { return { title: 'Audio', icon: '🎵' }; }
-  constructor({data}) { this.data = data; }
-  render() {
-    const wrapper = document.createElement('div');
-    wrapper.style.padding = '15px'; wrapper.style.background = '#161b22'; wrapper.style.border = '1px solid #30363d'; wrapper.style.borderRadius = '6px';
-    const input = document.createElement('input');
-    input.placeholder = 'Paste Audio URL (.mp3) and press Enter...';
-    input.style.width = '100%'; input.style.padding = '10px'; input.style.background = '#0d1117'; input.style.color = '#fff'; input.style.border = '1px solid #30363d';
-    const audio = document.createElement('audio'); audio.controls = true; audio.style.width = '100%'; audio.style.display = 'none';
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { audio.src = input.value; audio.style.display = 'block'; input.style.display = 'none'; } });
-    if (this.data && this.data.url) { audio.src = this.data.url; audio.style.display = 'block'; input.style.display = 'none'; }
-    wrapper.appendChild(input); wrapper.appendChild(audio); return wrapper;
+  
+  constructor({data}) { 
+    this.data = data || {}; 
   }
-  save(blockContent) { const audio = blockContent.querySelector('audio'); return { url: audio ? audio.src : '' }; }
+
+  render() {
+    this.wrapper = document.createElement('div');
+    this.wrapper.style.padding = '15px'; 
+    this.wrapper.style.background = '#161b22'; 
+    this.wrapper.style.border = this.data.url ? '1px solid #30363d' : '2px dashed #30363d'; 
+    this.wrapper.style.borderRadius = '8px';
+    this.wrapper.style.textAlign = 'center';
+
+    this.audioPlayer = document.createElement('audio'); 
+    this.audioPlayer.controls = true; 
+    this.audioPlayer.style.width = '100%'; 
+    this.audioPlayer.style.display = this.data.url ? 'block' : 'none';
+    this.audioPlayer.style.outline = 'none';
+
+    this.placeholder = document.createElement('div');
+    this.placeholder.innerHTML = '🎵 Tap to Select Audio File';
+    this.placeholder.style.padding = '20px';
+    this.placeholder.style.color = '#58a6ff';
+    this.placeholder.style.fontWeight = 'bold';
+    this.placeholder.style.cursor = 'pointer';
+    this.placeholder.style.display = this.data.url ? 'none' : 'block';
+
+    this.fileInput = document.createElement('input');
+    this.fileInput.type = 'file';
+    this.fileInput.accept = 'audio/*';
+    this.fileInput.style.display = 'none';
+
+    this.fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        // Convert to Base64 so it saves perfectly inside your JSON document offline
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          this.data.url = event.target.result;
+          this.audioPlayer.src = this.data.url;
+          this.audioPlayer.style.display = 'block';
+          this.placeholder.style.display = 'none';
+          this.wrapper.style.border = '1px solid #30363d';
+          // Trigger EditorJS to recognize a change for auto-saving/history
+          this.wrapper.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    this.placeholder.addEventListener('click', () => { this.fileInput.click(); });
+
+    if (this.data && this.data.url) { this.audioPlayer.src = this.data.url; }
+
+    this.wrapper.appendChild(this.placeholder);
+    this.wrapper.appendChild(this.fileInput);
+    this.wrapper.appendChild(this.audioPlayer); 
+    
+    return this.wrapper;
+  }
+  
+  save() { return { url: this.data.url || '' }; }
 }
 
 // --- 2. CUSTOM DRAWING ENGINE (PRO UI) ---
@@ -437,7 +486,6 @@ class MobileTableTool {
   save() { return { content: this.data.content }; }
 }
 
-// THE FIX: Global Undo variable for plugin reference
 let undo;
 
 // --- 3. EDITOR INITIALIZATION ---
@@ -449,7 +497,6 @@ const editor = new EditorJS({
     image: { class: ImageTool, config: { uploader: { uploadByFile(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve({ success: 1, file: { url: reader.result } }); reader.onerror = error => reject(error); }); } } } },
     audio: SimpleAudioTool, draw: SimpleDrawTool    
   },
-  // THE FIX: Initialize Undo plugin on ready
   onReady: () => {
     undo = new Undo({ editor });
   },
@@ -474,7 +521,6 @@ document.getElementById('tool-list').addEventListener('click', () => { editor.bl
 document.getElementById('tool-audio').addEventListener('click', () => { editor.blocks.insert('audio'); });
 document.getElementById('tool-draw').addEventListener('click', () => { editor.blocks.insert('draw'); });
 
-// THE FIX: Wiring up Functional Undo/Redo listeners in the mobile drawer
 document.getElementById('undo-btn').addEventListener('click', () => { if(undo) undo.undo(); });
 document.getElementById('redo-btn').addEventListener('click', () => { if(undo) undo.redo(); });
 

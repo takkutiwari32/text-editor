@@ -22,9 +22,11 @@
     "@capacitor/android": "^8.2.0",
     "@capacitor/app": "^8.0.1",
     "@capacitor/core": "^8.2.0",
+    "@capacitor/dialog": "^8.0.1",
     "@capacitor/filesystem": "^8.1.2"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.2.0"
-  }
+  },
+  "type": "commonjs"
 }

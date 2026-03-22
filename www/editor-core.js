@@ -56,6 +56,9 @@ const ipcRenderer = {
 const shell = { openExternal: (url) => window.open(url, '_blank') };
 const os = { release: () => 'android' };
 
+// --- GLOBAL HAPTIC ENGINE ---
+const triggerHaptic = () => { if(navigator.vibrate) navigator.vibrate(15); };
+
 // --- BYOK: LOCAL STORAGE ENGINE & FIRST-BOOT INTERCEPTOR ---
 function getLocalApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 
@@ -65,19 +68,22 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 document.getElementById('get-key-btn').addEventListener('click', () => {
+  triggerHaptic();
   const targetUrl = 'https://aistudio.google.com/app/apikey';
   if (os.release().toLowerCase().includes('microsoft') || os.release().toLowerCase().includes('wsl')) { exec(`explorer.exe "${targetUrl}"`); } 
   else { shell.openExternal(targetUrl); }
 });
 
 document.getElementById('settings-btn').addEventListener('click', () => {
+  triggerHaptic();
   document.getElementById('api-key-input').value = getLocalApiKey();
   document.getElementById('api-modal').style.display = 'flex';
 });
 
-document.getElementById('close-modal-btn').addEventListener('click', () => { document.getElementById('api-modal').style.display = 'none'; });
+document.getElementById('close-modal-btn').addEventListener('click', () => { triggerHaptic(); document.getElementById('api-modal').style.display = 'none'; });
 
 document.getElementById('save-api-btn').addEventListener('click', () => {
+  triggerHaptic();
   const newKey = document.getElementById('api-key-input').value.trim();
   if (!newKey) { alert("Please paste a valid API key first."); return; }
   localStorage.setItem('gemini_api_key', newKey);
@@ -85,7 +91,7 @@ document.getElementById('save-api-btn').addEventListener('click', () => {
   alert('Hardware Sync Complete: Pro CMS AI Engine is now online.');
 });
 
-// --- 1. CUSTOM AUDIO ENGINE (NATIVE FILE PICKER UPGRADE) ---
+// --- 1. CUSTOM AUDIO ENGINE (NATIVE FILE PICKER) ---
 class SimpleAudioTool {
   static get toolbox() { return { title: 'Audio', icon: '🎵' }; }
   
@@ -123,7 +129,6 @@ class SimpleAudioTool {
     this.fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) {
-        // Convert to Base64 so it saves perfectly inside your JSON document offline
         const reader = new FileReader();
         reader.onload = (event) => {
           this.data.url = event.target.result;
@@ -131,15 +136,13 @@ class SimpleAudioTool {
           this.audioPlayer.style.display = 'block';
           this.placeholder.style.display = 'none';
           this.wrapper.style.border = '1px solid #30363d';
-          // Trigger EditorJS to recognize a change for auto-saving/history
           this.wrapper.dispatchEvent(new Event('input', { bubbles: true }));
         };
         reader.readAsDataURL(file);
       }
     });
 
-    this.placeholder.addEventListener('click', () => { this.fileInput.click(); });
-
+    this.placeholder.addEventListener('click', () => { triggerHaptic(); this.fileInput.click(); });
     if (this.data && this.data.url) { this.audioPlayer.src = this.data.url; }
 
     this.wrapper.appendChild(this.placeholder);
@@ -190,7 +193,7 @@ class SimpleDrawTool {
     this.wrapper.appendChild(this.imagePreview);
     this.wrapper.appendChild(this.placeholder);
 
-    this.wrapper.addEventListener('click', () => { this.openFullScreenEditor(); });
+    this.wrapper.addEventListener('click', () => { triggerHaptic(); this.openFullScreenEditor(); });
 
     if (!this.data.image) { setTimeout(() => { this.openFullScreenEditor(); }, 50); }
     return this.wrapper;
@@ -291,6 +294,7 @@ class SimpleDrawTool {
         }
 
         btn.onclick = () => {
+            triggerHaptic();
             if (currentTool === t.id) {
                 optionsDrawer.style.display = optionsDrawer.style.display === 'none' ? 'flex' : 'none';
                 return;
@@ -320,6 +324,7 @@ class SimpleDrawTool {
         if (i === 0) { cBtn.style.borderColor = '#58a6ff'; activeColorBtn = cBtn; }
 
         cBtn.onclick = () => {
+            triggerHaptic();
             currentColor = color;
             if (activeColorBtn) activeColorBtn.style.borderColor = '#30363d';
             cBtn.style.borderColor = '#58a6ff';
@@ -353,6 +358,7 @@ class SimpleDrawTool {
         }
 
         wBtn.onclick = () => {
+            triggerHaptic();
             currentWidth = w;
             if (activeWidthBtn) {
                 activeWidthBtn.style.backgroundColor = '#8b949e';
@@ -399,9 +405,10 @@ class SimpleDrawTool {
     canvas.addEventListener('mouseup', stopDraw); canvas.addEventListener('mouseout', stopDraw);
     canvas.addEventListener('touchstart', startDraw, { passive: false }); canvas.addEventListener('touchmove', draw, { passive: false }); canvas.addEventListener('touchend', stopDraw);
 
-    cancelBtn.onclick = () => { modal.style.display = 'none'; };
+    cancelBtn.onclick = () => { triggerHaptic(); modal.style.display = 'none'; };
     
     saveBtn.onclick = () => {
+      triggerHaptic();
       ctx.globalCompositeOperation = "source-over"; 
       this.data.image = canvas.toDataURL('image/png');
       this.imagePreview.src = this.data.image;
@@ -442,7 +449,7 @@ class MobileTableTool {
       row.forEach((cellText, colIndex) => {
         const td = document.createElement('td');
         td.innerHTML = cellText ? cellText : '<span style="color:#bbb; font-style:italic;">Empty</span>';
-        td.onclick = () => this.openEditor(rowIndex, colIndex);
+        td.onclick = () => { triggerHaptic(); this.openEditor(rowIndex, colIndex); };
         tr.appendChild(td);
       });
       table.appendChild(tr);
@@ -457,12 +464,12 @@ class MobileTableTool {
     const addColBtn = document.createElement('button');
     addColBtn.className = 'custom-table-btn';
     addColBtn.innerText = '+ Column';
-    addColBtn.onclick = () => { this.data.content.forEach(row => row.push('')); this.drawGrid(); };
+    addColBtn.onclick = () => { triggerHaptic(); this.data.content.forEach(row => row.push('')); this.drawGrid(); };
 
     const addRowBtn = document.createElement('button');
     addRowBtn.className = 'custom-table-btn';
     addRowBtn.innerText = '+ Row';
-    addRowBtn.onclick = () => { this.data.content.push(new Array(this.data.content[0].length).fill('')); this.drawGrid(); };
+    addRowBtn.onclick = () => { triggerHaptic(); this.data.content.push(new Array(this.data.content[0].length).fill('')); this.drawGrid(); };
 
     controls.appendChild(addRowBtn);
     controls.appendChild(addColBtn);
@@ -480,17 +487,25 @@ class MobileTableTool {
     input.focus();
 
     saveBtn.onclick = null; cancelBtn.onclick = null;
-    cancelBtn.onclick = () => { modal.style.display = 'none'; };
-    saveBtn.onclick = () => { this.data.content[r][c] = input.value.trim(); modal.style.display = 'none'; this.drawGrid(); };
+    cancelBtn.onclick = () => { triggerHaptic(); modal.style.display = 'none'; };
+    saveBtn.onclick = () => { triggerHaptic(); this.data.content[r][c] = input.value.trim(); modal.style.display = 'none'; this.drawGrid(); };
   }
   save() { return { content: this.data.content }; }
 }
 
 let undo;
 
-// --- 3. EDITOR INITIALIZATION ---
+// --- THE NEW AUTO-SAVE ENGINE & INIT ---
+let initialData = {};
+try {
+  const savedData = localStorage.getItem('pro_cms_autosave');
+  if (savedData) initialData = JSON.parse(savedData);
+} catch(e) {}
+
 const editor = new EditorJS({
-  holder: 'editor-container', placeholder: '',
+  holder: 'editor-container', 
+  placeholder: 'Start writing your document...',
+  data: initialData,
   tools: {
     header: { class: Header, inlineToolbar: ['link', 'bold', 'italic', 'underline', 'Marker'] },
     list: { class: EditorjsList, inlineToolbar: true }, code: { class: CodeTool }, table: MobileTableTool, Marker: { class: Marker }, underline: { class: Underline },
@@ -502,6 +517,17 @@ const editor = new EditorJS({
   },
   onChange: () => {
     editor.save().then((outputData) => {
+      // 1. Silent Local Backup
+      localStorage.setItem('pro_cms_autosave', JSON.stringify(outputData));
+      
+      // 2. Visual Save Indicator
+      const statusIndicator = document.getElementById('save-status-indicator');
+      if(statusIndicator) {
+          statusIndicator.innerText = "Saving...";
+          setTimeout(() => { statusIndicator.innerText = "Draft: Auto-Saved"; }, 500);
+      }
+
+      // 3. Stats
       let text = ''; outputData.blocks.forEach(block => { if (block.data.text) text += block.data.text.replace(/<[^>]*>?/gm, '') + ' '; });
       const words = text.trim().split(/\s+/).filter(word => word.length > 0).length;
       const wordCountSpan = document.getElementById('word-count');
@@ -513,16 +539,12 @@ const editor = new EditorJS({
 });
 
 // --- 4. WIRING UP THE GUI BUTTONS ---
-document.getElementById('tool-header').addEventListener('click', () => { editor.blocks.insert('header'); });
-document.getElementById('tool-image').addEventListener('click', () => { editor.blocks.insert('image'); });
-document.getElementById('tool-code').addEventListener('click', () => { editor.blocks.insert('code'); });
-document.getElementById('tool-table').addEventListener('click', () => { editor.blocks.insert('table'); });
-document.getElementById('tool-list').addEventListener('click', () => { editor.blocks.insert('list'); });
-document.getElementById('tool-audio').addEventListener('click', () => { editor.blocks.insert('audio'); });
-document.getElementById('tool-draw').addEventListener('click', () => { editor.blocks.insert('draw'); });
+const bindTool = (id, tool) => { document.getElementById(id).addEventListener('click', () => { triggerHaptic(); editor.blocks.insert(tool); }); };
+bindTool('tool-header', 'header'); bindTool('tool-image', 'image'); bindTool('tool-code', 'code'); 
+bindTool('tool-table', 'table'); bindTool('tool-list', 'list'); bindTool('tool-audio', 'audio'); bindTool('tool-draw', 'draw');
 
-document.getElementById('undo-btn').addEventListener('click', () => { if(undo) undo.undo(); });
-document.getElementById('redo-btn').addEventListener('click', () => { if(undo) undo.redo(); });
+document.getElementById('undo-btn').addEventListener('click', () => { triggerHaptic(); if(undo) undo.undo(); });
+document.getElementById('redo-btn').addEventListener('click', () => { triggerHaptic(); if(undo) undo.redo(); });
 
 // --- 5. PUBLISH LOGIC (SAVE & SAVE AS) ---
 const getDocumentTitle = (outputData) => {
@@ -535,10 +557,12 @@ const getDocumentTitle = (outputData) => {
 };
 
 document.getElementById('publish-btn').addEventListener('click', () => {
+  triggerHaptic();
   editor.save().then((outputData) => { ipcRenderer.send('save-article', { title: getDocumentTitle(outputData), content: outputData, isSaveAs: false }); });
 });
 
 document.getElementById('save-as-btn').addEventListener('click', () => {
+  triggerHaptic();
   editor.save().then((outputData) => { ipcRenderer.send('save-article', { title: getDocumentTitle(outputData), content: outputData, isSaveAs: true }); });
 });
 
@@ -546,7 +570,7 @@ ipcRenderer.on('save-response', (event, response) => {
   if(response.success) { alert('Success! Article physically saved to your OS at:\n' + response.path); } else { alert('System Error saving file: ' + response.error); }
 });
 
-// --- 6. TYPOGRAPHY ENGINE (MOBILE & DESKTOP FIX) ---
+// --- 6. TYPOGRAPHY ENGINE ---
 let selectionTimeout;
 document.addEventListener('selectionchange', () => {
   clearTimeout(selectionTimeout);
@@ -591,62 +615,89 @@ document.getElementById('style-size').addEventListener('change', (e) => { applyT
 document.getElementById('style-size').addEventListener('keydown', (e) => { if (e.key === 'Enter') applyTypography('size', e.target.value); });
 document.getElementById('style-font').addEventListener('change', (e) => { applyTypography('font', e.target.value); });
 
-// --- AI CO-PILOT CHAT ENGINE ---
-document.getElementById('ai-send-btn').addEventListener('click', async () => {
-  const inputField = document.getElementById('ai-chat-input'); const prompt = inputField.value.trim(); if (!prompt) return;
-  const chatWindow = document.getElementById('ai-chat-window');
-  chatWindow.innerHTML += "<div><strong style='color: #58a6ff;'>You:</strong> " + prompt + "</div>"; inputField.value = '';
-  const loadingId = 'loading-' + Date.now(); chatWindow.innerHTML += "<div id='" + loadingId + "' style='color: var(--text-muted);'><em>Cloud AI is thinking...</em></div>"; chatWindow.scrollTop = chatWindow.scrollHeight;
-  try {
-    const data = await ipcRenderer.invoke('fetch-cloud-ai', { prompt: prompt, apiKey: getLocalApiKey() });
-    document.getElementById(loadingId).remove();
-    if (data.error) { chatWindow.innerHTML += "<div style='color: red;'><strong>System Error:</strong> " + data.error + "</div>"; } 
-    else { chatWindow.innerHTML += "<div><strong style='color: #f85149;'>Cloud AI:</strong> " + data.response + "</div>"; }
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-  } catch (error) { document.getElementById(loadingId).remove(); chatWindow.innerHTML += "<div style='color: red;'><strong>System Error:</strong> IPC bridge failure.</div>"; }
-});
-document.getElementById('ai-chat-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('ai-send-btn').click(); });
 
+// --- 7. THE NEW PREMIUM AI NEXUS ENGINE ---
 let lastActiveBlock = null;
 document.addEventListener('click', (e) => { const block = e.target.closest('.cdx-block'); if (block) lastActiveBlock = block; });
 document.addEventListener('keyup', (e) => { const block = e.target.closest('.cdx-block'); if (block) lastActiveBlock = block; });
 
+// FAB Toggle
+document.getElementById('ai-nexus-fab').addEventListener('click', () => {
+    triggerHaptic();
+    document.getElementById('ai-nexus-popup').classList.toggle('open');
+});
+
+// AI Grammar Fix
 document.getElementById('ai-grammar-btn').addEventListener('click', async () => {
-  if (!lastActiveBlock) { alert("System Error: Click inside a specific paragraph first."); return; }
+  triggerHaptic();
+  if (!lastActiveBlock) { alert("Please tap inside a paragraph first."); return; }
   const originalText = lastActiveBlock.innerText.trim(); if (!originalText) return;
-  const grammarBtn = document.getElementById('ai-grammar-btn'); const originalBtnText = grammarBtn.innerText;
-  grammarBtn.innerText = "Processing Cloud Grammar..."; grammarBtn.style.opacity = "0.7";
+  
+  const grammarBtn = document.getElementById('ai-grammar-btn'); 
+  const originalBtnText = grammarBtn.innerText;
+  grammarBtn.innerText = "✨ Processing..."; grammarBtn.style.opacity = "0.7";
+  
   const strictPrompt = "You are a strict proofreader. Fix all spelling and grammar errors in the following text. Do not add any conversational filler. Do not explain the changes. Do not use quotes. Return strictly the corrected text and nothing else. Text: " + originalText;
   try {
     const data = await ipcRenderer.invoke('fetch-cloud-ai', { prompt: strictPrompt, apiKey: getLocalApiKey() });
-    if (data.error) { grammarBtn.innerText = "API Error"; } else { lastActiveBlock.innerHTML = data.response.trim(); lastActiveBlock.dispatchEvent(new Event('input', { bubbles: true })); grammarBtn.innerText = "Grammar Fixed!"; }
+    if (data.error) { grammarBtn.innerText = "API Error"; alert(data.error); } 
+    else { 
+        lastActiveBlock.innerHTML = data.response.trim(); 
+        lastActiveBlock.dispatchEvent(new Event('input', { bubbles: true })); 
+        grammarBtn.innerText = "✨ Grammar Fixed!"; 
+    }
   } catch (error) { grammarBtn.innerText = "Bridge Offline"; }
+  
   setTimeout(() => { grammarBtn.innerText = originalBtnText; grammarBtn.style.opacity = "1"; }, 2500);
 });
 
-document.getElementById('ai-format-btn').addEventListener('click', async () => {
-  const inputField = document.getElementById('ai-chat-input'); const command = inputField.value.trim();
-  if (!command) { alert("System Error: Tell the AI what formatting to apply in the chat input first."); return; }
-  if (!lastActiveBlock) { alert("System Error: Click inside a specific paragraph first so the AI knows what to target."); return; }
+// Contextual AI Format Input
+document.getElementById('ai-format-btn').addEventListener('click', () => {
+  triggerHaptic();
+  const container = document.getElementById('ai-format-input-wrapper');
+  container.style.display = container.style.display === 'block' ? 'none' : 'block';
+  if(container.style.display === 'block') document.getElementById('ai-format-input').focus();
+});
+
+document.getElementById('ai-format-input').addEventListener('keydown', async (e) => {
+  if (e.key !== 'Enter') return;
+  const command = e.target.value.trim();
+  if (!command) return;
+  if (!lastActiveBlock) { alert("Please tap inside a paragraph first."); return; }
+  
   const originalHTML = lastActiveBlock.innerHTML; if (!originalHTML) return;
-  const formatBtn = document.getElementById('ai-format-btn'); const originalBtnText = formatBtn.innerText; const chatWindow = document.getElementById('ai-chat-window');
-  formatBtn.innerText = "Executing AI Format..."; formatBtn.style.opacity = "0.7";
+  const formatBtn = document.getElementById('ai-format-btn'); 
+  const originalBtnText = formatBtn.innerText; 
+  
+  formatBtn.innerText = "🎨 Formatting..."; formatBtn.style.opacity = "0.7";
+  e.target.disabled = true;
+
   const strictPrompt = "You are a CSS injection engine. The user command is: " + command + ". The raw text/HTML is: " + originalHTML + ". Wrap the text in a <span style='...'> tag with the exact CSS properties needed (like font-weight: bold, font-style: italic, text-decoration: underline, color, etc). Keep all text intact. Return strictly the modified HTML span and absolutely nothing else. Do not use markdown blocks.";
+  
   try {
     const data = await ipcRenderer.invoke('fetch-cloud-ai', { prompt: strictPrompt, apiKey: getLocalApiKey() });
-    if (data.error) { formatBtn.innerText = "API Error"; chatWindow.innerHTML += "<div style='color: red;'><strong>Format Engine Failed:</strong> " + data.error + "</div>"; chatWindow.scrollTop = chatWindow.scrollHeight; } 
-    else { lastActiveBlock.innerHTML = data.response.trim(); lastActiveBlock.dispatchEvent(new Event('input', { bubbles: true })); formatBtn.innerText = "Format Applied!"; inputField.value = '';  }
+    if (data.error) { formatBtn.innerText = "API Error"; alert(data.error); } 
+    else { 
+        lastActiveBlock.innerHTML = data.response.trim(); 
+        lastActiveBlock.dispatchEvent(new Event('input', { bubbles: true })); 
+        formatBtn.innerText = "🎨 Format Applied!"; 
+        e.target.value = '';
+        document.getElementById('ai-format-input-wrapper').style.display = 'none';
+        document.getElementById('ai-nexus-popup').classList.remove('open');
+    }
   } catch (error) { formatBtn.innerText = "Bridge Offline"; }
+  
+  e.target.disabled = false;
   setTimeout(() => { formatBtn.innerText = originalBtnText; formatBtn.style.opacity = "1"; }, 2500);
 });
 
+// Ghost Auto-Correct
 let isGhostEngineActive = false; let ghostTypingTimer; const GHOST_PAUSE_DURATION = 3000; 
 document.getElementById('ai-auto-toggle').addEventListener('change', (e) => {
-  isGhostEngineActive = e.target.checked; const chatWindow = document.getElementById('ai-chat-window');
-  if (isGhostEngineActive) { chatWindow.innerHTML += "<div><strong style='color: #58a6ff;'>System:</strong> Ghost Auto-Correct ARMED. AI will engage when you pause typing.</div>"; } 
-  else { chatWindow.innerHTML += "<div><strong style='color: #8b949e;'>System:</strong> Ghost Auto-Correct DISARMED. Manual mode active.</div>"; }
-  chatWindow.scrollTop = chatWindow.scrollHeight;
+  triggerHaptic();
+  isGhostEngineActive = e.target.checked; 
 });
+
 document.getElementById('editor-container').addEventListener('keyup', (e) => {
   if (!isGhostEngineActive) return; if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') return;
   const activeBlock = e.target.closest('.cdx-block'); if (!activeBlock) return;
@@ -736,6 +787,7 @@ if (window.Capacitor && window.Capacitor.Plugins.App) {
 
 // --- 11. NATIVE VECTOR PDF EXPORT ENGINE ---
 document.getElementById('export-pdf-btn').addEventListener('click', async () => {
+  triggerHaptic();
   const exportBtn = document.getElementById('export-pdf-btn');
   const originalText = exportBtn.innerText;
   exportBtn.innerText = "Compiling..."; exportBtn.disabled = true;
@@ -824,6 +876,7 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
 
 // --- 11.5 PLAIN TEXT EXPORT ENGINE ---
 document.getElementById('export-txt-btn').addEventListener('click', async () => {
+  triggerHaptic();
   const exportBtn = document.getElementById('export-txt-btn');
   const originalText = exportBtn.innerText;
   exportBtn.innerText = "Extracting..."; exportBtn.disabled = true;
@@ -898,11 +951,12 @@ const zenBtn = document.getElementById('zen-mode-btn');
 const exitZenBtn = document.getElementById('exit-zen-btn');
 if (zenBtn && exitZenBtn) {
   zenBtn.addEventListener('click', () => {
+    triggerHaptic();
     document.body.classList.add('zen-mode');
     const mobileDropdown = document.querySelector('.mobile-top-dropdown');
     if (mobileDropdown) mobileDropdown.classList.remove('open');
   });
-  exitZenBtn.addEventListener('click', () => { document.body.classList.remove('zen-mode'); });
+  exitZenBtn.addEventListener('click', () => { triggerHaptic(); document.body.classList.remove('zen-mode'); });
 }
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && document.body.classList.contains('zen-mode')) { document.body.classList.remove('zen-mode'); }
@@ -1092,6 +1146,7 @@ function saveCurrentPageAnnotation() {
 }
 
 document.getElementById('pdf-prev-btn').addEventListener('click', () => {
+  triggerHaptic();
   if (activePdf.pageNum <= 1) return;
   saveCurrentPageAnnotation();
   activePdf.pageNum--;
@@ -1099,6 +1154,7 @@ document.getElementById('pdf-prev-btn').addEventListener('click', () => {
 });
 
 document.getElementById('pdf-next-btn').addEventListener('click', () => {
+  triggerHaptic();
   if (activePdf.pageNum >= activePdf.totalPages) return;
   saveCurrentPageAnnotation();
   activePdf.pageNum++;
@@ -1108,6 +1164,7 @@ document.getElementById('pdf-next-btn').addEventListener('click', () => {
 const pdfPageNumClickable = document.getElementById('pdf-page-num');
 if(pdfPageNumClickable) {
     pdfPageNumClickable.addEventListener('click', () => {
+        triggerHaptic();
         const jump = prompt(`Jump to page (1 - ${activePdf.totalPages}):`, activePdf.pageNum);
         if (jump) {
             const jumpNum = parseInt(jump, 10);
@@ -1121,6 +1178,7 @@ if(pdfPageNumClickable) {
 }
 
 document.getElementById('pdf-cancel-btn').addEventListener('click', () => {
+  triggerHaptic();
   const pdfModal = document.getElementById('pdf-modal');
   if(pdfModal) pdfModal.style.display = 'none';
   
@@ -1130,6 +1188,7 @@ document.getElementById('pdf-cancel-btn').addEventListener('click', () => {
 });
 
 document.getElementById('pdf-save-btn').addEventListener('click', async () => {
+  triggerHaptic();
   saveCurrentPageAnnotation(); 
   const saveBtn = document.getElementById('pdf-save-btn');
   saveBtn.innerText = "Baking...";
@@ -1201,6 +1260,7 @@ function setupPdfDrawingTools() {
       
       document.querySelectorAll('.pdf-color-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
+              triggerHaptic();
               document.querySelectorAll('.pdf-color-btn').forEach(b => b.style.boxShadow = 'none');
               btn.style.boxShadow = '0 0 0 3px #ffffff';
               currentColor = btn.getAttribute('data-color');

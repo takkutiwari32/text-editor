@@ -16,13 +16,11 @@
   --topbar-height: 65px;
 }
 
-/* THE FIX: Removed font-family from the * selector to restore proper CSS inheritance */
 * { 
     box-sizing: border-box; margin: 0; padding: 0; 
     -webkit-tap-highlight-color: transparent; 
 }
 
-/* THE FIX: Applied the default font to the body so it cascades down normally */
 body { 
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
   background-color: var(--bg-color); 
@@ -68,6 +66,7 @@ body {
   background: rgba(255,255,255,0.05); color: var(--text-main); 
   transform: translateY(-1px);
 }
+.icon-btn:active { transform: scale(0.90); }
 
 .save-status { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-left: 10px; padding: 4px 10px; background: rgba(255,255,255,0.03); border-radius: 20px;}
 .action-section { display: flex; gap: 12px; }
@@ -86,6 +85,7 @@ body {
   box-shadow: 0 4px 15px var(--primary-glow);
 }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--primary-glow); filter: brightness(1.1); }
+.btn-primary:active { transform: scale(0.95); }
 
 /* =========================================
    3. LAYOUT & SIDEBARS
@@ -110,6 +110,7 @@ body {
   border-color: var(--primary-accent); background: rgba(88, 166, 255, 0.05); 
   transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 15px var(--primary-glow); 
 }
+.tool-card:active { transform: scale(0.95); }
 .tool-icon { font-size: 1.5rem; font-weight: bold; color: var(--text-main); transition: transform 0.3s ease; }
 .tool-card:hover .tool-icon { transform: scale(1.1); }
 .tool-name { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
@@ -125,7 +126,7 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; -webkit-appearance
 input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
 /* =========================================
-   4. THE CENTER CANVAS
+   4. THE CENTER CANVAS & INLINE TOOLBAR
 ========================================= */
 .editor-canvas {
   flex: 1; background: var(--surface-color); padding: 40px 20px; 
@@ -137,34 +138,23 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
   box-shadow: 0 12px 48px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.05); 
   min-height: calc(100vh - 180px); height: max-content; transition: padding 0.3s ease;
 }
-.document-title {
-  width: 100%; font-size: 3.5rem; font-weight: 900; border: none; outline: none;
-  margin-bottom: 40px; color: #111111 !important; border-bottom: 2px solid #eaeaea; padding-bottom: 15px; background: transparent;
-  letter-spacing: -1px;
-}
-.document-title::placeholder { color: #a0aec0 !important; }
 
-#editor-container, .ce-block__content, .ce-paragraph, .ce-header, .codex-editor { 
-    color: #111111 !important; 
-}
+#editor-container, .ce-block__content, .ce-paragraph, .ce-header, .codex-editor { color: #111111 !important; }
 .ce-paragraph[data-placeholder]:empty::before { color: #a0aec0 !important; }
 
-/* =========================================
-   5. MODALS & AI FLYOUT
-========================================= */
-@keyframes modalPop {
-  0% { opacity: 0; transform: scale(0.95) translateY(20px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
+/* Premium Inline Text Toolbar Styling */
+.ce-inline-toolbar {
+    background: rgba(22, 27, 34, 0.95) !important;
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.6) !important;
 }
-
-#draw-modal, #pdf-modal { background: rgba(5, 5, 5, 0.9) !important; backdrop-filter: blur(10px) !important; }
-#draw-modal > div:first-child, #pdf-modal > div:first-child, #pdf-toolbar-container > div, #draw-options-drawer, #draw-primary-tools {
-    background: rgba(16, 20, 26, 0.8) !important; backdrop-filter: blur(20px) !important;
-    border-color: rgba(255,255,255,0.05) !important;
-}
+.ce-inline-toolbar__buttons, .ce-inline-toolbar__dropdown { color: var(--text-main) !important; }
+.ce-inline-tool:hover { background: rgba(255,255,255,0.1) !important; }
 
 /* =========================================
-   6. MOBILE MATRIX (MAX 768PX)
+   5. MOBILE MATRIX (MAX 768PX)
 ========================================= */
 @media screen and (max-width: 768px) {
     .top-bar { height: 60px !important; padding: 0 15px !important; }
@@ -178,7 +168,6 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
     .app-body { margin-top: 60px !important; height: calc(100vh - 60px) !important; display: block !important; }
     .editor-canvas { padding: 0 !important; }
     .document-container { padding: 30px 20px !important; min-height: calc(100vh - 60px) !important; border-radius: 0 !important; border: none !important; box-shadow: none !important; }
-    .document-title { font-size: 2.2rem !important; margin-bottom: 20px !important; }
 
     .mobile-top-dropdown {
         position: fixed; top: 70px; right: 15px; width: 240px;
@@ -201,9 +190,7 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         background: rgba(255,255,255,0.04); padding: 12px; border-radius: 12px; width: 30%; font-size: 1.1rem; color: var(--text-main); 
         transition: all 0.2s ease;
     }
-    .mobile-top-dropdown .center-controls .icon-btn:active {
-        transform: scale(0.90); background: rgba(255,255,255,0.15);
-    }
+    .mobile-top-dropdown .center-controls .icon-btn:active { transform: scale(0.90); background: rgba(255,255,255,0.15); }
     
     .mobile-top-dropdown .action-section { display: flex !important; flex-direction: column !important; width: 100% !important; gap: 4px !important; }
     
@@ -215,31 +202,11 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
     }
     .mobile-top-dropdown .btn-secondary { color: var(--text-main) !important; }
-    
-    .mobile-top-dropdown .btn-secondary:active { 
-        background: rgba(255,255,255,0.1) !important; 
-        transform: scale(0.97) !important; 
-    }
-    
+    .mobile-top-dropdown .btn-secondary:active { background: rgba(255,255,255,0.1) !important; transform: scale(0.97) !important; }
     .mobile-top-dropdown #export-pdf-btn { color: #58a6ff !important; }
-    
-    .mobile-top-dropdown #export-txt-btn {
-        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
-        border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important;
-        padding-bottom: 18px !important; margin-bottom: 8px !important;
-    }
-
-    .mobile-top-dropdown #publish-btn { 
-        background: linear-gradient(135deg, var(--primary-accent), #3182ce) !important; 
-        color: #ffffff !important; 
-        font-weight: 700 !important;
-        margin-top: 4px !important;
-        box-shadow: 0 8px 20px rgba(88, 166, 255, 0.3) !important;
-    }
-    .mobile-top-dropdown #publish-btn:active {
-        transform: scale(0.95) !important;
-        box-shadow: 0 4px 10px rgba(88, 166, 255, 0.2) !important;
-    }
+    .mobile-top-dropdown #export-txt-btn { border-bottom: 1px solid rgba(255,255,255,0.08) !important; border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important; padding-bottom: 18px !important; margin-bottom: 8px !important; }
+    .mobile-top-dropdown #publish-btn { background: linear-gradient(135deg, var(--primary-accent), #3182ce) !important; color: #ffffff !important; font-weight: 700 !important; margin-top: 4px !important; box-shadow: 0 8px 20px rgba(88, 166, 255, 0.3) !important; }
+    .mobile-top-dropdown #publish-btn:active { transform: scale(0.95) !important; box-shadow: 0 4px 10px rgba(88, 166, 255, 0.2) !important; }
 
     .left-sidebar, .right-sidebar { display: none !important; }
 
@@ -253,9 +220,7 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
     .mobile-drawer {
         position: fixed; bottom: 0; left: 0; width: 100%; height: 80vh;
-        background: rgba(16, 20, 26, 0.98); 
-        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
-        z-index: 9000;
+        background: rgba(16, 20, 26, 0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 9000;
         border-top: 1px solid var(--border-color); border-radius: 24px 24px 0 0;
         transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
         display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 100px;
@@ -263,20 +228,17 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
     }
     .mobile-drawer.open { transform: translateY(0); }
     .mobile-drawer .left-sidebar, .mobile-drawer .right-sidebar { width: 100% !important; border: none !important; padding: 24px !important; display: flex !important; height: auto !important; }
-    .ai-flyout { position: relative !important; width: 100% !important; border: none !important; box-shadow: none !important; display: block !important; background: transparent !important; }
-    .ai-flyout:hover { width: 100% !important; }
-    #ai-chat-window { height: 300px !important; }
 }
 
 /* =========================================
-   7. DYNAMIC LINE SPACING & EDITOR RESET
+   6. DYNAMIC LINE SPACING
 ========================================= */
 :root { --editor-line-height: 1.5; }
 #editor-container, #editor-container * { line-height: var(--editor-line-height) !important; }
 .ce-block { margin-top: 0 !important; margin-bottom: 0 !important; padding-top: calc((var(--editor-line-height) - 1) * 10px) !important; padding-bottom: calc((var(--editor-line-height) - 1) * 10px) !important; }
 
 /* =========================================
-   8. TABLE ISOLATION 
+   7. TABLE ISOLATION 
 ========================================= */
 .custom-table-scroll { overflow-x: auto; border: 1px solid #eaeaea; border-radius: 8px; background: #ffffff; box-shadow: inset 0 0 10px rgba(0,0,0,0.02); }
 .custom-table { border-collapse: collapse; width: max-content; min-width: 100%; }
@@ -286,9 +248,9 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 .custom-table-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-main); }
 
 /* =========================================
-   9. ZEN FOCUS MODE
+   8. ZEN FOCUS MODE
 ========================================= */
-body.zen-mode .top-bar, body.zen-mode .left-sidebar, body.zen-mode .right-sidebar, body.zen-mode .mobile-fab, body.zen-mode .mobile-drawer, body.zen-mode .mobile-top-dropdown { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+body.zen-mode .top-bar, body.zen-mode .left-sidebar, body.zen-mode .right-sidebar, body.zen-mode .mobile-fab, body.zen-mode .mobile-drawer, body.zen-mode .mobile-top-dropdown, body.zen-mode .ai-nexus-container { display: none !important; opacity: 0 !important; pointer-events: none !important; }
 body.zen-mode .app-body { margin-top: 0 !important; height: 100vh !important; display: flex !important; justify-content: center !important; }
 body.zen-mode .editor-canvas { background-color: #ffffff !important; padding: 0 !important; }
 body.zen-mode .document-container { box-shadow: none !important; border-radius: 0 !important; border: none !important; max-width: 900px !important; width: 100% !important; margin: 0 auto !important; padding-top: 80px !important; min-height: 100vh !important; }
@@ -305,7 +267,7 @@ body.zen-mode .document-container { box-shadow: none !important; border-radius: 
 body.zen-mode .exit-zen-btn { display: block !important; }
 
 /* =========================================
-   10. MODERN LOADING SPINNER
+   9. MODERN LOADING SPINNER
 ========================================= */
 .modern-spinner-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -322,38 +284,74 @@ body.zen-mode .exit-zen-btn { display: block !important; }
     color: var(--text-main); font-size: 1.1rem; font-weight: 600; letter-spacing: 0.5px;
     text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 /* =========================================
-   11. GHOST UX FIX
+   10. GHOST UX FIX
 ========================================= */
 body.is-sliding .mobile-drawer, 
 body.is-sliding .left-sidebar, 
 body.is-sliding .right-sidebar { 
-    background: transparent !important; 
-    background-color: transparent !important;
-    box-shadow: none !important; 
-    border: none !important; 
-    backdrop-filter: blur(0px) !important;
-    -webkit-backdrop-filter: blur(0px) !important;
+    background: transparent !important; background-color: transparent !important;
+    box-shadow: none !important; border: none !important; 
+    backdrop-filter: blur(0px) !important; -webkit-backdrop-filter: blur(0px) !important;
 }
 
-body.is-sliding .left-sidebar > *, 
-body.is-sliding .right-sidebar > *, 
-body.is-sliding .ai-flyout { 
-    opacity: 0 !important; 
-    pointer-events: none; 
-    transition: opacity 0.2s ease; 
-}
+body.is-sliding .left-sidebar > *, body.is-sliding .right-sidebar > * { opacity: 0 !important; pointer-events: none; transition: opacity 0.2s ease; }
 
 body.is-sliding .right-sidebar > .active-slider-row { 
-    opacity: 1 !important; 
-    pointer-events: auto; 
-    background: rgba(16, 20, 26, 0.95) !important; 
-    padding: 12px; 
-    border-radius: 12px; 
-    border: 1px solid var(--border-color); 
-    transition: opacity 0.2s ease; 
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
+    opacity: 1 !important; pointer-events: auto; background: rgba(16, 20, 26, 0.95) !important; 
+    padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); 
+    transition: opacity 0.2s ease; backdrop-filter: blur(10px) !important; -webkit-backdrop-filter: blur(10px) !important;
 }
+
+/* =========================================
+   11. THE AI NEXUS ENGINE (PREMIUM 2026 UI)
+========================================= */
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.ai-nexus-container {
+    position: fixed; bottom: 24px; left: 24px; z-index: 10000;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 15px;
+}
+
+/* The Glowing Circular FAB */
+.ai-nexus-fab {
+    width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer;
+    position: relative; display: flex; justify-content: center; align-items: center;
+    background: #0d1117; padding: 0; outline: none;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+    transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.ai-nexus-fab:active { transform: scale(0.92); }
+
+/* The Neon Trail Animation */
+.ai-nexus-fab::before {
+    content: ''; position: absolute; inset: -3px; border-radius: 50%;
+    background: conic-gradient(from 0deg, #ff7eb3, #8b5cf6, #58a6ff, #ff7eb3);
+    animation: spin 3s linear infinite; z-index: -1;
+}
+
+.ai-nexus-inner {
+    width: 100%; height: 100%; background: #161b22; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 1.6rem; color: #fff; z-index: 1; transition: background 0.2s;
+}
+
+/* The Contextual Frosted Popup */
+.ai-nexus-popup {
+    background: rgba(22, 27, 34, 0.85); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; padding: 18px;
+    width: 280px; box-shadow: 0 16px 40px rgba(0,0,0,0.8);
+    transform: translateY(20px) scale(0.9); opacity: 0; pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: bottom left;
+}
+.ai-nexus-popup.open { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
+
+.ai-menu-btn {
+    width: 100%; padding: 14px 16px !important; text-align: left;
+    background: rgba(255,255,255,0.03) !important; border: 1px solid rgba(255,255,255,0.05) !important;
+    border-radius: 12px !important; font-size: 0.95rem !important; font-weight: 600 !important;
+    color: var(--text-main) !important; transition: all 0.2s !important;
+}
+.ai-menu-btn:hover { background: rgba(255,255,255,0.08) !important; }
+.ai-menu-btn:active { transform: scale(0.96); background: rgba(255,255,255,0.12) !important; }

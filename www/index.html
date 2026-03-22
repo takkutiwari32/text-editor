@@ -5,6 +5,10 @@
   <title>Tech Blog Pro CMS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" id="viewport-meta" />
   
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Fira+Code:wght@300..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Lora:ital,wght@0,400..700;1,400..700&family=Merriweather:ital,wght@0,300..900;1,300..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Oswald:wght@200..700&family=Pacifico&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
 
@@ -12,16 +16,10 @@
     :root { --editor-width: 80%; }
     .ce-block__content, .ce-toolbar__content { max-width: var(--editor-width) !important; transition: max-width 0.1s ease-out; }
 
-    /* MODAL CSS */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; }
     .modal-box { background: #161b22; padding: 25px; border-radius: 8px; border: 1px solid #30363d; width: 450px; max-width: 90%; color: #c9d1d9; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
     .modal-box h2 { margin-top: 0; color: #58a6ff; }
     
-    /* AI FLYOUT CSS */
-    .ai-flyout { position: fixed; bottom: 0; left: 0; width: 260px; background-color: #0d1117; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 15px; transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 9999; box-sizing: border-box; border-top-right-radius: 8px; }
-    .ai-flyout:hover { width: 25vw; box-shadow: 10px 0 20px rgba(0,0,0,0.6); }
-    #ai-chat-window { height: 250px; overflow-y: auto; background: #161b22; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; margin-bottom: 10px; font-size: 0.85rem; color: var(--text-main); display: flex; flex-direction: column; gap: 8px; transition: height 0.3s ease; }
-    .ai-flyout:hover #ai-chat-window { height: 450px; }
     .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #30363d; transition: .4s; border-radius: 20px; }
@@ -29,7 +27,6 @@
     input:checked + .slider { background-color: #58a6ff; }
     input:checked + .slider:before { transform: translateX(20px); }
 
-    /* PDF TEXT SELECTION OVERRIDES */
     .editor-canvas { touch-action: pan-y !important; }
     .textLayer { z-index: 5 !important; }
     .textLayer span {
@@ -60,7 +57,7 @@
     
     <div class="center-controls">
       <button class="icon-btn" id="zen-mode-btn" title="Zen Focus Mode">HIDE</button>
-      <span class="save-status">Draft status: Unsaved</span>
+      <span class="save-status" id="save-status-indicator">Draft: Auto-Saved</span>
     </div> 
     
     <div class="action-section">
@@ -105,34 +102,6 @@
           <span class="tool-name">Draw</span>
         </button>
       </div>
-
-      <div class="ai-flyout">
-        <div class="sidebar-title" style="margin-bottom: 10px;">Cloud Co-Pilot</div>
-        <div id="ai-chat-window">
-          <div style="color: var(--text-muted); font-style: italic;">System: Secure Cloud Bridge Online. Waiting for prompt...</div>
-        </div>
-        
-        <div style="display: flex; gap: 5px;">
-          <input type="text" id="ai-chat-input" class="setting-input" placeholder="Ask Co-Pilot..." style="flex-grow: 1;">
-          <button id="ai-send-btn" class="btn-primary" style="padding: 5px 10px; min-width: 40px;">Go</button>
-        </div>
-
-        <div style="margin-top: 8px;">
-          <button id="ai-grammar-btn" class="btn-secondary" style="width: 100%; font-size: 0.8rem; border-color: #58a6ff; color: #58a6ff;">✨ Fix Active Block Grammar</button>
-        </div>
-
-        <div style="margin-top: 8px;">
-          <button id="ai-format-btn" class="btn-secondary" style="width: 100%; font-size: 0.8rem; border-color: #ff7b72; color: #ff7b72;">🎨 AI Format Active Block</button>
-        </div>
-
-        <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #30363d; padding-top: 10px;">
-          <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: bold;">Ghost Auto-Correct</span>
-          <label class="switch">
-            <input type="checkbox" id="ai-auto-toggle">
-            <span class="slider"></span>
-          </label>
-        </div>
-      </div>
     </aside>
 
     <main class="editor-canvas">
@@ -167,50 +136,24 @@
 
       <div class="typo-row">
         <label>Font Style</label>
-        <select id="style-font" class="typo-input" style="cursor: pointer;">
-          <option value="">Theme Default</option>
-          <optgroup label="Modern Sans-Serif (Clean)">
-            <option value="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">Native OS Default</option>
-            <option value="Helvetica, Arial, sans-serif">Helvetica / Arial</option>
-            <option value="'Helvetica Neue', Helvetica, Arial, sans-serif">Helvetica Neue</option>
-            <option value="Verdana, Geneva, sans-serif">Verdana</option>
-            <option value="'Trebuchet MS', Helvetica, sans-serif">Trebuchet MS</option>
-            <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
-            <option value="'Century Gothic', sans-serif">Century Gothic</option>
-            <option value="'Lucida Sans Unicode', 'Lucida Grande', sans-serif">Lucida Sans</option>
-            <option value="'Gill Sans', 'Gill Sans MT', Calibri, sans-serif">Gill Sans</option>
-            <option value="Optima, Segoe, sans-serif">Optima</option>
-            <option value="'Avenir Next', Avenir, sans-serif">Avenir</option>
+        <select id="style-font" class="typo-input" style="cursor: pointer; font-family: 'Inter', sans-serif;">
+          <option value="">Theme Default (Inter)</option>
+          <optgroup label="Modern Sans-Serif">
+            <option value="'Roboto', sans-serif" style="font-family: 'Roboto', sans-serif;">Roboto</option>
+            <option value="'Open Sans', sans-serif" style="font-family: 'Open Sans', sans-serif;">Open Sans</option>
+            <option value="'Oswald', sans-serif" style="font-family: 'Oswald', sans-serif;">Oswald</option>
           </optgroup>
-          <optgroup label="Classic Serif (Editorial)">
-            <option value="Georgia, serif">Georgia</option>
-            <option value="'Times New Roman', Times, serif">Times New Roman</option>
-            <option value="Garamond, serif">Garamond</option>
-            <option value="'Palatino Linotype', 'Book Antiqua', Palatino, serif">Palatino</option>
-            <option value="Baskerville, 'Baskerville Old Face', 'Hoefler Text', serif">Baskerville</option>
-            <option value="'Lucida Bright', Georgia, serif">Lucida Bright</option>
-            <option value="Cambria, Georgia, serif">Cambria</option>
-            <option value="Didot, serif">Didot</option>
-            <option value="'Hoefler Text', 'Baskerville old face', serif">Hoefler Text</option>
+          <optgroup label="Classic Serif">
+            <option value="'Merriweather', serif" style="font-family: 'Merriweather', serif;">Merriweather</option>
+            <option value="'Playfair Display', serif" style="font-family: 'Playfair Display', serif;">Playfair Display</option>
+            <option value="'Lora', serif" style="font-family: 'Lora', serif;">Lora</option>
           </optgroup>
-          <optgroup label="Monospace (Code & Tech)">
-            <option value="ui-monospace, Menlo, Monaco, 'Cascadia Mono', 'Segoe UI Mono', 'Roboto Mono', monospace">Native OS Mono</option>
-            <option value="Consolas, monospace">Consolas</option>
-            <option value="'Courier New', Courier, monospace">Courier New</option>
-            <option value="'Lucida Console', Monaco, monospace">Lucida Console</option>
-            <option value="'Andale Mono', monospace">Andale Mono</option>
-          </optgroup>
-          <optgroup label="Display & Heavy (Headlines)">
-            <option value="Impact, fantasy">Impact</option>
-            <option value="'Arial Black', Gadget, sans-serif">Arial Black</option>
-            <option value="'Franklin Gothic Medium', 'Arial Narrow', sans-serif">Franklin Gothic</option>
-            <option value="Copperplate, 'Copperplate Gothic Light', fantasy">Copperplate</option>
+          <optgroup label="Monospace (Code)">
+            <option value="'Fira Code', monospace" style="font-family: 'Fira Code', monospace;">Fira Code</option>
           </optgroup>
           <optgroup label="Handwriting & Cursive">
-            <option value="'Brush Script MT', cursive">Brush Script</option>
-            <option value="'Comic Sans MS', cursive">Comic Sans</option>
-            <option value="'Bradley Hand', cursive">Bradley Hand</option>
-            <option value="'Snell Roundhand', cursive">Snell Roundhand</option>
+            <option value="'Caveat', cursive" style="font-family: 'Caveat', cursive;">Caveat</option>
+            <option value="'Pacifico', cursive" style="font-family: 'Pacifico', cursive;">Pacifico</option>
           </optgroup>
         </select>
       </div>
@@ -225,13 +168,38 @@
 
   </div>
 
+  <div class="ai-nexus-container">
+      <div id="ai-nexus-popup" class="ai-nexus-popup">
+        <div class="sidebar-title" style="margin-bottom: 15px; color: #58a6ff; letter-spacing: 2px;">Cloud Co-Pilot</div>
+        
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button id="ai-grammar-btn" class="btn-secondary ai-menu-btn">✨ Fix Active Paragraph</button>
+            <button id="ai-format-btn" class="btn-secondary ai-menu-btn">🎨 AI Format Element...</button>
+        </div>
+
+        <div id="ai-format-input-wrapper" style="display: none; margin-top: 8px;">
+            <input type="text" id="ai-format-input" class="setting-input" placeholder="Type format, press Enter..." style="width: 100%; font-size: 0.85rem; padding: 10px;">
+        </div>
+
+        <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px;">
+          <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: bold;">Ghost Auto-Correct</span>
+          <label class="switch">
+            <input type="checkbox" id="ai-auto-toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <button id="ai-nexus-fab" class="ai-nexus-fab" title="Activate AI Co-Pilot">
+          <div class="ai-nexus-inner">AI</div>
+      </button>
+  </div>
+
   <div id="api-modal" class="modal-overlay">
     <div class="modal-box" style="width: 600px; text-align: center; padding: 40px;">
       <h2 style="font-size: 2rem; margin-bottom: 10px;">Welcome to Pro CMS</h2>
       <p style="font-size: 1rem; color: #8b949e; line-height: 1.6; margin-bottom: 25px;">
         To keep this software a one-time purchase with <strong>zero monthly subscription fees</strong>, Pro CMS runs natively on your personal Google account. 
-        <br><br>
-        Click the button below to generate a free API key from Google AI Studio. We securely lock this key to your local hardware—it never touches our servers.
       </p>
       <button id="get-key-btn" style="background-color: #238636; color: white; padding: 12px 24px; border: none; cursor: pointer; border-radius: 6px; font-weight: bold; margin-bottom: 25px; font-size: 1rem; transition: 0.2s;">
         1. Get Free Google API Key ↗
@@ -264,27 +232,21 @@
       <div style="color: var(--text-main); font-weight: bold;">Canvas</div>
       <button id="draw-save-btn" style="background: none; border: none; color: #58a6ff; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Done</button>
     </div>
-
     <div id="draw-canvas-container" style="flex: 1; width: 100%; background: #ffffff; position: relative; overflow: hidden;">
       <canvas id="fullscreen-draw-canvas" style="position: absolute; top: 0; left: 0; touch-action: none;"></canvas>
     </div>
-
     <div style="width: 100%; background: #0d1117; border-top: 1px solid #30363d; display: flex; flex-direction: column; position: relative;">
-      
       <div id="draw-options-drawer" style="display: none; flex-direction: column; padding: 15px 20px; gap: 15px; position: absolute; bottom: 100%; left: 0; width: 100%; background: rgba(13, 17, 23, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.08); z-index: 50; box-sizing: border-box;">
         <div id="draw-color-palette" style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 5px;"></div>
         <div id="draw-width-selector" style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #161b22;"></div>
       </div>
-
       <div id="draw-primary-tools" style="display: flex; justify-content: space-around; padding: 15px 10px; position: relative; z-index: 60; background: #0d1117;"></div>
     </div>
   </div>
 
   <div id="pdf-modal" class="modal-overlay" style="z-index: 10010; flex-direction: column; background: var(--bg-color);">
-    
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #0d1117; border-bottom: 1px solid #30363d; width: 100%; box-sizing: border-box;">
       <button id="pdf-cancel-btn" style="background: none; border: none; color: var(--text-muted); font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;">Close</button>
-      
       <div style="display: flex; align-items: center; gap: 15px;">
         <button id="pdf-prev-btn" class="icon-btn">◀</button>
         <div style="color: var(--text-main); font-weight: bold; font-size: 0.85rem; padding: 0 5px;">
@@ -292,32 +254,25 @@
         </div>
         <button id="pdf-next-btn" class="icon-btn">▶</button>
       </div>
-
       <button id="pdf-save-btn" style="background: none; border: none; color: #58a6ff; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Save</button>
     </div>
-
     <div id="pdf-canvas-container" style="flex: 1; width: 100%; background: #050505; overflow: auto; text-align: center; padding: 20px; box-sizing: border-box; position: relative; -webkit-overflow-scrolling: touch;">
-      
       <div id="pdf-loading-spinner" class="modern-spinner-overlay" style="display: none;">
         <div class="modern-spinner"></div>
         <div id="pdf-spinner-text" class="modern-spinner-text">Reading File...</div>
       </div>
-
       <div id="pdf-transform-wrapper" style="position: relative; display: inline-block; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.8); transform-origin: top left; transform: scale(1); will-change: transform; margin: 0 auto;">
         <canvas id="pdf-base-canvas" style="display: block;"></canvas>
         <div id="pdf-text-layer" class="textLayer" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; line-height: 1.0;"></div>
         <canvas id="pdf-glass-canvas" style="position: absolute; top: 0; left: 0; touch-action: none; cursor: crosshair;"></canvas>
       </div>
-
     </div>
-
     <div id="pdf-toolbar-container" style="width: 100%;"></div>
   </div>
 
   <button id="exit-zen-btn" class="exit-zen-btn">Exit Zen ⤫</button>
 
   <script>if (typeof module === 'object') { window.module = module; module = undefined; }</script>
-  
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
@@ -326,30 +281,21 @@
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
-  
   <script src="https://cdn.jsdelivr.net/npm/editorjs-undo@latest"></script>
-
   <script>if (window.module) { module = window.module; }</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-
   <script src="editor-core.js"></script>
   
   <script>
     if (window.innerWidth <= 768) {
         const drawer = document.createElement('div');
         drawer.className = 'mobile-drawer';
-        
         drawer.appendChild(document.querySelector('.left-sidebar'));
         drawer.appendChild(document.querySelector('.right-sidebar'));
-        
-        const aiFlyout = document.querySelector('.ai-flyout');
-        if(aiFlyout) drawer.appendChild(aiFlyout);
-
         document.querySelector('.app-body').appendChild(drawer);
         
         const fab = document.createElement('button');
@@ -360,25 +306,27 @@
         fab.addEventListener('click', () => {
             drawer.classList.toggle('open');
             fab.innerHTML = drawer.classList.contains('open') ? '❌ Close' : '🛠️ Tools';
+            // Trigger Haptic Feedback
+            if(navigator.vibrate) navigator.vibrate(10);
         });
         
         const topBar = document.querySelector('.top-bar');
         const kebabBtn = document.createElement('button');
         kebabBtn.innerHTML = '⋮';
-        kebabBtn.style.cssText = 'background: none; border: none; color: var(--text-main); font-size: 28px; font-weight: bold; cursor: pointer; padding: 0 10px; margin-left: auto;';
+        kebabBtn.style.cssText = 'background: none; border: none; color: var(--text-main); font-size: 28px; font-weight: bold; cursor: pointer; padding: 0 10px; margin-left: auto; outline: none;';
         
         document.querySelector('.logo-section').style.flexGrow = '1';
         topBar.appendChild(kebabBtn);
 
         const topDropdown = document.createElement('div');
         topDropdown.className = 'mobile-top-dropdown';
-        
         topDropdown.appendChild(document.querySelector('.center-controls'));
         topDropdown.appendChild(document.querySelector('.action-section'));
         document.body.appendChild(topDropdown);
 
         kebabBtn.addEventListener('click', () => {
             topDropdown.classList.toggle('open');
+            if(navigator.vibrate) navigator.vibrate(10);
         });
     }
   </script>

@@ -1,3 +1,74 @@
+// --- CUSTOM UI DIALOG ENGINE (PHASE 3 FIX) ---
+function createDialogDOM() {
+  if (document.getElementById('custom-dialog-overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'custom-dialog-overlay';
+  overlay.className = 'modal-overlay';
+  overlay.style.cssText = 'z-index: 30000; align-items: center; justify-content: center; display: none; background: rgba(0,0,0,0.8);';
+  
+  overlay.innerHTML = `
+      <div class="modal-box" style="width: 320px; max-width: 90%; padding: 25px; text-align: center; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); background: #161b22; transform: scale(0.95); transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); animation: none;">
+          <h2 id="custom-dialog-title" style="font-size: 1.3rem; margin-bottom: 8px; color: #fff; margin-top: 0;"></h2>
+          <p id="custom-dialog-message" style="color: #8b949e; margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5;"></p>
+          <input type="text" id="custom-dialog-input" class="setting-input" style="width: 100%; margin-bottom: 20px; text-align: center; display: none; min-height: 45px; border-radius: 10px;">
+          <div style="display: flex; gap: 10px;">
+              <button id="custom-dialog-cancel" class="btn-secondary" style="flex: 1; border-radius: 10px; display: none; padding: 12px;">Cancel</button>
+              <button id="custom-dialog-ok" class="btn-primary" style="flex: 1; border-radius: 10px; padding: 12px;">OK</button>
+          </div>
+      </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+window.addEventListener('DOMContentLoaded', createDialogDOM);
+
+function showCustomDialog({ title, message, isPrompt, defaultValue }) {
+  createDialogDOM();
+  return new Promise((resolve) => {
+      const overlay = document.getElementById('custom-dialog-overlay');
+      const box = overlay.querySelector('.modal-box');
+      const titleEl = document.getElementById('custom-dialog-title');
+      const msgEl = document.getElementById('custom-dialog-message');
+      const inputEl = document.getElementById('custom-dialog-input');
+      const cancelBtn = document.getElementById('custom-dialog-cancel');
+      const okBtn = document.getElementById('custom-dialog-ok');
+
+      titleEl.innerText = title || '';
+      msgEl.innerText = message || '';
+
+      if (isPrompt) {
+          inputEl.style.display = 'block';
+          inputEl.value = defaultValue || '';
+          cancelBtn.style.display = 'block';
+      } else {
+          inputEl.style.display = 'none';
+          cancelBtn.style.display = 'none';
+      }
+
+      overlay.style.display = 'flex';
+      setTimeout(() => { 
+          box.style.transform = 'scale(1)'; 
+          if(isPrompt) inputEl.focus(); 
+      }, 10);
+
+      const closeDialog = (value) => {
+          box.style.transform = 'scale(0.95)';
+          setTimeout(() => {
+              overlay.style.display = 'none';
+              okBtn.onclick = null;
+              cancelBtn.onclick = null;
+              resolve(value);
+          }, 200);
+      };
+
+      okBtn.onclick = () => { triggerHaptic(); closeDialog(isPrompt ? inputEl.value.trim() : true); };
+      cancelBtn.onclick = () => { triggerHaptic(); closeDialog(null); };
+  });
+}
+
+async function nativeAlert(title, message) { await showCustomDialog({ title, message, isPrompt: false }); }
+async function nativePrompt(title, message, defaultValue = '') { return await showCustomDialog({ title, message, isPrompt: true, defaultValue }); }
+
 // --- MOBILE ELECTRON BYPASS (POLYFILL) ---
 const ipcRenderer = {
   invoke: async (channel, payload) => {
@@ -19,13 +90,14 @@ const ipcRenderer = {
       } catch (err) { return { error: "Cloud connection physically failed. Check your internet." }; }
     }
   },
-  send: (channel, payload) => {
+  send: async (channel, payload) => { 
     if (channel === 'save-article') {
       let fileName = payload.isSaveAs ? null : window.currentOpenFile;
       if (!fileName) {
         const suggestedName = payload.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
         const promptMessage = payload.isSaveAs ? "SAVE AS - Enter a name for the new copy:" : "Name your save file (it will be saved to your Documents folder):";
-        let customName = prompt(promptMessage, suggestedName);
+        
+        let customName = await nativePrompt("Save Document", promptMessage, suggestedName);
         if (!customName) return; 
         fileName = customName.endsWith('.json') ? customName : customName + '.json';
       }
@@ -38,8 +110,8 @@ const ipcRenderer = {
             path: fileName, data: fileContent, directory: 'DOCUMENTS', encoding: 'utf8'
           }).then(() => {
             window.currentOpenFile = fileName;
-            alert('Hardware Sync Complete!\nSuccessfully saved to Documents: ' + fileName);
-          }).catch((err) => { alert('Android OS Write Error: ' + err.message); });
+            nativeAlert('Success', 'Hardware Sync Complete!\nSuccessfully saved to Documents: ' + fileName);
+          }).catch((err) => { nativeAlert('Write Error', 'Android OS Error: ' + err.message); });
         } else {
           window.currentOpenFile = fileName;
           const a = document.createElement('a');
@@ -47,7 +119,7 @@ const ipcRenderer = {
           a.download = fileName;
           document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
-      } catch (error) { alert("System Error: " + error.message); }
+      } catch (error) { nativeAlert("System Error", error.message); }
     }
   },
   on: () => {}
@@ -85,19 +157,17 @@ document.getElementById('close-modal-btn').addEventListener('click', () => { tri
 document.getElementById('save-api-btn').addEventListener('click', () => {
   triggerHaptic();
   const newKey = document.getElementById('api-key-input').value.trim();
-  if (!newKey) { alert("Please paste a valid API key first."); return; }
+  if (!newKey) { nativeAlert("Missing Key", "Please paste a valid API key first."); return; }
   localStorage.setItem('gemini_api_key', newKey);
   document.getElementById('api-modal').style.display = 'none';
-  alert('Hardware Sync Complete: Pro CMS AI Engine is now online.');
+  nativeAlert('Engine Online', 'Hardware Sync Complete: Pro CMS AI Engine is now online.');
 });
 
 // --- 1. CUSTOM AUDIO ENGINE (NATIVE FILE PICKER) ---
 class SimpleAudioTool {
   static get toolbox() { return { title: 'Audio', icon: '🎵' }; }
   
-  constructor({data}) { 
-    this.data = data || {}; 
-  }
+  constructor({data}) { this.data = data || {}; }
 
   render() {
     this.wrapper = document.createElement('div');
@@ -142,7 +212,15 @@ class SimpleAudioTool {
       }
     });
 
-    this.placeholder.addEventListener('click', () => { triggerHaptic(); this.fileInput.click(); });
+    const preventHijack = (e) => e.stopPropagation();
+    this.placeholder.addEventListener('mousedown', preventHijack);
+    this.placeholder.addEventListener('pointerdown', preventHijack);
+    this.placeholder.addEventListener('touchstart', preventHijack, { passive: true });
+    this.placeholder.addEventListener('click', (e) => { 
+        e.preventDefault(); e.stopPropagation();
+        triggerHaptic(); this.fileInput.click(); 
+    });
+
     if (this.data && this.data.url) { this.audioPlayer.src = this.data.url; }
 
     this.wrapper.appendChild(this.placeholder);
@@ -151,7 +229,6 @@ class SimpleAudioTool {
     
     return this.wrapper;
   }
-  
   save() { return { url: this.data.url || '' }; }
 }
 
@@ -171,7 +248,7 @@ class SimpleDrawTool {
     this.wrapper = document.createElement('div');
     this.wrapper.style.width = '100%';
     this.wrapper.style.textAlign = 'center';
-    this.wrapper.style.position = 'relative'; // Required for absolute positioning of the overlay
+    this.wrapper.style.position = 'relative';
 
     this.imagePreview = document.createElement('img');
     this.imagePreview.style.width = '100%'; 
@@ -192,7 +269,6 @@ class SimpleDrawTool {
     this.placeholder.contentEditable = 'false'; 
     this.placeholder.style.display = this.data.image ? 'none' : 'block';
 
-    /* THE FIX: Floating Top-Right Pill Overlay */
     this.editBtn = document.createElement('button');
     this.editBtn.type = 'button'; 
     this.editBtn.contentEditable = 'false'; 
@@ -218,7 +294,6 @@ class SimpleDrawTool {
     this.wrapper.appendChild(this.editBtn);
     this.wrapper.appendChild(this.placeholder);
 
-    // Event Shields
     const preventHijack = (e) => e.stopPropagation();
     
     this.placeholder.addEventListener('mousedown', preventHijack);
@@ -365,7 +440,8 @@ class SimpleDrawTool {
     palette.forEach((color, i) => {
         const cBtn = document.createElement('div');
         cBtn.style.minWidth = '28px'; cBtn.style.height = '28px';
-        cBtn.style.borderRadius = '50%'; cBtn.style.backgroundColor = color;
+        cBtn.style.borderRadius = '50%';
+        cBtn.style.backgroundColor = color;
         cBtn.style.cursor = 'pointer';
         cBtn.style.border = '2px solid #30363d';
         if (i === 0) { cBtn.style.borderColor = '#58a6ff'; activeColorBtn = cBtn; }
@@ -608,7 +684,7 @@ document.getElementById('save-as-btn').addEventListener('click', () => {
 });
 
 ipcRenderer.on('save-response', (event, response) => {
-  if(response.success) { alert('Success! Article physically saved to your OS at:\n' + response.path); } else { alert('System Error saving file: ' + response.error); }
+  if(response.success) { nativeAlert('Success', 'Article physically saved to your OS at:\n' + response.path); } else { nativeAlert('Error', 'System Error saving file: ' + response.error); }
 });
 
 // --- 6. TYPOGRAPHY ENGINE ---
@@ -642,7 +718,7 @@ document.addEventListener('selectionchange', () => {
 
 function applyTypography(type, value) {
   const targetSpan = document.getElementById('pending-style-target'); 
-  if (!targetSpan) { alert("Please highlight some text in the editor first!"); return; }
+  if (!targetSpan) { nativeAlert("Action Required", "Please highlight some text in the editor first!"); return; }
   if (type === 'color') targetSpan.style.color = value; 
   if (type === 'size') targetSpan.style.fontSize = value; 
   if (type === 'font') targetSpan.style.fontFamily = value;
@@ -671,7 +747,7 @@ document.getElementById('ai-nexus-fab').addEventListener('click', () => {
 // AI Grammar Fix (Kept isolated to active block to avoid losing formatting)
 document.getElementById('ai-grammar-btn').addEventListener('click', async () => {
   triggerHaptic();
-  if (!lastActiveBlock) { alert("Please tap inside a paragraph first."); return; }
+  if (!lastActiveBlock) { nativeAlert("Action Required", "Please tap inside a paragraph first."); return; }
   const originalText = lastActiveBlock.innerText.trim(); if (!originalText) return;
   
   const grammarBtn = document.getElementById('ai-grammar-btn'); 
@@ -681,7 +757,7 @@ document.getElementById('ai-grammar-btn').addEventListener('click', async () => 
   const strictPrompt = "You are a strict proofreader. Fix all spelling and grammar errors in the following text. Do not add any conversational filler. Do not explain the changes. Do not use quotes. Return strictly the corrected text and nothing else. Text: " + originalText;
   try {
     const data = await ipcRenderer.invoke('fetch-cloud-ai', { prompt: strictPrompt, apiKey: getLocalApiKey() });
-    if (data.error) { grammarBtn.innerText = "API Error"; alert(data.error); } 
+    if (data.error) { grammarBtn.innerText = "API Error"; nativeAlert("AI Error", data.error); } 
     else { 
         lastActiveBlock.innerHTML = data.response.trim(); 
         lastActiveBlock.dispatchEvent(new Event('input', { bubbles: true })); 
@@ -716,13 +792,13 @@ document.getElementById('ai-format-input').addEventListener('keydown', async (e)
   
   try {
     const data = await ipcRenderer.invoke('fetch-cloud-ai', { prompt: strictPrompt, apiKey: getLocalApiKey() });
-    if (data.error) { formatBtn.innerText = "API Error"; alert(data.error); } 
+    if (data.error) { formatBtn.innerText = "API Error"; nativeAlert("AI Error", data.error); } 
     else { 
         let generatedCSS = data.response.replace(/```(css)?/gi, '').replace(/`/g, '').replace(/"/g, "'").trim();
         
         // Target only the exact text containers to prevent Editor.js from corrupting
         const editableElements = document.querySelectorAll('[contenteditable="true"]');
-        if(editableElements.length === 0) { alert("No text to format!"); }
+        if(editableElements.length === 0) { nativeAlert("Action Required", "No text to format!"); }
         
         editableElements.forEach(el => {
             const currentHTML = el.innerHTML;
@@ -772,6 +848,36 @@ if(widthSlider && widthDisplay) { widthSlider.addEventListener('input', (e) => {
 
 const lineHeightSlider = document.getElementById('line-height-slider'); const lineHeightDisplay = document.getElementById('line-height-display');
 if (lineHeightSlider && lineHeightDisplay) { lineHeightSlider.addEventListener('input', (e) => { document.documentElement.style.setProperty('--editor-line-height', e.target.value); lineHeightDisplay.innerText = e.target.value; }); }
+
+// --- 12. GHOST UX SLIDER ENGINE (RESTORED & FIXED) ---
+function initGhostUI() {
+  const allSliders = document.querySelectorAll('input[type="range"]');
+  allSliders.forEach(slider => {
+    const parentRow = slider.closest('.typo-row');
+    
+    const startSlide = () => { 
+        document.body.classList.add('is-sliding'); 
+        if (parentRow) parentRow.classList.add('active-slider-row'); 
+    };
+    
+    const stopSlide = () => { 
+        document.body.classList.remove('is-sliding'); 
+        if (parentRow) parentRow.classList.remove('active-slider-row'); 
+    };
+
+    slider.addEventListener('touchstart', startSlide, {passive: true});
+    slider.addEventListener('mousedown', startSlide);
+    slider.addEventListener('touchend', stopSlide);
+    slider.addEventListener('mouseup', stopSlide);
+    slider.addEventListener('touchcancel', stopSlide);
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initGhostUI);
+} else {
+  initGhostUI();
+}
 
 // --- 10. THE OS INTENT INTERCEPTOR (FILE READER) ---
 async function loadFileFromOS(contentUrl) {
@@ -827,7 +933,7 @@ async function loadFileFromOS(contentUrl) {
       }
     });
   } catch (error) { 
-      alert('System Error unpacking file: ' + error.message); 
+      nativeAlert('Read Error', 'System Error unpacking file: ' + error.message); 
       const modal = document.getElementById('pdf-modal');
       if (modal) modal.style.display = 'none';
   }
@@ -850,7 +956,7 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
     const titleText = getDocumentTitle(outputData);
     const suggestedName = titleText.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     
-    let customName = prompt("Name your Native PDF file:", suggestedName);
+    let customName = await nativePrompt("Export PDF", "Name your Native PDF file:", suggestedName);
     if (!customName) { exportBtn.innerText = originalText; exportBtn.disabled = false; return; }
     
     const fileName = customName.endsWith('.pdf') ? customName : customName + '.pdf';
@@ -867,18 +973,60 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
 
     const cleanText = (html) => { const tmp = document.createElement('div'); tmp.innerHTML = html; return tmp.textContent || tmp.innerText || ''; };
 
+    const parseHtmlToPdfMake = (html) => {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      
+      const parseNode = (node, currentStyles) => {
+        if (node.nodeType === 3) {
+          return { text: node.textContent, ...currentStyles };
+        }
+        if (node.nodeType === 1) {
+          const styles = { ...currentStyles };
+          const tag = node.tagName.toLowerCase();
+          
+          if (tag === 'b' || tag === 'strong') styles.bold = true;
+          if (tag === 'i' || tag === 'em') styles.italics = true;
+          if (tag === 'u') styles.decoration = 'underline';
+          if (tag === 'mark') styles.background = '#fff7cc';
+          
+          if (node.style.color) styles.color = node.style.color;
+          if (node.style.backgroundColor && tag !== 'mark') styles.background = node.style.backgroundColor;
+          if (node.style.fontSize) {
+              const size = parseInt(node.style.fontSize);
+              if(!isNaN(size)) styles.fontSize = size;
+          }
+
+          let result = [];
+          node.childNodes.forEach(child => {
+            const childResult = parseNode(child, styles);
+            if (Array.isArray(childResult)) result.push(...childResult);
+            else if (childResult) result.push(childResult);
+          });
+          return result;
+        }
+        return null;
+      };
+      
+      const parsed = parseNode(tmp, {});
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : [{ text: tmp.textContent || ' ' }];
+    };
+
     outputData.blocks.forEach(block => {
       try {
         switch (block.type) {
           case 'paragraph': 
-            if (block.data.text) docDefinition.content.push({ text: cleanText(block.data.text), style: 'paragraph' }); 
+            if (block.data.text) docDefinition.content.push({ text: parseHtmlToPdfMake(block.data.text), style: 'paragraph' }); 
             break;
           case 'header': 
-            if (block.data.text) docDefinition.content.push({ text: cleanText(block.data.text), style: 'h' + block.data.level }); 
+            if (block.data.text) docDefinition.content.push({ text: parseHtmlToPdfMake(block.data.text), style: 'h' + block.data.level }); 
             break;
           case 'list':
             if (block.data.items && block.data.items.length > 0) {
-              const items = block.data.items.map(i => { const itemText = typeof i === 'object' ? (i.content || '') : i; return cleanText(itemText) || ' '; }); 
+              const items = block.data.items.map(i => { 
+                  const itemText = typeof i === 'object' ? (i.content || '') : i; 
+                  return { text: parseHtmlToPdfMake(itemText) }; 
+              }); 
               if (block.data.style === 'ordered') docDefinition.content.push({ ol: items, style: 'list' }); 
               else docDefinition.content.push({ ul: items, style: 'list' });
             }
@@ -901,7 +1049,7 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
             break;
           case 'table':
             if (block.data.content && block.data.content.length > 0) {
-              const tableBody = block.data.content.map(row => row.map(cell => cleanText(cell) || ' '));
+              const tableBody = block.data.content.map(row => row.map(cell => ({ text: parseHtmlToPdfMake(cell) })));
               const colWidths = Array(tableBody[0].length).fill('*');
               docDefinition.content.push({ 
                 table: { widths: colWidths, body: tableBody }, layout: 'lightHorizontalLines', margin: [0, 10, 0, 15] 
@@ -919,12 +1067,12 @@ document.getElementById('export-pdf-btn').addEventListener('click', async () => 
       try {
         if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
           await window.Capacitor.Plugins.Filesystem.writeFile({ path: fileName, data: base64Data, directory: 'DOCUMENTS' });
-          alert('Success! Native PDF compiled and saved to Documents:\n' + fileName);
+          nativeAlert('Exported', 'Success! Native PDF compiled and saved to Documents:\n' + fileName);
         } else { pdfDocGenerator.download(fileName); }
-      } catch (err) { alert('Android OS Write Error: ' + err.message); }
+      } catch (err) { nativeAlert('Error', 'Android OS Write Error: ' + err.message); }
       exportBtn.innerText = originalText; exportBtn.disabled = false;
     });
-  } catch (error) { alert("System Error compiling PDF: " + error.message); exportBtn.innerText = originalText; exportBtn.disabled = false; }
+  } catch (error) { nativeAlert('Error', "System Error compiling PDF: " + error.message); exportBtn.innerText = originalText; exportBtn.disabled = false; }
 });
 
 // --- 11.5 PLAIN TEXT EXPORT ENGINE ---
@@ -938,7 +1086,7 @@ document.getElementById('export-txt-btn').addEventListener('click', async () => 
     const titleText = getDocumentTitle(outputData);
     const suggestedName = titleText.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     
-    let customName = prompt("Name your Plain Text file:", suggestedName);
+    let customName = await nativePrompt("Export Text", "Name your Plain Text file:", suggestedName);
     if (!customName) { exportBtn.innerText = originalText; exportBtn.disabled = false; return; }
     const fileName = customName.endsWith('.txt') ? customName : customName + '.txt';
 
@@ -977,26 +1125,15 @@ document.getElementById('export-txt-btn').addEventListener('click', async () => 
     plainText = plainText.trim();
     if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
       await window.Capacitor.Plugins.Filesystem.writeFile({ path: fileName, data: plainText, directory: 'DOCUMENTS', encoding: 'utf8' });
-      alert('Success! Plain Text file saved to Documents:\n' + fileName);
+      nativeAlert('Exported', 'Success! Plain Text file saved to Documents:\n' + fileName);
     } else { 
         const a = document.createElement('a');
         a.href = "data:text/plain;charset=utf-8," + encodeURIComponent(plainText);
         a.download = fileName;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
-  } catch (error) { alert("System Error extracting text: " + error.message); } 
+  } catch (error) { nativeAlert('Error', "System Error extracting text: " + error.message); } 
   finally { exportBtn.innerText = originalText; exportBtn.disabled = false; }
-});
-
-window.addEventListener('load', () => {
-  const allSliders = document.querySelectorAll('input[type="range"]');
-  allSliders.forEach(slider => {
-    const parentRow = slider.closest('.typo-row');
-    const startSlide = () => { document.body.classList.add('is-sliding'); if (parentRow) parentRow.classList.add('active-slider-row'); };
-    const stopSlide = () => { document.body.classList.remove('is-sliding'); if (parentRow) parentRow.classList.remove('active-slider-row'); };
-    slider.addEventListener('touchstart', startSlide, {passive: true}); slider.addEventListener('mousedown', startSlide);
-    slider.addEventListener('touchend', stopSlide); slider.addEventListener('mouseup', stopSlide); slider.addEventListener('touchcancel', stopSlide);
-  });
 });
 
 // --- 13. ZEN FOCUS MODE ENGINE ---
@@ -1081,7 +1218,7 @@ async function launchPdfAnnotator(base64Data, filePath) {
 
   } catch (err) {
     if (spinnerOverlay) spinnerOverlay.style.display = 'none';
-    alert("Error loading PDF: " + err.message);
+    nativeAlert('Error', "Error loading PDF: " + err.message);
     if(modal) modal.style.display = 'none';
   }
 }
@@ -1216,9 +1353,9 @@ document.getElementById('pdf-next-btn').addEventListener('click', () => {
 
 const pdfPageNumClickable = document.getElementById('pdf-page-num');
 if(pdfPageNumClickable) {
-    pdfPageNumClickable.addEventListener('click', () => {
+    pdfPageNumClickable.addEventListener('click', async () => {
         triggerHaptic();
-        const jump = prompt(`Jump to page (1 - ${activePdf.totalPages}):`, activePdf.pageNum);
+        const jump = await nativePrompt('Jump to Page', `Jump to page (1 - ${activePdf.totalPages}):`, activePdf.pageNum.toString());
         if (jump) {
             const jumpNum = parseInt(jump, 10);
             if (jumpNum >= 1 && jumpNum <= activePdf.totalPages) {
@@ -1272,7 +1409,7 @@ document.getElementById('pdf-save-btn').addEventListener('click', async () => {
         await window.Capacitor.Plugins.Filesystem.writeFile({
           path: fileName, data: bakedPdfBase64, directory: 'DOCUMENTS'
         });
-        alert("Success! Annotations baked into PDF.");
+        nativeAlert('Saved', "Success! Annotations baked into PDF.");
         const pdfModal = document.getElementById('pdf-modal');
         if(pdfModal) pdfModal.style.display = 'none';
     } else {
@@ -1283,7 +1420,7 @@ document.getElementById('pdf-save-btn').addEventListener('click', async () => {
         const pdfModal = document.getElementById('pdf-modal');
         if(pdfModal) pdfModal.style.display = 'none';
     }
-  } catch (error) { alert("Error baking PDF: " + error.message); } 
+  } catch (error) { nativeAlert('Error', "Error baking PDF: " + error.message); } 
   finally { saveBtn.innerText = "Save PDF"; }
 });
 
@@ -1414,3 +1551,44 @@ function setupPdfDrawingTools() {
       glassCanvas.addEventListener('touchstart', startDraw, { passive: false }); glassCanvas.addEventListener('touchmove', draw, { passive: false }); glassCanvas.addEventListener('touchend', stopDraw);
   }
 }
+
+// --- 15. PHASE 4: NATIVE MOBILE FORMATTING ENGINE ---
+function formatTextMobile(command) {
+    triggerHaptic();
+    if (command === 'bold') document.execCommand('bold', false, null);
+    if (command === 'italic') document.execCommand('italic', false, null);
+    if (command === 'underline') document.execCommand('underline', false, null);
+    if (command === 'mark') {
+      const selection = window.getSelection();
+      if (!selection.isCollapsed) {
+        const range = selection.getRangeAt(0);
+        const mark = document.createElement('mark');
+        mark.className = 'cdx-marker';
+        try { 
+            mark.appendChild(range.extractContents()); 
+            range.insertNode(mark); 
+        } catch(e){}
+      } else {
+          nativeAlert("Action Required", "Please select text to highlight.");
+      }
+    }
+    
+    // Force Editor.js to recognize the change and trigger auto-save
+    const activeBlock = document.activeElement ? document.activeElement.closest('.cdx-block') : null;
+    if (activeBlock) activeBlock.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  
+  function dismissFormatBar() {
+    triggerHaptic();
+    document.getElementById('mobile-format-bar').classList.remove('active');
+    document.body.classList.remove('is-editing');
+    if (document.activeElement) document.activeElement.blur();
+  }
+  
+  // Automatically slide up the bar when the user taps into the text
+  document.addEventListener('focusin', (e) => {
+    if (window.innerWidth <= 768 && e.target.closest('.ce-block__content')) {
+      document.getElementById('mobile-format-bar').classList.add('active');
+      document.body.classList.add('is-editing');
+    }
+  });

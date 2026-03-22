@@ -496,9 +496,6 @@ class MobileTableTool {
 let undo;
 
 // --- THE NEW AUTO-SAVE ENGINE & INIT ---
-// THE FIX: Removed the auto-loading payload so the canvas boots clean.
-// The background loop below will continue to silently save the new drafts!
-
 const editor = new EditorJS({
   holder: 'editor-container', 
   placeholder: 'Start writing your document...',
@@ -513,17 +510,17 @@ const editor = new EditorJS({
   },
   onChange: () => {
     editor.save().then((outputData) => {
-      // 1. Silent Local Backup
+      // Silent Local Backup
       localStorage.setItem('pro_cms_autosave', JSON.stringify(outputData));
       
-      // 2. Visual Save Indicator
+      // Visual Save Indicator
       const statusIndicator = document.getElementById('save-status-indicator');
       if(statusIndicator) {
           statusIndicator.innerText = "Saving...";
           setTimeout(() => { statusIndicator.innerText = "Draft: Auto-Saved"; }, 500);
       }
 
-      // 3. Stats
+      // Stats
       let text = ''; outputData.blocks.forEach(block => { if (block.data.text) text += block.data.text.replace(/<[^>]*>?/gm, '') + ' '; });
       const words = text.trim().split(/\s+/).filter(word => word.length > 0).length;
       const wordCountSpan = document.getElementById('word-count');
@@ -612,7 +609,7 @@ document.getElementById('style-size').addEventListener('keydown', (e) => { if (e
 document.getElementById('style-font').addEventListener('change', (e) => { applyTypography('font', e.target.value); });
 
 
-// --- 7. THE NEW PREMIUM AI NEXUS ENGINE ---
+// --- 7. THE NEW PREMIUM AI NEXUS ENGINE (GLOBAL OVERRIDE) ---
 let lastActiveBlock = null;
 document.addEventListener('click', (e) => { const block = e.target.closest('.cdx-block'); if (block) lastActiveBlock = block; });
 document.addEventListener('keyup', (e) => { const block = e.target.closest('.cdx-block'); if (block) lastActiveBlock = block; });
@@ -623,7 +620,7 @@ document.getElementById('ai-nexus-fab').addEventListener('click', () => {
     document.getElementById('ai-nexus-popup').classList.toggle('open');
 });
 
-// AI Grammar Fix
+// AI Grammar Fix (Kept isolated to active block to avoid losing formatting)
 document.getElementById('ai-grammar-btn').addEventListener('click', async () => {
   triggerHaptic();
   if (!lastActiveBlock) { alert("Please tap inside a paragraph first."); return; }
@@ -655,27 +652,39 @@ document.getElementById('ai-format-btn').addEventListener('click', () => {
   if(container.style.display === 'block') document.getElementById('ai-format-input').focus();
 });
 
+// THE FIX: Safe DOM Injection targeting contenteditable, NOT the structural block wrappers
 document.getElementById('ai-format-input').addEventListener('keydown', async (e) => {
   if (e.key !== 'Enter') return;
   const command = e.target.value.trim();
   if (!command) return;
-  if (!lastActiveBlock) { alert("Please tap inside a paragraph first."); return; }
   
-  const originalHTML = lastActiveBlock.innerHTML; if (!originalHTML) return;
   const formatBtn = document.getElementById('ai-format-btn'); 
   const originalBtnText = formatBtn.innerText; 
   
-  formatBtn.innerText = "🎨 Formatting..."; formatBtn.style.opacity = "0.7";
+  formatBtn.innerText = "🎨 Formatting Canvas..."; formatBtn.style.opacity = "0.7";
   e.target.disabled = true;
 
-  const strictPrompt = "You are a CSS injection engine. The user command is: " + command + ". The raw text/HTML is: " + originalHTML + ". Wrap the text in a <span style='...'> tag with the exact CSS properties needed (like font-weight: bold, font-style: italic, text-decoration: underline, color, etc). Keep all text intact. Return strictly the modified HTML span and absolutely nothing else. Do not use markdown blocks.";
+  const strictPrompt = "You are a CSS inline-style generator. The user command is: '" + command + "'. Return ONLY a valid CSS inline style string (e.g., color: red; font-weight: bold;). Do not include HTML tags, no markdown formatting, no explanations. Just the CSS properties.";
   
   try {
     const data = await ipcRenderer.invoke('fetch-cloud-ai', { prompt: strictPrompt, apiKey: getLocalApiKey() });
     if (data.error) { formatBtn.innerText = "API Error"; alert(data.error); } 
     else { 
-        lastActiveBlock.innerHTML = data.response.trim(); 
-        lastActiveBlock.dispatchEvent(new Event('input', { bubbles: true })); 
+        let generatedCSS = data.response.replace(/```(css)?/gi, '').replace(/`/g, '').replace(/"/g, "'").trim();
+        
+        // Target only the exact text containers to prevent Editor.js from corrupting
+        const editableElements = document.querySelectorAll('[contenteditable="true"]');
+        if(editableElements.length === 0) { alert("No text to format!"); }
+        
+        editableElements.forEach(el => {
+            const currentHTML = el.innerHTML;
+            if (currentHTML) {
+                // Safely wrap text without destroying Editor.js hooks
+                el.innerHTML = `<span style="${generatedCSS}">${currentHTML}</span>`;
+                el.dispatchEvent(new Event('input', { bubbles: true })); 
+            }
+        });
+
         formatBtn.innerText = "🎨 Format Applied!"; 
         e.target.value = '';
         document.getElementById('ai-format-input-wrapper').style.display = 'none';
@@ -1008,7 +1017,7 @@ async function launchPdfAnnotator(base64Data, filePath) {
 
     const loadingTask = pdfjsLib.getDocument({
         data: uint8Array,
-        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+        cMapUrl: '[https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/](https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/)',
         cMapPacked: true,
     });
     

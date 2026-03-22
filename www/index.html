@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
 
-  <!-- THE FIX: Restored the missing CSS block that controls the Modals, AI Flyout, and PDF Text Selection! -->
   <style>
     :root { --editor-width: 80%; }
     .ce-block__content, .ce-toolbar__content { max-width: var(--editor-width) !important; transition: max-width 0.1s ease-out; }
@@ -270,12 +269,16 @@
       <canvas id="fullscreen-draw-canvas" style="position: absolute; top: 0; left: 0; touch-action: none;"></canvas>
     </div>
 
-    <div style="width: 100%; background: #0d1117; border-top: 1px solid #30363d; display: flex; flex-direction: column;">
-      <div id="draw-primary-tools" style="display: flex; justify-content: space-around; padding: 15px 10px; border-bottom: 1px solid #161b22;"></div>
-      <div id="draw-options-drawer" style="display: none; flex-direction: column; padding: 15px 20px; gap: 15px;">
+    <!-- THE FIX: Made the toolbar container relative, and the drawer absolute so it floats over the canvas -->
+    <div style="width: 100%; background: #0d1117; border-top: 1px solid #30363d; display: flex; flex-direction: column; position: relative;">
+      
+      <!-- The Options Drawer now pops UP over the canvas instead of squishing it -->
+      <div id="draw-options-drawer" style="display: none; flex-direction: column; padding: 15px 20px; gap: 15px; position: absolute; bottom: 100%; left: 0; width: 100%; background: rgba(13, 17, 23, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.08); z-index: 50; box-sizing: border-box;">
         <div id="draw-color-palette" style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 5px;"></div>
         <div id="draw-width-selector" style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #161b22;"></div>
       </div>
+
+      <div id="draw-primary-tools" style="display: flex; justify-content: space-around; padding: 15px 10px; position: relative; z-index: 60; background: #0d1117;"></div>
     </div>
   </div>
 

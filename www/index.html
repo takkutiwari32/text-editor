@@ -16,8 +16,12 @@
     :root { --editor-width: 80%; }
     .ce-block__content, .ce-toolbar__content { max-width: var(--editor-width) !important; transition: max-width 0.1s ease-out; }
 
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; }
-    .modal-box { background: #161b22; padding: 25px; border-radius: 8px; border: 1px solid #30363d; width: 450px; max-width: 90%; color: #c9d1d9; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
+    /* THE FIX: Bumped z-index to 20000 to cleanly cover the Top Bar and FAB buttons */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 20000; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
+    
+    /* THE FIX: Added max-height: 85vh and overflow-y: auto so the box becomes scrollable when the keyboard opens */
+    .modal-box { background: #161b22; padding: 25px; border-radius: 8px; border: 1px solid #30363d; width: 450px; max-width: 100%; color: #c9d1d9; box-shadow: 0 10px 40px rgba(0,0,0,0.9); max-height: 85vh; overflow-y: auto; }
+    
     .modal-box h2 { margin-top: 0; color: #58a6ff; }
     
     .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
@@ -136,7 +140,6 @@
 
       <div class="typo-row">
         <label>Font Style</label>
-        <!-- THE FIX: The massive 30+ native font list is fully restored here -->
         <select id="style-font" class="typo-input" style="cursor: pointer;">
           <option value="">Theme Default</option>
           <optgroup label="Modern Sans-Serif (Clean)">
@@ -223,7 +226,7 @@
   </div>
 
   <div id="api-modal" class="modal-overlay">
-    <div class="modal-box" style="width: 600px; text-align: center; padding: 40px;">
+    <div class="modal-box" style="width: 600px; text-align: center;">
       <h2 style="font-size: 2rem; margin-bottom: 10px;">Welcome to Pro CMS</h2>
       <p style="font-size: 1rem; color: #8b949e; line-height: 1.6; margin-bottom: 25px;">
         To keep this software a one-time purchase with <strong>zero monthly subscription fees</strong>, Pro CMS runs natively on your personal Google account. 
@@ -253,7 +256,7 @@
     </div>
   </div>
 
-  <div id="draw-modal" class="modal-overlay" style="z-index: 10005; flex-direction: column; background: var(--bg-color);">
+  <div id="draw-modal" class="modal-overlay" style="z-index: 20005; flex-direction: column; background: var(--bg-color);">
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #0d1117; border-bottom: 1px solid #30363d; width: 100%; box-sizing: border-box;">
       <button id="draw-cancel-btn" style="background: none; border: none; color: var(--text-main); font-size: 1.5rem; cursor: pointer;">←</button>
       <div style="color: var(--text-main); font-weight: bold;">Canvas</div>
@@ -271,7 +274,7 @@
     </div>
   </div>
 
-  <div id="pdf-modal" class="modal-overlay" style="z-index: 10010; flex-direction: column; background: var(--bg-color);">
+  <div id="pdf-modal" class="modal-overlay" style="z-index: 20010; flex-direction: column; background: var(--bg-color);">
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #0d1117; border-bottom: 1px solid #30363d; width: 100%; box-sizing: border-box;">
       <button id="pdf-cancel-btn" style="background: none; border: none; color: var(--text-muted); font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;">Close</button>
       <div style="display: flex; align-items: center; gap: 15px;">

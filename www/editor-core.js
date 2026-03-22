@@ -164,19 +164,21 @@ class SimpleDrawTool {
     this.wrapper = null;
     this.imagePreview = null;
     this.placeholder = null;
+    this.editBtn = null;
   }
 
   render() {
     this.wrapper = document.createElement('div');
     this.wrapper.style.width = '100%';
     this.wrapper.style.textAlign = 'center';
-    this.wrapper.style.cursor = 'pointer';
+    this.wrapper.style.position = 'relative'; // Required for absolute positioning of the overlay
 
     this.imagePreview = document.createElement('img');
     this.imagePreview.style.width = '100%'; 
     this.imagePreview.style.height = 'auto'; 
     this.imagePreview.style.display = this.data.image ? 'block' : 'none';
-    this.imagePreview.style.borderRadius = '4px';
+    this.imagePreview.style.borderRadius = '8px';
+    this.imagePreview.style.border = '1px solid var(--border-color)';
 
     this.placeholder = document.createElement('div');
     this.placeholder.innerHTML = '🖍️ Tap to Draw';
@@ -186,14 +188,54 @@ class SimpleDrawTool {
     this.placeholder.style.borderRadius = '8px';
     this.placeholder.style.color = '#58a6ff';
     this.placeholder.style.fontWeight = 'bold';
+    this.placeholder.style.cursor = 'pointer';
+    this.placeholder.contentEditable = 'false'; 
     this.placeholder.style.display = this.data.image ? 'none' : 'block';
+
+    /* THE FIX: Floating Top-Right Pill Overlay */
+    this.editBtn = document.createElement('button');
+    this.editBtn.type = 'button'; 
+    this.editBtn.contentEditable = 'false'; 
+    this.editBtn.innerHTML = '✎ Edit';
+    this.editBtn.style.position = 'absolute';
+    this.editBtn.style.top = '10px';
+    this.editBtn.style.right = '10px';
+    this.editBtn.style.padding = '6px 14px';
+    this.editBtn.style.background = 'rgba(16, 20, 26, 0.85)';
+    this.editBtn.style.color = '#58a6ff';
+    this.editBtn.style.border = '1px solid rgba(88, 166, 255, 0.3)';
+    this.editBtn.style.borderRadius = '20px';
+    this.editBtn.style.backdropFilter = 'blur(8px)';
+    this.editBtn.style.fontWeight = 'bold';
+    this.editBtn.style.fontSize = '0.85rem';
+    this.editBtn.style.cursor = 'pointer';
+    this.editBtn.style.zIndex = '5';
+    this.editBtn.style.display = this.data.image ? 'block' : 'none';
 
     if (this.data.image) this.imagePreview.src = this.data.image;
 
     this.wrapper.appendChild(this.imagePreview);
+    this.wrapper.appendChild(this.editBtn);
     this.wrapper.appendChild(this.placeholder);
 
-    this.wrapper.addEventListener('click', () => { triggerHaptic(); this.openFullScreenEditor(); });
+    // Event Shields
+    const preventHijack = (e) => e.stopPropagation();
+    
+    this.placeholder.addEventListener('mousedown', preventHijack);
+    this.placeholder.addEventListener('pointerdown', preventHijack);
+    this.placeholder.addEventListener('touchstart', preventHijack, { passive: true });
+    this.placeholder.addEventListener('click', (e) => { 
+        e.preventDefault(); e.stopPropagation();
+        triggerHaptic(); this.openFullScreenEditor(); 
+    });
+    
+    this.editBtn.addEventListener('mousedown', preventHijack);
+    this.editBtn.addEventListener('pointerdown', preventHijack);
+    this.editBtn.addEventListener('touchstart', preventHijack, { passive: true });
+    this.editBtn.addEventListener('click', (e) => { 
+        e.preventDefault(); e.stopPropagation();
+        triggerHaptic(); this.openFullScreenEditor(); 
+    });
 
     if (!this.data.image) { setTimeout(() => { this.openFullScreenEditor(); }, 50); }
     return this.wrapper;
@@ -275,11 +317,15 @@ class SimpleDrawTool {
         const btn = document.createElement('div');
         btn.style.width = '40px'; btn.style.height = '40px';
         btn.style.display = 'flex'; btn.style.justifyContent = 'center'; btn.style.alignItems = 'center';
-        btn.style.cursor = 'pointer'; btn.style.borderRadius = '8px';
+        btn.style.cursor = 'pointer';
+        btn.style.borderRadius = '8px';
         
         const indicator = document.createElement('div');
-        indicator.style.position = 'absolute'; indicator.style.bottom = '-10px'; indicator.style.width = '20px';
-        indicator.style.height = '3px'; indicator.style.borderRadius = '2px';
+        indicator.style.position = 'absolute';
+        indicator.style.bottom = '-10px';
+        indicator.style.width = '20px';
+        indicator.style.height = '3px';
+        indicator.style.borderRadius = '2px';
         indicator.style.background = 'transparent';
         indicator.style.transition = 'background 0.2s';
         
@@ -320,7 +366,8 @@ class SimpleDrawTool {
         const cBtn = document.createElement('div');
         cBtn.style.minWidth = '28px'; cBtn.style.height = '28px';
         cBtn.style.borderRadius = '50%'; cBtn.style.backgroundColor = color;
-        cBtn.style.cursor = 'pointer'; cBtn.style.border = '2px solid #30363d';
+        cBtn.style.cursor = 'pointer';
+        cBtn.style.border = '2px solid #30363d';
         if (i === 0) { cBtn.style.borderColor = '#58a6ff'; activeColorBtn = cBtn; }
 
         cBtn.onclick = () => {
@@ -413,6 +460,7 @@ class SimpleDrawTool {
       this.data.image = canvas.toDataURL('image/png');
       this.imagePreview.src = this.data.image;
       this.imagePreview.style.display = 'block';
+      this.editBtn.style.display = 'block';
       this.placeholder.style.display = 'none'; 
       this.wrapper.dispatchEvent(new Event('input', { bubbles: true }));
       modal.style.display = 'none';
@@ -652,7 +700,7 @@ document.getElementById('ai-format-btn').addEventListener('click', () => {
   if(container.style.display === 'block') document.getElementById('ai-format-input').focus();
 });
 
-// THE FIX: Safe DOM Injection targeting contenteditable, NOT the structural block wrappers
+// Safe DOM Injection targeting contenteditable, NOT the structural block wrappers
 document.getElementById('ai-format-input').addEventListener('keydown', async (e) => {
   if (e.key !== 'Enter') return;
   const command = e.target.value.trim();

@@ -2,29 +2,35 @@
    1. CORE VARIABLES & PREMIUM THEME
 ========================================= */
 :root {
-  --bg-color: #050505;        /* Ultra-deep OLED black */
-  --surface-color: #10141a;   /* Sleek, cool-toned surface */
+  --editor-width: 80%;
+  --bg-color: #050505;        
+  --surface-color: #10141a;   
   --surface-glass: rgba(16, 20, 26, 0.75); 
-  --border-color: rgba(255, 255, 255, 0.08); /* Soft, barely-there borders */
-  --text-main: #e2e8f0;       /* Softened white to reduce eye strain */
+  --border-color: rgba(255, 255, 255, 0.08); 
+  --text-main: #e2e8f0;       
   --text-muted: #8b949e;
-  --primary-accent: #58a6ff;  /* Crisp modern blue */
+  --primary-accent: #58a6ff;  
   --primary-glow: rgba(88, 166, 255, 0.3);
-  --danger-accent: #f85149;   /* Coral red for destructive actions/alerts */
+  --danger-accent: #f85149;   
   --sidebar-width: 280px;
   --topbar-height: 65px;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+/* THE FIX: Added -webkit-tap-highlight-color to kill the ugly blue Android tap square globally */
+* { 
+    box-sizing: border-box; margin: 0; padding: 0; 
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+    -webkit-tap-highlight-color: transparent; 
+}
 
 body { 
   background-color: var(--bg-color); 
   color: var(--text-main); 
   overflow: hidden; 
   -webkit-font-smoothing: antialiased;
+  touch-action: pan-x pan-y; 
 }
 
-/* Custom Sleek Scrollbars */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
@@ -45,13 +51,13 @@ body {
 .logo-text { 
   font-weight: 900; font-size: 1.3rem; 
   background: linear-gradient(135deg, #fff, #8b949e);
+  background-clip: text;
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
   letter-spacing: 1px; 
 }
 
 .center-controls { display: flex; align-items: center; gap: 12px; }
 
-/* Modern Icon Buttons */
 .icon-btn { 
   background: transparent; border: 1px solid transparent; border-radius: 8px; 
   font-size: 1.2rem; cursor: pointer; padding: 8px 12px; color: var(--text-muted); 
@@ -65,7 +71,6 @@ body {
 .save-status { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-left: 10px; padding: 4px 10px; background: rgba(255,255,255,0.03); border-radius: 20px;}
 .action-section { display: flex; gap: 12px; }
 
-/* Premium Action Buttons */
 .btn-secondary { 
   background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 8px 18px; 
   border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--text-main); 
@@ -94,7 +99,6 @@ body {
 .right-sidebar { border-right: none; border-left: 1px solid var(--border-color); }
 .sidebar-title { font-size: 0.75rem; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 1px; }
 
-/* Tool Grid Cards (Soft Glow Hover) */
 .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .tool-card {
   background: linear-gradient(145deg, rgba(255,255,255,0.02), rgba(255,255,255,0)); border: 1px solid var(--border-color);
@@ -109,25 +113,15 @@ body {
 .tool-card:hover .tool-icon { transform: scale(1.1); }
 .tool-name { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
 
-/* Inputs & Form Elements */
 .setting-input, .typo-input { 
   padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); 
   border-radius: 8px; font-size: 0.85rem; color: var(--text-main); outline: none; transition: all 0.2s; 
 }
 .setting-input:focus, .typo-input:focus { border-color: var(--primary-accent); box-shadow: 0 0 0 3px var(--primary-glow); }
 
-/* Typography Sliders */
-input[type="range"] { -webkit-appearance: none; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; }
-input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: var(--primary-accent); border-radius: 50%; cursor: pointer; transition: transform 0.1s; }
+input[type="range"] { appearance: none; -webkit-appearance: none; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; }
+input[type="range"]::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 16px; height: 16px; background: var(--primary-accent); border-radius: 50%; cursor: pointer; transition: transform 0.1s; }
 input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
-
-/* Switch Toggle */
-.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 24px; }
-.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s cubic-bezier(0.68, -0.55, 0.265, 1.55); border-radius: 50%; }
-input:checked + .slider { background-color: var(--primary-accent); }
-input:checked + .slider:before { transform: translateX(20px); }
 
 /* =========================================
    4. THE CENTER CANVAS
@@ -149,52 +143,24 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 .document-title::placeholder { color: #a0aec0 !important; }
 
-/* FIX 1: Force Editor Text to be Dark */
 #editor-container, .ce-block__content, .ce-paragraph, .ce-header, .codex-editor { 
     color: #111111 !important; 
 }
 .ce-paragraph[data-placeholder]:empty::before { color: #a0aec0 !important; }
 
 /* =========================================
-   5. MODALS & AI FLYOUT (ANIMATED)
+   5. MODALS & AI FLYOUT
 ========================================= */
 @keyframes modalPop {
   0% { opacity: 0; transform: scale(0.95) translateY(20px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-.modal-overlay { 
-  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-  background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  z-index: 10000; justify-content: center; align-items: center; 
-}
-.modal-box { 
-  background: rgba(16, 20, 26, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  padding: 30px; border-radius: 16px; border: 1px solid var(--border-color); 
-  width: 450px; max-width: 90%; color: var(--text-main); 
-  box-shadow: 0 24px 60px rgba(0,0,0,0.8); animation: modalPop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
-}
-
-/* Force override the inline styles of your drawing/pdf modals so they look premium */
 #draw-modal, #pdf-modal { background: rgba(5, 5, 5, 0.9) !important; backdrop-filter: blur(10px) !important; }
 #draw-modal > div:first-child, #pdf-modal > div:first-child, #pdf-toolbar-container > div, #draw-options-drawer, #draw-primary-tools {
     background: rgba(16, 20, 26, 0.8) !important; backdrop-filter: blur(20px) !important;
     border-color: rgba(255,255,255,0.05) !important;
 }
-
-/* AI Flyout */
-.ai-flyout { 
-  position: fixed; bottom: 0; left: 0; width: var(--sidebar-width); 
-  background: rgba(16, 20, 26, 0.85); backdrop-filter: blur(16px);
-  border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); 
-  padding: 20px; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 9999; border-top-right-radius: 16px; 
-}
-.ai-flyout:hover { width: 30vw; box-shadow: 10px -10px 40px rgba(0,0,0,0.5); background: rgba(16, 20, 26, 0.98); }
-#ai-chat-window { 
-  height: 250px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); 
-  border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px; transition: height 0.4s ease; 
-}
-.ai-flyout:hover #ai-chat-window { height: 450px; }
 
 /* =========================================
    6. MOBILE MATRIX (MAX 768PX)
@@ -207,22 +173,70 @@ input:checked + .slider:before { transform: translateX(20px); }
     .document-container { padding: 30px 20px !important; min-height: calc(100vh - 60px) !important; border-radius: 0 !important; border: none !important; box-shadow: none !important; }
     .document-title { font-size: 2.2rem !important; margin-bottom: 20px !important; }
 
-    /* Mobile 3-Dot Dropdown */
+    /* THE FIX: Darkened the Background of the Dropdown */
     .mobile-top-dropdown {
-        position: fixed; top: 70px; right: 15px; width: 220px;
-        background: rgba(16, 20, 26, 0.95); backdrop-filter: blur(20px); border: 1px solid var(--border-color);
-        border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 15px;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.6); z-index: 10000;
-        transform: translateY(-10px) scale(0.95); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        position: fixed; top: 70px; right: 15px; width: 240px;
+        background: rgba(13, 17, 23, 0.95); /* Much darker and richer background */
+        backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 20px; padding: 12px; display: flex; flex-direction: column; gap: 4px;
+        box-shadow: 0 24px 50px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.1); z-index: 10000;
+        transform: translateY(-20px) scale(0.85); opacity: 0; pointer-events: none; 
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         transform-origin: top right;
     }
     .mobile-top-dropdown.open { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
-    .mobile-top-dropdown .action-section { flex-direction: column !important; width: 100% !important; }
-    .mobile-top-dropdown .btn-primary, .mobile-top-dropdown .btn-secondary { width: 100% !important; padding: 12px !important; }
+    
+    .mobile-top-dropdown .center-controls {
+        display: flex; justify-content: space-around; padding: 4px 4px 14px 4px;
+        border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 6px;
+    }
+    .mobile-top-dropdown .center-controls .icon-btn { 
+        background: rgba(255,255,255,0.04); padding: 12px; border-radius: 12px; width: 30%; font-size: 1.1rem; color: var(--text-main); 
+        transition: all 0.2s ease;
+    }
+    .mobile-top-dropdown .center-controls .icon-btn:active {
+        transform: scale(0.90); background: rgba(255,255,255,0.15);
+    }
+    
+    .mobile-top-dropdown .action-section { flex-direction: column !important; width: 100% !important; gap: 4px !important; }
+    
+    .mobile-top-dropdown .btn-primary, .mobile-top-dropdown .btn-secondary { 
+        width: 100% !important; padding: 14px 16px !important; 
+        border-radius: 12px !important; border: none !important;
+        text-align: left !important; font-size: 1rem !important; font-weight: 500 !important;
+        background: transparent !important; display: block !important; 
+        transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+    }
+    .mobile-top-dropdown .btn-secondary { color: var(--text-main) !important; }
+    
+    .mobile-top-dropdown .btn-secondary:active { 
+        background: rgba(255,255,255,0.1) !important; 
+        transform: scale(0.97) !important; 
+    }
+    
+    .mobile-top-dropdown #export-pdf-btn { color: #58a6ff !important; }
+    
+    .mobile-top-dropdown #export-txt-btn {
+        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+        border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important;
+        padding-bottom: 18px !important; margin-bottom: 8px !important;
+    }
+
+    .mobile-top-dropdown #publish-btn { 
+        background: linear-gradient(135deg, var(--primary-accent), #3182ce) !important; 
+        color: #ffffff !important; 
+        font-weight: 700 !important;
+        margin-top: 4px !important;
+        box-shadow: 0 8px 20px rgba(88, 166, 255, 0.3) !important;
+    }
+    .mobile-top-dropdown #publish-btn:active {
+        transform: scale(0.95) !important;
+        box-shadow: 0 4px 10px rgba(88, 166, 255, 0.2) !important;
+    }
 
     .left-sidebar, .right-sidebar { display: none !important; }
 
-    /* Mobile Floating Action Button */
     .mobile-fab {
         position: fixed; bottom: 24px; right: 24px; z-index: 10000;
         background: linear-gradient(135deg, var(--primary-accent), #3182ce); color: white; border: none;
@@ -231,10 +245,11 @@ input:checked + .slider:before { transform: translateX(20px); }
     }
     .mobile-fab:active { transform: scale(0.95); }
 
-    /* The Unified Sliding Drawer */
     .mobile-drawer {
         position: fixed; bottom: 0; left: 0; width: 100%; height: 80vh;
-        background: rgba(16, 20, 26, 0.98); backdrop-filter: blur(20px); z-index: 9000;
+        background: rgba(16, 20, 26, 0.98); 
+        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
+        z-index: 9000;
         border-top: 1px solid var(--border-color); border-radius: 24px 24px 0 0;
         transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
         display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 100px;
@@ -255,12 +270,8 @@ input:checked + .slider:before { transform: translateX(20px); }
 .ce-block { margin-top: 0 !important; margin-bottom: 0 !important; padding-top: calc((var(--editor-line-height) - 1) * 10px) !important; padding-bottom: calc((var(--editor-line-height) - 1) * 10px) !important; }
 
 /* =========================================
-   8. GHOST UX & TABLE ISOLATION 
+   8. TABLE ISOLATION 
 ========================================= */
-body.is-sliding .mobile-drawer, body.is-sliding .left-sidebar, body.is-sliding .right-sidebar { background: transparent !important; box-shadow: none !important; border-top-color: transparent !important; }
-body.is-sliding .left-sidebar > *, body.is-sliding .right-sidebar > *, body.is-sliding .ai-flyout { opacity: 0 !important; pointer-events: none; transition: opacity 0.2s ease; }
-body.is-sliding .right-sidebar > .active-slider-row { opacity: 1 !important; pointer-events: auto; background: rgba(16, 20, 26, 0.9) !important; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); transition: opacity 0.2s ease; }
-
 .custom-table-scroll { overflow-x: auto; border: 1px solid #eaeaea; border-radius: 8px; background: #ffffff; box-shadow: inset 0 0 10px rgba(0,0,0,0.02); }
 .custom-table { border-collapse: collapse; width: max-content; min-width: 100%; }
 .custom-table td { min-width: 120px; max-width: 250px; padding: 16px; border: 1px solid #eaeaea; color: #111; cursor: text; font-size: 1rem; word-break: break-word; transition: background 0.2s; }
@@ -306,3 +317,37 @@ body.zen-mode .exit-zen-btn { display: block !important; }
     text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* =========================================
+   11. GHOST UX FIX
+========================================= */
+body.is-sliding .mobile-drawer, 
+body.is-sliding .left-sidebar, 
+body.is-sliding .right-sidebar { 
+    background: transparent !important; 
+    background-color: transparent !important;
+    box-shadow: none !important; 
+    border: none !important; 
+    backdrop-filter: blur(0px) !important;
+    -webkit-backdrop-filter: blur(0px) !important;
+}
+
+body.is-sliding .left-sidebar > *, 
+body.is-sliding .right-sidebar > *, 
+body.is-sliding .ai-flyout { 
+    opacity: 0 !important; 
+    pointer-events: none; 
+    transition: opacity 0.2s ease; 
+}
+
+body.is-sliding .right-sidebar > .active-slider-row { 
+    opacity: 1 !important; 
+    pointer-events: auto; 
+    background: rgba(16, 20, 26, 0.95) !important; 
+    padding: 12px; 
+    border-radius: 12px; 
+    border: 1px solid var(--border-color); 
+    transition: opacity 0.2s ease; 
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+}

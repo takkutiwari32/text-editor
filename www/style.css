@@ -142,7 +142,6 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 #editor-container, .ce-block__content, .ce-paragraph, .ce-header, .codex-editor { color: #111111 !important; }
 .ce-paragraph[data-placeholder]:empty::before { color: #a0aec0 !important; }
 
-/* Premium Inline Text Toolbar Styling */
 .ce-inline-toolbar {
     background: rgba(22, 27, 34, 0.95) !important;
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -227,7 +226,12 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
     }
     .mobile-drawer.open { transform: translateY(0); }
-    .mobile-drawer .left-sidebar, .mobile-drawer .right-sidebar { width: 100% !important; border: none !important; padding: 24px !important; display: flex !important; height: auto !important; }
+    
+    /* THE FIX: Force overflow visible so the sidebars expand and let the parent drawer handle the scrolling */
+    .mobile-drawer .left-sidebar, .mobile-drawer .right-sidebar { 
+        width: 100% !important; border: none !important; padding: 24px !important; display: flex !important; height: auto !important; 
+        overflow: visible !important; 
+    }
 }
 
 /* =========================================
@@ -309,12 +313,12 @@ body.is-sliding .right-sidebar > .active-slider-row {
 ========================================= */
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+/* THE FIX: Lowered Z-Index from 10000 to 8900 so it sits below the 9000-level drawer */
 .ai-nexus-container {
-    position: fixed; bottom: 24px; left: 24px; z-index: 10000;
+    position: fixed; bottom: 24px; left: 24px; z-index: 8900; 
     display: flex; flex-direction: column; align-items: flex-start; gap: 15px;
 }
 
-/* The Glowing Circular FAB */
 .ai-nexus-fab {
     width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer;
     position: relative; display: flex; justify-content: center; align-items: center;
@@ -324,7 +328,6 @@ body.is-sliding .right-sidebar > .active-slider-row {
 }
 .ai-nexus-fab:active { transform: scale(0.92); }
 
-/* The Neon Trail Animation */
 .ai-nexus-fab::before {
     content: ''; position: absolute; inset: -3px; border-radius: 50%;
     background: conic-gradient(from 0deg, #ff7eb3, #8b5cf6, #58a6ff, #ff7eb3);
@@ -337,7 +340,6 @@ body.is-sliding .right-sidebar > .active-slider-row {
     font-size: 1.6rem; color: #fff; z-index: 1; transition: background 0.2s;
 }
 
-/* The Contextual Frosted Popup */
 .ai-nexus-popup {
     background: rgba(22, 27, 34, 0.85); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
     border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; padding: 18px;

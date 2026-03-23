@@ -249,10 +249,9 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
     .mobile-drawer.open { transform: translateY(0); }
     .mobile-drawer .left-sidebar, .mobile-drawer .right-sidebar { width: 100% !important; border: none !important; padding: 24px !important; display: flex !important; height: auto !important; overflow: visible !important; }
 
-    /* PHASE 4 OVERRIDES: Disable Default Toolbar & Adjust Layout when Editing */
     .ce-inline-toolbar { display: none !important; pointer-events: none !important; visibility: hidden !important; }
     body.is-editing .mobile-fab, body.is-editing .ai-nexus-container { display: none !important; }
-    body.is-editing .app-body { height: calc(100vh - 60px - 70px) !important; } /* Pad for bottom format bar */
+    body.is-editing .app-body { height: calc(100vh - 60px - 70px) !important; } 
 }
 
 /* =========================================
@@ -280,15 +279,18 @@ body.zen-mode .app-body { margin-top: 0 !important; height: 100vh !important; di
 body.zen-mode .editor-canvas { background-color: #ffffff !important; padding: 0 !important; }
 body.zen-mode .document-container { box-shadow: none !important; border-radius: 0 !important; border: none !important; max-width: 900px !important; width: 100% !important; margin: 0 auto !important; padding-top: 80px !important; min-height: 100vh !important; }
 
+/* THE FIX: Removed the overriding 'display: flex' from the base class */
 .exit-zen-btn {
     display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
     background: rgba(16, 20, 26, 0.95); color: var(--text-muted);
     border: 1px solid var(--border-color); border-radius: 30px; padding: 10px 24px; min-height: 48px;
-    font-size: 1rem; font-weight: bold; z-index: 10000; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; font-weight: bold; z-index: 10000; cursor: pointer; 
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
 .exit-zen-btn:hover { background: var(--danger-accent); color: #ffffff; border-color: var(--danger-accent); transform: translateX(-50%) translateY(-2px); box-shadow: 0 10px 30px rgba(248, 81, 73, 0.4); }
-body.zen-mode .exit-zen-btn { display: inline-flex !important; }
+
+/* THE FIX: Only apply flex display when zen mode is active */
+body.zen-mode .exit-zen-btn { display: flex !important; align-items: center; justify-content: center; }
 
 /* =========================================
    10. MODERN LOADING SPINNER

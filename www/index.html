@@ -11,141 +11,122 @@
   
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
-
-  <style>
-    :root { --editor-width: 80%; }
-    .ce-block__content, .ce-toolbar__content { max-width: var(--editor-width) !important; transition: max-width 0.1s ease-out; }
-    .modal-overlay { 
-        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-        background: rgba(0,0,0,0.6); z-index: 20000; justify-content: center; 
-        align-items: flex-end; padding: 0; box-sizing: border-box; animation: fadeIn 0.2s ease-out;
-    }
-    .modal-box { 
-        background: #161b22; padding: 35px 24px 40px 24px; border-radius: 24px 24px 0 0; 
-        border-top: 1px solid rgba(255,255,255,0.08); width: 100%; max-width: 600px; color: #c9d1d9; 
-        box-shadow: 0 -10px 40px rgba(0,0,0,0.8); max-height: 90vh; overflow-y: auto; position: relative;
-        animation: sheetSlideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-    }
-    .modal-box::before { content: ''; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 40px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); }
-    .modal-box h2 { margin-top: 0; color: #58a6ff; font-size: 1.6rem; margin-bottom: 8px;}
-    @keyframes fadeIn { from { background: rgba(0,0,0,0); } to { background: rgba(0,0,0,0.6); } }
-    @keyframes sheetSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    #draw-modal, #pdf-modal { animation: sheetSlideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
-    .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #30363d; transition: .4s; border-radius: 20px; }
-    .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-    input:checked + .slider { background-color: #58a6ff; }
-    input:checked + .slider:before { transform: translateX(20px); }
-    .editor-canvas { touch-action: pan-y !important; }
-    .textLayer { z-index: 5 !important; }
-    .textLayer span { color: transparent !important; user-select: text !important; -webkit-user-select: text !important; pointer-events: auto !important; padding-right: 20px !important; margin-right: -20px !important; padding-bottom: 5px !important; margin-bottom: -5px !important; }
-    .textLayer span::after { content: " " !important; }
-  </style>
 </head>
 <body>
 
-  <nav class="top-bar">
-    <div class="logo-section" style="display: flex; align-items: center;">
-      <span class="logo-text">PRO CMS</span>
-      <button id="settings-btn" class="icon-btn" style="margin-left: 15px; cursor: pointer; background: none; border: none; font-size: 1.2rem;" title="API Settings">👑</button>
-      <div style="display: flex; margin-left: auto; gap: 4px; padding-right: 5px;">
-        <button class="icon-btn" id="undo-btn" title="Undo" style="font-size: 1.3rem; padding: 4px 8px;">↺</button>
-        <button class="icon-btn" id="redo-btn" title="Redo" style="font-size: 1.3rem; padding: 4px 8px;">↻</button>
+  <div id="home-view">
+    <div class="home-header">
+      <h1 class="home-title">My Documents</h1>
+      <div style="display: flex; gap: 10px;">
+        <button id="open-external-btn" class="btn-secondary" style="border: none; background: rgba(255,255,255,0.05);">📂 Browse</button>
+        <button id="home-settings-btn" class="icon-btn" title="API Settings">⚙️</button>
       </div>
     </div>
-    <div class="center-controls">
-      <button class="icon-btn" id="zen-mode-btn" title="Zen Focus Mode">HIDE</button>
-      <span class="save-status" id="save-status-indicator">Draft: Auto-Saved</span>
-    </div> 
-    <div class="action-section">
-       <button class="btn-secondary" id="export-pdf-btn" style="border-color: rgba(88, 166, 255, 0.4); color: #58a6ff;">Export to PDF</button>
-       <button class="btn-secondary" id="export-txt-btn">Export to Text</button>
-       <button class="btn-secondary" id="save-as-btn">Save Copy As...</button>
-       <button class="btn-primary" id="publish-btn">✓ Save Document</button>
+    
+    <div class="file-list-container" id="file-list-container">
+      </div>
+
+    <button id="new-doc-fab" class="new-fab">＋</button>
+  </div>
+
+
+  <div id="editor-view">
+    <nav class="top-bar">
+      <div class="logo-section" style="display: flex; align-items: center;">
+        <button id="back-to-home-btn" class="icon-btn" style="margin-right: 15px; background: rgba(255,255,255,0.05); color: white;">←</button>
+        <span class="logo-text">PRO CMS</span>
+        
+        <div style="display: flex; margin-left: auto; gap: 4px; padding-right: 5px;">
+          <button class="icon-btn" id="undo-btn" title="Undo" style="font-size: 1.3rem; padding: 4px 8px;">↺</button>
+          <button class="icon-btn" id="redo-btn" title="Redo" style="font-size: 1.3rem; padding: 4px 8px;">↻</button>
+        </div>
+      </div>
+      
+      <div class="center-controls">
+        <button class="icon-btn" id="zen-mode-btn" title="Zen Focus Mode">HIDE</button>
+        <span class="save-status" id="save-status-indicator">Draft: Auto-Saved</span>
+      </div> 
+      
+      <div class="action-section">
+         <button class="btn-secondary" id="export-pdf-btn" style="border-color: rgba(88, 166, 255, 0.4); color: #58a6ff;">📄 Export PDF</button>
+         <button class="btn-secondary" id="export-txt-btn">📝 Export Text</button>
+         <button class="btn-secondary" id="save-as-btn">💾 Save As...</button>
+         <button class="btn-primary" id="publish-btn">✓ Save</button>
+      </div>
+    </nav>
+
+    <div class="app-body">
+      <aside class="left-sidebar">
+        <div class="sidebar-title">Add Elements</div>
+        <div class="tool-grid">
+          <button class="tool-card" id="tool-header"><span class="tool-icon">H</span><span class="tool-name">Heading</span></button>
+          <button class="tool-card" id="tool-image"><span class="tool-icon">🌄</span><span class="tool-name">Image</span></button>
+          <button class="tool-card" id="tool-code"><span class="tool-icon">&lt;/&gt;</span><span class="tool-name">Code</span></button>
+          <button class="tool-card" id="tool-table"><span class="tool-icon">⊞</span><span class="tool-name">Table</span></button>
+          <button class="tool-card" id="tool-list"><span class="tool-icon">📃</span><span class="tool-name">List</span></button>
+          <button class="tool-card" id="tool-audio"><span class="tool-icon">🎵</span><span class="tool-name">Audio</span></button>
+          <button class="tool-card" id="tool-draw"><span class="tool-icon">✎</span><span class="tool-name">Draw</span></button>
+        </div>
+      </aside>
+
+      <main class="editor-canvas">
+        <div class="document-container">
+          <div id="editor-container"></div>
+        </div>
+      </main>
+
+      <aside class="right-sidebar">
+        <div class="sidebar-title" style="margin-bottom: 15px;">Typography Engine</div>
+        <div class="typo-row" style="margin-bottom: 15px;">
+          <label style="display: flex; justify-content: space-between;">Canvas Width <span id="width-display" style="color: var(--text-muted);">80%</span></label>
+          <input type="range" id="canvas-width-slider" min="40" max="100" value="80" style="width: 100%; margin-top: 5px; cursor: pointer;">
+        </div>
+        <div class="typo-row" style="margin-bottom: 15px;">
+          <label style="display: flex; justify-content: space-between;">Line Spacing <span id="line-height-display" style="color: var(--text-muted);">1.5</span></label>
+          <input type="range" id="line-height-slider" min="0.5" max="3.0" step="0.1" value="1.5" style="width: 100%; margin-top: 5px; cursor: pointer;">
+        </div>
+        <div class="typo-row">
+          <label>Font Color</label>
+          <input type="color" id="style-color" value="#f85149" class="typo-color">
+        </div>
+        <div class="typo-row">
+          <label>Font Size</label>
+          <input type="text" id="style-size" class="typo-input" placeholder="e.g. 24px">
+        </div>
+        <div class="typo-row">
+          <label>Font Style</label>
+          <select id="style-font" class="typo-input" style="cursor: pointer;">
+            <option value="">Theme Default</option>
+            <optgroup label="Modern Sans-Serif (Clean)"><option value="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">Native OS Default</option><option value="Helvetica, Arial, sans-serif">Helvetica / Arial</option></optgroup>
+            <optgroup label="Classic Serif (Editorial)"><option value="Georgia, serif">Georgia</option><option value="'Times New Roman', Times, serif">Times New Roman</option></optgroup>
+          </select>
+        </div>
+        <hr style="border: 1px solid var(--border-color); margin: 20px 0; width: 100%;">
+        <div class="stats-box">
+          <div class="stat-row">Words: <span id="word-count">0</span></div>
+          <div class="stat-row">Est. Read: <span id="read-time">0 min</span></div>
+        </div>
+      </aside>
     </div>
-  </nav>
 
-  <div class="app-body">
-    <aside class="left-sidebar">
-      <div class="sidebar-title">Add Elements</div>
-      <div class="tool-grid">
-        <button class="tool-card" id="tool-header"><span class="tool-icon">H</span><span class="tool-name">Heading</span></button>
-        <button class="tool-card" id="tool-image"><span class="tool-icon">🌄</span><span class="tool-name">Image</span></button>
-        <button class="tool-card" id="tool-code"><span class="tool-icon">&lt;/&gt;</span><span class="tool-name">Code</span></button>
-        <button class="tool-card" id="tool-table"><span class="tool-icon">⊞</span><span class="tool-name">Table</span></button>
-        <button class="tool-card" id="tool-list"><span class="tool-icon">📃</span><span class="tool-name">List</span></button>
-        <button class="tool-card" id="tool-audio"><span class="tool-icon">🎵</span><span class="tool-name">Audio</span></button>
-        <button class="tool-card" id="tool-draw"><span class="tool-icon">✎</span><span class="tool-name">Draw</span></button>
-      </div>
-    </aside>
-
-    <main class="editor-canvas">
-      <div class="document-container">
-        <div id="editor-container"></div>
-      </div>
-    </main>
-
-    <aside class="right-sidebar">
-      <div class="sidebar-title" style="margin-bottom: 15px;">Post Properties</div>
-      <div class="sidebar-title" style="margin-bottom: 15px;">Typography Engine</div>
-      <div class="typo-row" style="margin-bottom: 15px;">
-        <label style="display: flex; justify-content: space-between;">Canvas Width <span id="width-display" style="color: var(--text-muted);">80%</span></label>
-        <input type="range" id="canvas-width-slider" min="40" max="100" value="80" style="width: 100%; margin-top: 5px; cursor: pointer;">
-      </div>
-      <div class="typo-row" style="margin-bottom: 15px;">
-        <label style="display: flex; justify-content: space-between;">Line Spacing <span id="line-height-display" style="color: var(--text-muted);">1.5</span></label>
-        <input type="range" id="line-height-slider" min="0.5" max="3.0" step="0.1" value="1.5" style="width: 100%; margin-top: 5px; cursor: pointer;">
-      </div>
-      <div class="typo-row">
-        <label>Font Color</label>
-        <input type="color" id="style-color" value="#f85149" class="typo-color">
-      </div>
-      <div class="typo-row">
-        <label>Font Size</label>
-        <input type="text" id="style-size" class="typo-input" placeholder="e.g. 24px">
-      </div>
-      <div class="typo-row">
-        <label>Font Style</label>
-        <select id="style-font" class="typo-input" style="cursor: pointer;">
-          <option value="">Theme Default</option>
-          <optgroup label="Modern Sans-Serif (Clean)">
-            <option value="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">Native OS Default</option>
-            <option value="Helvetica, Arial, sans-serif">Helvetica / Arial</option>
-          </optgroup>
-          <optgroup label="Classic Serif (Editorial)">
-            <option value="Georgia, serif">Georgia</option>
-            <option value="'Times New Roman', Times, serif">Times New Roman</option>
-          </optgroup>
-        </select>
-      </div>
-      <hr style="border: 1px solid var(--border-color); margin: 20px 0; width: 100%;">
-      <div class="stats-box">
-        <div class="stat-row">Words: <span id="word-count">0</span></div>
-        <div class="stat-row">Est. Read: <span id="read-time">0 min</span></div>
-      </div>
-    </aside>
-  </div>
-
-  <div class="ai-nexus-container">
-      <div id="ai-nexus-popup" class="ai-nexus-popup">
-        <div class="sidebar-title" style="margin-bottom: 15px; color: #58a6ff; letter-spacing: 2px;">COMMAND AI</div>
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-            <button id="ai-grammar-btn" class="btn-secondary ai-menu-btn">GRAMMAR✅</button>
-            <button id="ai-format-btn" class="btn-secondary ai-menu-btn">🤖</button>
+    <div class="ai-nexus-container">
+        <div id="ai-nexus-popup" class="ai-nexus-popup">
+          <div class="sidebar-title" style="margin-bottom: 15px; color: #58a6ff; letter-spacing: 2px;">Cloud Co-Pilot</div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button id="ai-grammar-btn" class="btn-secondary ai-menu-btn">✨ Fix Active Paragraph</button>
+              <button id="ai-format-btn" class="btn-secondary ai-menu-btn">🎨 AI Format Element...</button>
+          </div>
+          <div id="ai-format-input-wrapper" style="display: none; margin-top: 8px;">
+              <input type="text" id="ai-format-input" class="setting-input" placeholder="Type format, press Enter..." style="width: 100%; font-size: 0.85rem; padding: 10px;">
+          </div>
+          <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px;">
+            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: bold;">Ghost Auto-Correct</span>
+            <label class="switch"><input type="checkbox" id="ai-auto-toggle"><span class="slider"></span></label>
+          </div>
         </div>
-        <div id="ai-format-input-wrapper" style="display: none; margin-top: 8px;">
-            <input type="text" id="ai-format-input" class="setting-input" placeholder="Type format, press Enter..." style="width: 100%; font-size: 0.85rem; padding: 10px;">
-        </div>
-        <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px;">
-          <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: bold;">Ghost Auto-Correct</span>
-          <label class="switch"><input type="checkbox" id="ai-auto-toggle"><span class="slider"></span></label>
-        </div>
-      </div>
-      <button id="ai-nexus-fab" class="ai-nexus-fab" title="Activate AI Co-Pilot"><div class="ai-nexus-inner"><b><i>AI</i></b></div></button>
-  </div>
-
-  <div id="api-modal" class="modal-overlay">
+        <button id="ai-nexus-fab" class="ai-nexus-fab" title="Activate AI Co-Pilot"><div class="ai-nexus-inner">✨</div></button>
+    </div>
+  </div> <div id="api-modal" class="modal-overlay">
     <div class="modal-box" style="text-align: center;">
       <h2 style="font-size: 2rem; margin-bottom: 10px;">Welcome to Pro CMS</h2>
       <p style="font-size: 1rem; color: #8b949e; line-height: 1.6; margin-bottom: 25px;">To keep this software a one-time purchase with <strong>zero monthly subscription fees</strong>, Pro CMS runs natively on your personal Google account.</p>
@@ -182,7 +163,7 @@
       <canvas id="fullscreen-draw-canvas" style="position: absolute; top: 0; left: 0; touch-action: none;"></canvas>
     </div>
     <div style="width: 100%; background: #0d1117; border-top: 1px solid #30363d; display: flex; flex-direction: column; position: relative;">
-      <div id="draw-options-drawer" style="display: none; flex-direction: column; padding: 15px 20px; gap: 15px; position: absolute; bottom: 100%; left: 0; width: 100%; background: rgba(13, 17, 23, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.08); z-index: 50; box-sizing: border-box;">
+      <div id="draw-options-drawer" style="display: none; flex-direction: column; padding: 15px 20px; gap: 15px; position: absolute; bottom: 100%; left: 0; width: 100%; background: rgba(13, 17, 23, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.08); z-index: 50; box-sizing: border-box;">
         <div id="draw-color-palette" style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 5px;"></div>
         <div id="draw-width-selector" style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #161b22;"></div>
       </div>
@@ -196,7 +177,7 @@
       <div style="display: flex; align-items: center; gap: 15px;">
         <button id="pdf-prev-btn" class="icon-btn">◀</button>
         <div style="color: var(--text-main); font-weight: bold; font-size: 0.85rem; padding: 0 5px;">
-          Page <span id="pdf-page-num" style="cursor: pointer; color: #58a6ff; text-decoration: underline;" title="Tap to jump to page">1</span> of <span id="pdf-page-count">?</span>
+          Page <span id="pdf-page-num" style="cursor: pointer; color: #58a6ff; text-decoration: underline;">1</span> of <span id="pdf-page-count">?</span>
         </div>
         <button id="pdf-next-btn" class="icon-btn">▶</button>
       </div>
@@ -205,17 +186,14 @@
     <div id="pdf-canvas-container" style="flex: 1; width: 100%; background: #050505; overflow: auto; text-align: center; padding: 20px; box-sizing: border-box; position: relative; -webkit-overflow-scrolling: touch;">
       <div id="pdf-loading-spinner" class="modern-spinner-overlay" style="display: none;"><div class="modern-spinner"></div><div id="pdf-spinner-text" class="modern-spinner-text">Reading File...</div></div>
       <div id="pdf-transform-wrapper" style="position: relative; display: inline-block; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.8); transform-origin: top left; transform: scale(1); will-change: transform; margin: 0 auto;">
-  <canvas id="pdf-base-canvas" style="display: block;"></canvas>
-  <div id="pdf-text-layer" class="textLayer" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; line-height: 1.0;"></div>
-  
-  <!-- THE FIX: Added z-index: 10; so the canvas sits above the text layer -->
-  <canvas id="pdf-glass-canvas" style="position: absolute; top: 0; left: 0; touch-action: none; cursor: crosshair; z-index: 10;"></canvas>
-</div>
+        <canvas id="pdf-base-canvas" style="display: block;"></canvas>
+        <div id="pdf-text-layer" class="textLayer" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; line-height: 1.0;"></div>
+        <canvas id="pdf-glass-canvas" style="position: absolute; top: 0; left: 0; touch-action: none; cursor: crosshair; z-index: 10;"></canvas>
+      </div>
     </div>
     <div id="pdf-toolbar-container" style="width: 100%;"></div>
   </div>
 
-  <!-- PHASE 4 FIX: The Mobile Format Bar -->
   <div id="mobile-format-bar" class="mobile-format-bar">
     <button class="format-btn" onmousedown="event.preventDefault(); formatTextMobile('bold');"><b>B</b></button>
     <button class="format-btn" onmousedown="event.preventDefault(); formatTextMobile('italic');"><i>I</i></button>
@@ -252,12 +230,12 @@
         drawer.className = 'mobile-drawer';
         drawer.appendChild(document.querySelector('.left-sidebar'));
         drawer.appendChild(document.querySelector('.right-sidebar'));
-        document.querySelector('.app-body').appendChild(drawer);
+        document.getElementById('editor-view').appendChild(drawer); // Appended inside editor view
         
         const fab = document.createElement('button');
         fab.className = 'mobile-fab';
         fab.innerHTML = '🛠️ Tools';
-        document.body.appendChild(fab);
+        document.getElementById('editor-view').appendChild(fab); // Only exists in editor
 
         fab.addEventListener('click', () => {
             drawer.classList.toggle('open');
@@ -277,7 +255,7 @@
         topDropdown.className = 'mobile-top-dropdown';
         topDropdown.appendChild(document.querySelector('.center-controls'));
         topDropdown.appendChild(document.querySelector('.action-section'));
-        document.body.appendChild(topDropdown);
+        document.getElementById('editor-view').appendChild(topDropdown);
 
         kebabBtn.addEventListener('click', () => {
             topDropdown.classList.toggle('open');

@@ -17,41 +17,70 @@
   <div id="home-view">
     <div class="home-header">
       <h1 class="home-title">My Documents</h1>
-      <div style="display: flex; gap: 10px;">
-        <button id="open-external-btn" class="btn-secondary" style="border: none; background: rgba(255,255,255,0.05);">📂 Browse</button>
-        <button id="home-settings-btn" class="icon-btn" title="API Settings">⚙️</button>
-      </div>
     </div>
     
     <div class="file-list-container" id="file-list-container">
       </div>
 
-    <button id="new-doc-fab" class="new-fab">＋</button>
+    <div class="home-bottom-bar">
+      <button id="home-settings-btn" class="bottom-bar-btn" title="API Settings">
+          <div class="btn-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          </div>
+          <span class="btn-label">Settings</span>
+      </button>
+      <button id="open-external-btn" class="bottom-bar-btn">
+          <div class="btn-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          </div>
+          <span class="btn-label">Browse</span>
+      </button>
+    </div>
+
+    <button id="new-doc-fab" class="new-fab">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
   </div>
 
 
   <div id="editor-view">
     <nav class="top-bar">
       <div class="logo-section" style="display: flex; align-items: center;">
-        <button id="back-to-home-btn" class="icon-btn" style="margin-right: 15px; background: rgba(255,255,255,0.05); color: white;">←</button>
+        <button id="back-to-home-btn" class="icon-btn" style="margin-right: 15px; color: white;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        </button>
         <span class="logo-text">PRO CMS</span>
         
         <div style="display: flex; margin-left: auto; gap: 4px; padding-right: 5px;">
-          <button class="icon-btn" id="undo-btn" title="Undo" style="font-size: 1.3rem; padding: 4px 8px;">↺</button>
-          <button class="icon-btn" id="redo-btn" title="Redo" style="font-size: 1.3rem; padding: 4px 8px;">↻</button>
+          <button class="icon-btn" id="undo-btn" title="Undo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
+          </button>
+          <button class="icon-btn" id="redo-btn" title="Redo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path></svg>
+          </button>
         </div>
       </div>
       
       <div class="center-controls">
-        <button class="icon-btn" id="zen-mode-btn" title="Zen Focus Mode">HIDE</button>
+        <button class="icon-btn" id="zen-mode-btn" title="Zen Focus Mode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+        </button>
         <span class="save-status" id="save-status-indicator">Draft: Auto-Saved</span>
       </div> 
       
       <div class="action-section">
-         <button class="btn-secondary" id="export-pdf-btn" style="border-color: rgba(88, 166, 255, 0.4); color: #58a6ff;">📄 Export PDF</button>
-         <button class="btn-secondary" id="export-txt-btn">📝 Export Text</button>
-         <button class="btn-secondary" id="save-as-btn">💾 Save As...</button>
-         <button class="btn-primary" id="publish-btn">✓ Save</button>
+         <button class="btn-secondary" id="export-pdf-btn">
+             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Export PDF
+         </button>
+         <button class="btn-secondary" id="export-txt-btn">
+             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="15" x2="9" y2="15"></line><line x1="21" y1="12" x2="9" y2="12"></line><line x1="21" y1="9" x2="9" y2="9"></line><line x1="21" y1="19" x2="9" y2="19"></line><path d="M3 15h1a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2H3v6z"></path><path d="M3 5h4"></path><path d="M5 5v14"></path></svg> Export Text
+         </button>
+         <button class="btn-secondary" id="save-as-btn">
+             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save As...
+         </button>
+         <button class="btn-primary" id="publish-btn">
+             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Save
+         </button>
       </div>
     </nav>
 
@@ -59,13 +88,34 @@
       <aside class="left-sidebar">
         <div class="sidebar-title">Add Elements</div>
         <div class="tool-grid">
-          <button class="tool-card" id="tool-header"><span class="tool-icon">H</span><span class="tool-name">Heading</span></button>
-          <button class="tool-card" id="tool-image"><span class="tool-icon">🌄</span><span class="tool-name">Image</span></button>
-          <button class="tool-card" id="tool-code"><span class="tool-icon">&lt;/&gt;</span><span class="tool-name">Code</span></button>
-          <button class="tool-card" id="tool-table"><span class="tool-icon">⊞</span><span class="tool-name">Table</span></button>
-          <button class="tool-card" id="tool-list"><span class="tool-icon">📃</span><span class="tool-name">List</span></button>
-          <button class="tool-card" id="tool-audio"><span class="tool-icon">🎵</span><span class="tool-name">Audio</span></button>
-          <button class="tool-card" id="tool-draw"><span class="tool-icon">✎</span><span class="tool-name">Draw</span></button>
+          <button class="tool-card" id="tool-header">
+              <span class="tool-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg></span>
+              <span class="tool-name">Heading</span>
+          </button>
+          <button class="tool-card" id="tool-image">
+              <span class="tool-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></span>
+              <span class="tool-name">Image</span>
+          </button>
+          <button class="tool-card" id="tool-code">
+              <span class="tool-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg></span>
+              <span class="tool-name">Code</span>
+          </button>
+          <button class="tool-card" id="tool-table">
+              <span class="tool-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg></span>
+              <span class="tool-name">Table</span>
+          </button>
+          <button class="tool-card" id="tool-list">
+              <span class="tool-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></span>
+              <span class="tool-name">List</span>
+          </button>
+          <button class="tool-card" id="tool-audio">
+              <span class="tool-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></span>
+              <span class="tool-name">Audio</span>
+          </button>
+          <button class="tool-card" id="tool-draw">
+              <span class="tool-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-1.5L17 10l1.5 1.5z"></path><path d="M2 22h4l11-11-4-4L2 18v4z"></path></svg></span>
+              <span class="tool-name">Draw</span>
+          </button>
         </div>
       </aside>
 
@@ -93,7 +143,7 @@
           <label>Font Size</label>
           <input type="text" id="style-size" class="typo-input" placeholder="e.g. 24px">
         </div>
-       <div class="typo-row">
+        <div class="typo-row">
           <label>Font Style</label>
           <select id="style-font" class="typo-input" style="cursor: pointer;">
             <option value="">Theme Default</option>
@@ -154,8 +204,12 @@
         <div id="ai-nexus-popup" class="ai-nexus-popup">
           <div class="sidebar-title" style="margin-bottom: 15px; color: #58a6ff; letter-spacing: 2px;">Cloud Co-Pilot</div>
           <div style="display: flex; flex-direction: column; gap: 8px;">
-              <button id="ai-grammar-btn" class="btn-secondary ai-menu-btn">✨ Fix Active Paragraph</button>
-              <button id="ai-format-btn" class="btn-secondary ai-menu-btn">🎨 AI Format Element...</button>
+              <button id="ai-grammar-btn" class="btn-secondary ai-menu-btn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> Fix Grammar
+              </button>
+              <button id="ai-format-btn" class="btn-secondary ai-menu-btn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg> AI Format...
+              </button>
           </div>
           <div id="ai-format-input-wrapper" style="display: none; margin-top: 8px;">
               <input type="text" id="ai-format-input" class="setting-input" placeholder="Type format, press Enter..." style="width: 100%; font-size: 0.85rem; padding: 10px;">
@@ -165,20 +219,24 @@
             <label class="switch"><input type="checkbox" id="ai-auto-toggle"><span class="slider"></span></label>
           </div>
         </div>
-        <button id="ai-nexus-fab" class="ai-nexus-fab" title="Activate AI Co-Pilot"><div class="ai-nexus-inner">✨</div></button>
+        <button id="ai-nexus-fab" class="ai-nexus-fab" title="Activate AI Co-Pilot">
+            <div class="ai-nexus-inner">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            </div>
+        </button>
     </div>
   </div> <div id="api-modal" class="modal-overlay">
     <div class="modal-box" style="text-align: center;">
       <h2 style="font-size: 2rem; margin-bottom: 10px;">Welcome to Pro CMS</h2>
       <p style="font-size: 1rem; color: #8b949e; line-height: 1.6; margin-bottom: 25px;">To keep this software a one-time purchase with <strong>zero monthly subscription fees</strong>, Pro CMS runs natively on your personal Google account.</p>
-      <button id="get-key-btn" style="width: 100%; background-color: #238636; color: white; padding: 14px; border: none; cursor: pointer; border-radius: 12px; font-weight: bold; margin-bottom: 25px; font-size: 1.1rem; transition: 0.2s;">1. Get Free Google API Key ↗</button>
+      <button id="get-key-btn" style="width: 100%; background-color: #238636; color: white; padding: 14px; border: none; cursor: pointer; border-radius: 12px; font-weight: bold; margin-bottom: 25px; font-size: 1.1rem; transition: 0.2s; box-shadow: inset 0 1px 1px rgba(255,255,255,0.2);">1. Get Free Google API Key ↗</button>
       <div style="text-align: left;">
         <label style="display: block; color: #c9d1d9; margin-bottom: 8px; font-weight: bold;">2. Paste Your Key Here:</label>
         <input type="password" id="api-key-input" class="setting-input" placeholder="AIzaSy..." style="width: 100%; padding: 14px; font-size: 1.1rem; margin-bottom: 20px; box-sizing: border-box; border-radius: 12px;">
       </div>
       <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
         <button id="save-api-btn" class="btn-primary" style="width: 100%; padding: 14px; font-size: 1.1rem; border-radius: 12px;">Initialize Engine</button>
-        <button id="close-modal-btn" class="btn-secondary" style="width: 100%; border: none; background: transparent; opacity: 0.6; font-size: 1rem;">Skip for now (AI Disabled)</button>
+        <button id="close-modal-btn" class="btn-secondary" style="width: 100%; border: none; background: transparent; opacity: 0.6; font-size: 1rem; box-shadow: none;">Skip for now (AI Disabled)</button>
       </div>
     </div>
   </div>
@@ -196,7 +254,9 @@
 
   <div id="draw-modal" class="modal-overlay" style="z-index: 20005; flex-direction: column; background: var(--bg-color);">
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #0d1117; border-bottom: 1px solid #30363d; width: 100%; box-sizing: border-box;">
-      <button id="draw-cancel-btn" style="background: none; border: none; color: var(--text-main); font-size: 1.5rem; cursor: pointer;">←</button>
+      <button id="draw-cancel-btn" class="icon-btn" style="color: var(--text-main);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      </button>
       <div style="color: var(--text-main); font-weight: bold;">Canvas</div>
       <button id="draw-save-btn" style="background: none; border: none; color: #58a6ff; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Done</button>
     </div>
@@ -216,11 +276,15 @@
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #0d1117; border-bottom: 1px solid #30363d; width: 100%; box-sizing: border-box;">
       <button id="pdf-cancel-btn" style="background: none; border: none; color: var(--text-muted); font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;">Close</button>
       <div style="display: flex; align-items: center; gap: 15px;">
-        <button id="pdf-prev-btn" class="icon-btn">◀</button>
+        <button id="pdf-prev-btn" class="icon-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
         <div style="color: var(--text-main); font-weight: bold; font-size: 0.85rem; padding: 0 5px;">
           Page <span id="pdf-page-num" style="cursor: pointer; color: #58a6ff; text-decoration: underline;">1</span> of <span id="pdf-page-count">?</span>
         </div>
-        <button id="pdf-next-btn" class="icon-btn">▶</button>
+        <button id="pdf-next-btn" class="icon-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
       </div>
       <button id="pdf-save-btn" style="background: none; border: none; color: #58a6ff; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Save</button>
     </div>
@@ -236,13 +300,25 @@
   </div>
 
   <div id="mobile-format-bar" class="mobile-format-bar">
-    <button class="format-btn" onmousedown="event.preventDefault(); formatTextMobile('bold');"><b>B</b></button>
-    <button class="format-btn" onmousedown="event.preventDefault(); formatTextMobile('italic');"><i>I</i></button>
-    <button class="format-btn" onmousedown="event.preventDefault(); formatTextMobile('underline');"><u>U</u></button>
-    <button class="format-btn" onmousedown="event.preventDefault(); formatTextMobile('mark');" style="background: #fff7cc; color: #000;">🖍️</button>
+    <button class="format-btn" onmousedown="event.preventDefault(); formatTextMobile('bold');">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg>
+    </button>
+    <button class="format-btn" onmousedown="event.preventDefault(); formatTextMobile('italic');">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"></line><line x1="14" y1="20" x2="5" y2="20"></line><line x1="15" y1="4" x2="9" y2="20"></line></svg>
+    </button>
+    <button class="format-btn" onmousedown="event.preventDefault(); formatTextMobile('underline');">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"></path><line x1="4" y1="21" x2="20" y2="21"></line></svg>
+    </button>
+    <button class="format-btn" onmousedown="event.preventDefault(); formatTextMobile('mark');" style="background: rgba(255, 247, 204, 0.1); color: #fff7cc;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+    </button>
     <div class="format-divider"></div>
-    <button class="format-btn" onmousedown="event.preventDefault(); document.getElementById('style-color').click();">🎨</button>
-    <button class="format-btn" onmousedown="event.preventDefault(); dismissFormatBar();" style="margin-left: auto;">⬇</button>
+    <button class="format-btn" onmousedown="event.preventDefault(); document.getElementById('style-color').click();">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>
+    </button>
+    <button class="format-btn" onmousedown="event.preventDefault(); dismissFormatBar();" style="margin-left: auto;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </button>
   </div>
 
   <button id="exit-zen-btn" class="exit-zen-btn">Exit Zen ⤫</button>
@@ -271,23 +347,23 @@
         drawer.className = 'mobile-drawer';
         drawer.appendChild(document.querySelector('.left-sidebar'));
         drawer.appendChild(document.querySelector('.right-sidebar'));
-        document.getElementById('editor-view').appendChild(drawer); // Appended inside editor view
+        document.getElementById('editor-view').appendChild(drawer); 
         
         const fab = document.createElement('button');
         fab.className = 'mobile-fab';
-        fab.innerHTML = '🛠️ Tools';
-        document.getElementById('editor-view').appendChild(fab); // Only exists in editor
+        fab.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg> Tools';
+        document.getElementById('editor-view').appendChild(fab); 
 
         fab.addEventListener('click', () => {
             drawer.classList.toggle('open');
-            fab.innerHTML = drawer.classList.contains('open') ? '❌ Close' : '🛠️ Tools';
+            fab.innerHTML = drawer.classList.contains('open') ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Close' : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg> Tools';
             if(navigator.vibrate) navigator.vibrate(10);
         });
         
         const topBar = document.querySelector('.top-bar');
         const kebabBtn = document.createElement('button');
-        kebabBtn.innerHTML = '⋮';
-        kebabBtn.style.cssText = 'background: none; border: none; color: var(--text-main); font-size: 28px; font-weight: bold; cursor: pointer; padding: 0 10px; margin-left: auto; outline: none;';
+        kebabBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>';
+        kebabBtn.style.cssText = 'background: none; border: none; color: var(--text-main); cursor: pointer; padding: 0 10px; margin-left: auto; outline: none;';
         
         document.querySelector('.logo-section').style.flexGrow = '1';
         topBar.appendChild(kebabBtn);

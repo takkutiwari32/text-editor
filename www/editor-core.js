@@ -70,7 +70,69 @@ async function nativeAlert(title, message) { await showCustomDialog({ title, mes
 async function nativePrompt(title, message, defaultValue = '') { return await showCustomDialog({ title, message, isPrompt: true, defaultValue }); }
 
 
-// --- PHASE 5: THE SPA VIEW CONTROLLER ---
+// --- PILLAR 2: NATIVE SWIPE-TO-DISMISS ENGINE ---
+function initSwipeToDismiss() {
+    const bottomSheets = document.querySelectorAll('.modal-overlay');
+
+    bottomSheets.forEach(overlay => {
+        // Ignore the custom center dialog, we only want to swipe bottom sheets
+        if (overlay.id === 'custom-dialog-overlay') return;
+
+        const box = overlay.querySelector('.modal-box');
+        if (!box) return;
+
+        let startY = 0;
+        let currentY = 0;
+        let isDragging = false;
+
+        box.addEventListener('touchstart', (e) => {
+            // Only allow dragging if the user is at the very top of the scrollable content
+            if (box.scrollTop > 0) return;
+            
+            startY = e.touches[0].clientY;
+            isDragging = true;
+            // Remove CSS transitions so it instantly sticks to the thumb
+            box.style.transition = 'none';
+        }, { passive: true });
+
+        box.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const y = e.touches[0].clientY;
+            const deltaY = y - startY;
+
+            // Only allow the box to be dragged downward
+            if (deltaY > 0) {
+                currentY = deltaY;
+                box.style.transform = `translateY(${currentY}px)`;
+            }
+        }, { passive: true });
+
+        box.addEventListener('touchend', (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            
+            // Restore smooth spring physics for the release animation
+            box.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
+
+            // The Snap Threshold: If dragged down more than 120 pixels, throw it away
+            if (currentY > 120) {
+                box.style.transform = `translateY(100%)`;
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    box.style.transform = ''; // Reset coordinates for next time
+                    currentY = 0;
+                }, 300);
+            } else {
+                // Not dragged far enough. Snap it back open.
+                box.style.transform = `translateY(0)`;
+                currentY = 0;
+            }
+        });
+    });
+}
+
+
+// --- THE SPA VIEW CONTROLLER ---
 function showEditor() {
     document.getElementById('home-view').style.display = 'none';
     document.getElementById('editor-view').style.display = 'flex';
@@ -82,9 +144,58 @@ function showHome() {
     loadHomeFiles();
 }
 
+// --- PILLAR 3: RIPPLE EFFECT ENGINE ---
+function createRipple(event) {
+    const button = event.currentTarget;
+    const circle = document.createElement("span");
+    const diameter = Math.max(button.clientWidth, button.clientHeight);
+    const radius = diameter / 2;
+    
+    // Account for both mouse clicks and physical touches
+    const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+    const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+    const rect = button.getBoundingClientRect();
+    
+    circle.style.width = circle.style.height = `${diameter}px`;
+    circle.style.left = `${clientX - rect.left - radius}px`;
+    circle.style.top = `${clientY - rect.top - radius}px`;
+    circle.classList.add("ripple");
+    
+    const existingRipple = button.querySelector(".ripple");
+    if (existingRipple) existingRipple.remove();
+    button.appendChild(circle);
+}
+
+// Attach ripples to all buttons globally
+document.addEventListener('DOMContentLoaded', () => {
+    const rippleElements = document.querySelectorAll('.file-card, .btn-primary, .btn-secondary, .icon-btn, .bottom-bar-btn, .new-fab, .tool-card, .format-btn');
+    rippleElements.forEach(el => {
+        el.classList.add('ripple-target');
+        el.addEventListener('mousedown', createRipple);
+        el.addEventListener('touchstart', createRipple, {passive: true});
+    });
+});
+
 async function loadHomeFiles() {
     const container = document.getElementById('file-list-container');
-    container.innerHTML = '<div style="text-align:center; padding: 40px; color: #8b949e;">Loading library...</div>';
+    
+    // Inject Shimmering Skeleton while hard drive is scanned
+    container.innerHTML = `
+        <div class="skeleton-card">
+            <div style="display: flex; flex-direction: column; gap: 8px; width: 60%;">
+                <div class="skeleton-text" style="width: 100%;"></div>
+                <div class="skeleton-text" style="width: 60%;"></div>
+            </div>
+            <div class="skeleton-icon"></div>
+        </div>
+        <div class="skeleton-card" style="opacity: 0.6;">
+            <div style="display: flex; flex-direction: column; gap: 8px; width: 60%;">
+                <div class="skeleton-text" style="width: 80%;"></div>
+                <div class="skeleton-text" style="width: 40%;"></div>
+            </div>
+            <div class="skeleton-icon"></div>
+        </div>
+    `;
     
     try {
         if (window.Capacitor && window.Capacitor.Plugins.Filesystem) {
@@ -94,7 +205,14 @@ async function loadHomeFiles() {
             const files = result.files.filter(f => f.name.endsWith('.json') || f.name.endsWith('.pdf'));
             
             if (files.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding: 60px 20px; color: #8b949e; line-height: 1.6;">No documents found.<br>Tap the red + to create your first note.</div>';
+                // Inject the Premium Empty State graphic
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <div class="empty-title">Your library is empty</div>
+                        <div style="font-size: 0.95rem;">Tap the red + below to draft a document.</div>
+                    </div>
+                `;
                 return;
             }
             
@@ -102,7 +220,8 @@ async function loadHomeFiles() {
             files.forEach(file => {
                 const isPdf = file.name.endsWith('.pdf');
                 const card = document.createElement('div');
-                card.className = 'file-card';
+                // Ensure new cards get the ripple effect class
+                card.className = 'file-card ripple-target'; 
                 card.innerHTML = `
                     <div class="file-info">
                         <div class="file-title">${file.name.replace('.json', '').replace('.pdf', '')}</div>
@@ -110,6 +229,10 @@ async function loadHomeFiles() {
                     </div>
                     <div style="font-size: 1.5rem; color: #58a6ff;">${isPdf ? '📄' : '📝'}</div>
                 `;
+                
+                // Wire up the ripple and open logic
+                card.addEventListener('mousedown', createRipple);
+                card.addEventListener('touchstart', createRipple, {passive: true});
                 card.onclick = () => {
                     triggerHaptic();
                     loadFileFromOS(file.uri || file.name); 
@@ -117,15 +240,30 @@ async function loadHomeFiles() {
                 container.appendChild(card);
             });
         } else {
-            container.innerHTML = '<div style="text-align:center; padding: 60px 20px; color: #8b949e; line-height: 1.6;">Hardware File System not detected.<br>Running in Web Mode.</div>';
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">🌐</div>
+                    <div class="empty-title">Web Mode</div>
+                    <div style="font-size: 0.95rem;">Hardware File System not detected.</div>
+                </div>
+            `;
         }
     } catch(e) {
-        container.innerHTML = '<div style="text-align:center; padding: 40px; color: #f85149;">Error reading storage.</div>';
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon" style="filter: none; color: var(--danger-accent);">⚠️</div>
+                <div class="empty-title" style="color: var(--danger-accent);">Storage Locked</div>
+                <div style="font-size: 0.95rem;">Check app permissions and try again.</div>
+            </div>
+        `;
     }
 }
 
-// Wire up the new App Navigation
+// Wire up the new App Navigation & Physics Engine
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Swipe Gestures
+    initSwipeToDismiss();
+
     // New Doc FAB
     const fab = document.getElementById('new-doc-fab');
     if (fab) {
@@ -175,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Load home view initially
     showHome();
 });
 
@@ -245,11 +382,6 @@ const triggerHaptic = () => { if(navigator.vibrate) navigator.vibrate(15); };
 // --- BYOK: LOCAL STORAGE ENGINE & FIRST-BOOT INTERCEPTOR ---
 function getLocalApiKey() { return localStorage.getItem('gemini_api_key') || ''; }
 
-window.addEventListener('DOMContentLoaded', () => {
-  const existingKey = getLocalApiKey();
-  if (!existingKey) { document.getElementById('api-modal').style.display = 'flex'; }
-});
-
 const getKeyBtn = document.getElementById('get-key-btn');
 if (getKeyBtn) {
     getKeyBtn.addEventListener('click', () => {
@@ -259,8 +391,6 @@ if (getKeyBtn) {
       else { shell.openExternal(targetUrl); }
     });
 }
-
-// THE FIX: The old 'settings-btn' listener was removed here because it caused the fatal null crash.
 
 const closeModalBtn = document.getElementById('close-modal-btn');
 if (closeModalBtn) {
@@ -605,7 +735,6 @@ document.addEventListener('selectionchange', () => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
     
-    // Only save the highlight if the user is actively inside the editor
     const activeEl = document.activeElement;
     if (activeEl && activeEl.closest('.ce-block__content')) {
         const range = selection.getRangeAt(0);
@@ -623,32 +752,26 @@ function applyTypography(type, value) {
     }
     
     try {
-        // Temporarily restore the highlight in case the UI element stole focus
         const selection = window.getSelection();
         selection.removeAllRanges();
         selection.addRange(lastSelectionRange);
 
-        // Build the style wrapper
         const span = document.createElement('span');
         if (type === 'color') span.style.color = value;
         if (type === 'font') span.style.fontFamily = value;
         if (type === 'size') {
             let sizeVal = value.trim();
-            // Smart parsing: If user just types "24", auto-append "px"
             if (sizeVal && !isNaN(sizeVal)) sizeVal += 'px';
             span.style.fontSize = sizeVal;
         }
 
-        // Safely extract the highlighted text and wrap it
         const contents = lastSelectionRange.extractContents();
         span.appendChild(contents);
         lastSelectionRange.insertNode(span);
 
-        // Force Editor.js to recognize the newly injected styles and auto-save
         const activeBlock = span.closest('.cdx-block');
         if (activeBlock) activeBlock.dispatchEvent(new Event('input', { bubbles: true }));
 
-        // Re-highlight the newly styled text so the user can easily chain multiple styles
         lastSelectionRange.selectNodeContents(span);
         selection.removeAllRanges();
         selection.addRange(lastSelectionRange);
@@ -659,26 +782,12 @@ function applyTypography(type, value) {
     }
 }
 
-// 3. Wired up safely to the 'change' events to prevent infinite loops
-document.getElementById('style-color').addEventListener('change', (e) => { 
-    applyTypography('color', e.target.value); 
-});
-
-document.getElementById('style-font').addEventListener('change', (e) => { 
-    applyTypography('font', e.target.value); 
-});
-
+document.getElementById('style-color').addEventListener('change', (e) => { applyTypography('color', e.target.value); });
+document.getElementById('style-font').addEventListener('change', (e) => { applyTypography('font', e.target.value); });
 const sizeInput = document.getElementById('style-size');
-sizeInput.addEventListener('change', (e) => { 
-    applyTypography('size', e.target.value); 
-});
-// Allow user to apply size by hitting the Enter key on their mobile keyboard
+sizeInput.addEventListener('change', (e) => { applyTypography('size', e.target.value); });
 sizeInput.addEventListener('keydown', (e) => { 
-    if (e.key === 'Enter') { 
-        e.preventDefault(); 
-        applyTypography('size', e.target.value); 
-        sizeInput.blur(); // Drop the keyboard after applying
-    } 
+    if (e.key === 'Enter') { e.preventDefault(); applyTypography('size', e.target.value); sizeInput.blur(); } 
 });
 
 // --- PREMIUM AI NEXUS ENGINE ---

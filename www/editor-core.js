@@ -597,34 +597,89 @@ document.getElementById('save-as-btn').addEventListener('click', () => {
   triggerHaptic(); editor.save().then((outputData) => { ipcRenderer.send('save-article', { title: getDocumentTitle(outputData), content: outputData, isSaveAs: true }); });
 });
 
-// --- TYPOGRAPHY ENGINE ---
-let selectionTimeout;
+// --- 6. FLAWLESS TYPOGRAPHY ENGINE ---
+let lastSelectionRange = null;
+
+// 1. Passively memorize the highlight without mutating the DOM
 document.addEventListener('selectionchange', () => {
-  clearTimeout(selectionTimeout);
-  selectionTimeout = setTimeout(() => {
-    const activeId = document.activeElement ? document.activeElement.id : '';
-    if (['style-color', 'style-size', 'style-font'].includes(activeId)) return;
-    const selection = window.getSelection(); const oldTarget = document.getElementById('pending-style-target');
-    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) { if (oldTarget) { oldTarget.removeAttribute('id'); oldTarget.style.backgroundColor = 'transparent'; } return; }
-    const range = selection.getRangeAt(0);
-    if (!range.commonAncestorContainer.parentElement || !range.commonAncestorContainer.parentElement.closest('.ce-block')) return;
-    if (oldTarget) { oldTarget.removeAttribute('id'); oldTarget.style.backgroundColor = 'transparent'; }
-    const span = document.createElement('span'); span.id = 'pending-style-target'; span.style.backgroundColor = 'rgba(248, 81, 73, 0.2)'; 
-    try { span.appendChild(range.extractContents()); range.insertNode(span); } catch (err) {}
-  }, 400); 
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    
+    // Only save the highlight if the user is actively inside the editor
+    const activeEl = document.activeElement;
+    if (activeEl && activeEl.closest('.ce-block__content')) {
+        const range = selection.getRangeAt(0);
+        if (!range.collapsed) {
+            lastSelectionRange = range.cloneRange();
+        }
+    }
 });
 
+// 2. The core injection function
 function applyTypography(type, value) {
-  const targetSpan = document.getElementById('pending-style-target'); 
-  if (!targetSpan) { nativeAlert("Action Required", "Please highlight some text in the editor first!"); return; }
-  if (type === 'color') targetSpan.style.color = value; if (type === 'size') targetSpan.style.fontSize = value; if (type === 'font') targetSpan.style.fontFamily = value;
-  targetSpan.style.backgroundColor = 'transparent';
-  const activeBlock = targetSpan.closest('.cdx-block'); if (activeBlock) activeBlock.dispatchEvent(new Event('input', { bubbles: true }));
+    if (!lastSelectionRange || lastSelectionRange.collapsed) { 
+        nativeAlert("Action Required", "Please highlight some text in the editor first!"); 
+        return; 
+    }
+    
+    try {
+        // Temporarily restore the highlight in case the UI element stole focus
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(lastSelectionRange);
+
+        // Build the style wrapper
+        const span = document.createElement('span');
+        if (type === 'color') span.style.color = value;
+        if (type === 'font') span.style.fontFamily = value;
+        if (type === 'size') {
+            let sizeVal = value.trim();
+            // Smart parsing: If user just types "24", auto-append "px"
+            if (sizeVal && !isNaN(sizeVal)) sizeVal += 'px';
+            span.style.fontSize = sizeVal;
+        }
+
+        // Safely extract the highlighted text and wrap it
+        const contents = lastSelectionRange.extractContents();
+        span.appendChild(contents);
+        lastSelectionRange.insertNode(span);
+
+        // Force Editor.js to recognize the newly injected styles and auto-save
+        const activeBlock = span.closest('.cdx-block');
+        if (activeBlock) activeBlock.dispatchEvent(new Event('input', { bubbles: true }));
+
+        // Re-highlight the newly styled text so the user can easily chain multiple styles
+        lastSelectionRange.selectNodeContents(span);
+        selection.removeAllRanges();
+        selection.addRange(lastSelectionRange);
+        
+    } catch (err) {
+        console.error("Typography Error:", err);
+        nativeAlert("Format Error", "Please select text within a single paragraph.");
+    }
 }
-document.getElementById('style-color').addEventListener('input', (e) => { applyTypography('color', e.target.value); });
-document.getElementById('style-size').addEventListener('change', (e) => { applyTypography('size', e.target.value); });
-document.getElementById('style-size').addEventListener('keydown', (e) => { if (e.key === 'Enter') applyTypography('size', e.target.value); });
-document.getElementById('style-font').addEventListener('change', (e) => { applyTypography('font', e.target.value); });
+
+// 3. Wired up safely to the 'change' events to prevent infinite loops
+document.getElementById('style-color').addEventListener('change', (e) => { 
+    applyTypography('color', e.target.value); 
+});
+
+document.getElementById('style-font').addEventListener('change', (e) => { 
+    applyTypography('font', e.target.value); 
+});
+
+const sizeInput = document.getElementById('style-size');
+sizeInput.addEventListener('change', (e) => { 
+    applyTypography('size', e.target.value); 
+});
+// Allow user to apply size by hitting the Enter key on their mobile keyboard
+sizeInput.addEventListener('keydown', (e) => { 
+    if (e.key === 'Enter') { 
+        e.preventDefault(); 
+        applyTypography('size', e.target.value); 
+        sizeInput.blur(); // Drop the keyboard after applying
+    } 
+});
 
 // --- PREMIUM AI NEXUS ENGINE ---
 let lastActiveBlock = null;

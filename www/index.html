@@ -48,7 +48,7 @@
   <nav class="top-bar">
     <div class="logo-section" style="display: flex; align-items: center;">
       <span class="logo-text">PRO CMS</span>
-      <button id="settings-btn" class="icon-btn" style="margin-left: 15px; cursor: pointer; background: none; border: none; font-size: 1.2rem;" title="API Settings">⚙️</button>
+      <button id="settings-btn" class="icon-btn" style="margin-left: 15px; cursor: pointer; background: none; border: none; font-size: 1.2rem;" title="API Settings">👑</button>
       <div style="display: flex; margin-left: auto; gap: 4px; padding-right: 5px;">
         <button class="icon-btn" id="undo-btn" title="Undo" style="font-size: 1.3rem; padding: 4px 8px;">↺</button>
         <button class="icon-btn" id="redo-btn" title="Redo" style="font-size: 1.3rem; padding: 4px 8px;">↻</button>
@@ -59,9 +59,9 @@
       <span class="save-status" id="save-status-indicator">Draft: Auto-Saved</span>
     </div> 
     <div class="action-section">
-       <button class="btn-secondary" id="export-pdf-btn" style="border-color: rgba(88, 166, 255, 0.4); color: #58a6ff;">📄 Export to PDF</button>
-       <button class="btn-secondary" id="export-txt-btn">📝 Export to Text</button>
-       <button class="btn-secondary" id="save-as-btn">💾 Save Copy As...</button>
+       <button class="btn-secondary" id="export-pdf-btn" style="border-color: rgba(88, 166, 255, 0.4); color: #58a6ff;">Export to PDF</button>
+       <button class="btn-secondary" id="export-txt-btn">Export to Text</button>
+       <button class="btn-secondary" id="save-as-btn">Save Copy As...</button>
        <button class="btn-primary" id="publish-btn">✓ Save Document</button>
     </div>
   </nav>
@@ -129,10 +129,10 @@
 
   <div class="ai-nexus-container">
       <div id="ai-nexus-popup" class="ai-nexus-popup">
-        <div class="sidebar-title" style="margin-bottom: 15px; color: #58a6ff; letter-spacing: 2px;">Cloud Co-Pilot</div>
+        <div class="sidebar-title" style="margin-bottom: 15px; color: #58a6ff; letter-spacing: 2px;">COMMAND AI</div>
         <div style="display: flex; flex-direction: column; gap: 8px;">
-            <button id="ai-grammar-btn" class="btn-secondary ai-menu-btn">✨ Fix Active Paragraph</button>
-            <button id="ai-format-btn" class="btn-secondary ai-menu-btn">🎨 AI Format Element...</button>
+            <button id="ai-grammar-btn" class="btn-secondary ai-menu-btn">GRAMMAR✅</button>
+            <button id="ai-format-btn" class="btn-secondary ai-menu-btn">🤖</button>
         </div>
         <div id="ai-format-input-wrapper" style="display: none; margin-top: 8px;">
             <input type="text" id="ai-format-input" class="setting-input" placeholder="Type format, press Enter..." style="width: 100%; font-size: 0.85rem; padding: 10px;">
@@ -142,7 +142,7 @@
           <label class="switch"><input type="checkbox" id="ai-auto-toggle"><span class="slider"></span></label>
         </div>
       </div>
-      <button id="ai-nexus-fab" class="ai-nexus-fab" title="Activate AI Co-Pilot"><div class="ai-nexus-inner">✨</div></button>
+      <button id="ai-nexus-fab" class="ai-nexus-fab" title="Activate AI Co-Pilot"><div class="ai-nexus-inner"><b><i>AI</i></b></div></button>
   </div>
 
   <div id="api-modal" class="modal-overlay">
@@ -205,10 +205,12 @@
     <div id="pdf-canvas-container" style="flex: 1; width: 100%; background: #050505; overflow: auto; text-align: center; padding: 20px; box-sizing: border-box; position: relative; -webkit-overflow-scrolling: touch;">
       <div id="pdf-loading-spinner" class="modern-spinner-overlay" style="display: none;"><div class="modern-spinner"></div><div id="pdf-spinner-text" class="modern-spinner-text">Reading File...</div></div>
       <div id="pdf-transform-wrapper" style="position: relative; display: inline-block; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.8); transform-origin: top left; transform: scale(1); will-change: transform; margin: 0 auto;">
-        <canvas id="pdf-base-canvas" style="display: block;"></canvas>
-        <div id="pdf-text-layer" class="textLayer" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; line-height: 1.0;"></div>
-        <canvas id="pdf-glass-canvas" style="position: absolute; top: 0; left: 0; touch-action: none; cursor: crosshair;"></canvas>
-      </div>
+  <canvas id="pdf-base-canvas" style="display: block;"></canvas>
+  <div id="pdf-text-layer" class="textLayer" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; line-height: 1.0;"></div>
+  
+  <!-- THE FIX: Added z-index: 10; so the canvas sits above the text layer -->
+  <canvas id="pdf-glass-canvas" style="position: absolute; top: 0; left: 0; touch-action: none; cursor: crosshair; z-index: 10;"></canvas>
+</div>
     </div>
     <div id="pdf-toolbar-container" style="width: 100%;"></div>
   </div>
